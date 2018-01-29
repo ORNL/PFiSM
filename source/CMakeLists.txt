@@ -48,7 +48,7 @@ MACRO(m4tof filename)
     ADD_CUSTOM_COMMAND(
       OUTPUT ${CMAKE_SOURCE_DIR}/fortran/${filename}.f
       COMMAND m4 
-      ARGS -DPDAT_FORTDIR=${SAMRAI_DIR}/SAMRAI/source/SAMRAI/pdat/fortran 
+      ARGS -DPDAT_FORTDIR=${SAMRAI_DIR}/../SAMRAI/source/SAMRAI/pdat/fortran 
           ${CMAKE_SOURCE_DIR}/fortran/${filename}.m4 > ${CMAKE_SOURCE_DIR}/fortran/${filename}.f
       VERBATIM
       )

@@ -1,0 +1,42 @@
+#load modeules
+module load boost
+module load hdf5
+module load cmake
+module load gcc
+module load hypre
+
+#build sundials
+./configure --build=ppc64le --prefix=/autofs/nccs-svm1_home1/jeanluc/sundials/build_summitdev --with-mpicc=/s
+w/summitdev/gcc/6.3.1-20170301/bin/gcc
+
+#build SAMRAI from SAMRAI-v3.11.2/objs:
+cd objs
+sh ../SAMRAI/configure CFLAGS="-O2 " CXXFLAGS="-O2 " \
+            --build=ppc64le \
+            --disable-debug --enable-opt \
+            --with-CXX=mpicxx \
+            --with-CC=mpicc \
+            --with-F77=mpif77 \
+            --without-petsc \
+            --without-x \
+            --disable-shared \
+            --disable-rpath \
+            --with-mpi-lib-dirs=$MPI_ROOT \
+            --with-boost=$OLCF_BOOST_ROOT \
+            --with-hdf5=$OLCF_HDF5_ROOT \
+            --with-hypre=$OLCF_HYPRE_ROOT \
+            --with-sundials=$HOME/sundials/build_summitdev \
+            --prefix=$HOME/SAMRAI/SAMRAI-v3.11.2/build_summitdev
+
+gmake library
+gmake install
+
+#build code using cmake from PFiSM/build_summitdev
+scripts/doconfig_summitdev
+
+make
+
+#run code
+bsub -nnodes 1 -PCSC249ADSE10 -W02:00 -Is $SHELL
+jsrun -n1 -a1 -g1 ./main cvode_neu.3d.input
+
