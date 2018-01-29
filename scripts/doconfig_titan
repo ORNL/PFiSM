@@ -1,0 +1,6 @@
+cmake -DCMAKE_CXX_COMPILER=CC -DCMAKE_C_COMPILER=cc -DCMAKE_Fortran_COMPILER=ftn \
+	-DSAMRAI_DIR=$HOME/SAMRAI/SAMRAI-v3.11.2/build_titan \
+	-DHYPRE_DIR=$HOME/hypre/hypre-2.11.1/src/hypre_gnu \
+	-DSUNDIALS_DIR=$HOME/sundials/build_titan \
+	-DCMAKE_BUILD_TYPE=Debug -DBUILD_SHARED_LIBS=OFF ../source
+
