@@ -1,0 +1,29 @@
+#load modules
+module load cray-netcdf
+module load cray-hdf5
+module load boost
+module load cmake3/3.6.1
+
+#build SAMRAI from SAMRAI-v3.11.2/objs:
+sh ../SAMRAI/configure CFLAGS="-O2 " CXXFLAGS="-O2 " \
+            --disable-debug --enable-opt \
+            --with-CXX=CC \
+            --with-CC=cc \
+            --with-F77=ftn \
+            --without-petsc \
+            --without-x \
+            --disable-shared \
+            --disable-rpath \
+            --with-mpi-lib-dirs=$MPICH_DIR \
+            --with-boost=$BOOST_DIR \
+            --with-hdf5=$HDF5_DIR \
+            --with-hypre=$HOME/hypre/hypre-2.11.1/src/hypre_intel \
+            --with-sundials=$HOME/sundials/build_eos \
+            --prefix=$HOME/SAMRAI/SAMRAI-v3.11.2/build_eos
+
+gmake library
+
+#build code from PFiSM/build_eos
+../scripts/doconfig_eos
+make
+
