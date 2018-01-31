@@ -37,7 +37,6 @@
 
 // routines for managing boundary data
 #include "SAMRAI/appu/CartesianBoundaryUtilities2.h"
-
 #include "SAMRAI/appu/CartesianBoundaryUtilities3.h"
 
 // Define class version number
@@ -104,6 +103,7 @@ CVODEModel::CVODEModel(
    d_soln_scr_id = variable_db->registerVariableAndContext(d_soln_var,
          d_scr_cxt,
          IntVector(d_dim, 1));
+
    d_diff_var.reset(new SideVariable<double>(d_dim, "diffusion",
          hier::IntVector::getOne(d_dim), 1));
 
@@ -133,25 +133,12 @@ CVODEModel::CVODEModel(
    /*
     * Boundary condition initialization.
     */
-   d_scalar_bdry_face_conds.resize(NUM_3D_FACES);
-   for (int fi = 0; fi < NUM_3D_FACES; ++fi) {
-      d_scalar_bdry_face_conds[fi] = BOGUS_BDRY_DATA;
-   }
+   d_scalar_bdry_face_conds.resize(NUM_3D_FACES,BOGUS_BDRY_DATA);
 
-   d_scalar_bdry_edge_conds.resize(NUM_3D_EDGES);
-   d_edge_bdry_face.resize(NUM_3D_EDGES);
-   for (int ei = 0; ei < NUM_3D_EDGES; ++ei) {
-      d_scalar_bdry_edge_conds[ei] = BOGUS_BDRY_DATA;
-      d_edge_bdry_face[ei] = BOGUS_BDRY_DATA;
-   }
-
-   d_scalar_bdry_node_conds.resize(NUM_3D_NODES);
-   d_node_bdry_face.resize(NUM_3D_NODES);
-
-   for (int ni = 0; ni < NUM_3D_NODES; ++ni) {
-      d_scalar_bdry_node_conds[ni] = BOGUS_BDRY_DATA;
-      d_node_bdry_face[ni] = BOGUS_BDRY_DATA;
-   }
+   d_scalar_bdry_edge_conds.resize(NUM_3D_EDGES,BOGUS_BDRY_DATA);
+   d_edge_bdry_face.resize(NUM_3D_EDGES,BOGUS_BDRY_DATA);
+   d_scalar_bdry_node_conds.resize(NUM_3D_NODES,BOGUS_BDRY_DATA);
+   d_node_bdry_face.resize(NUM_3D_NODES,BOGUS_BDRY_DATA);
 
    d_bdry_face_val.resize(NUM_3D_FACES);
    MathUtilities<double>::setVectorToSignalingNaN(d_bdry_face_val);
@@ -193,27 +180,10 @@ CVODEModel::CVODEModel(
    }
 
    /*
-    * Postprocess boundary data from input/restart values.  Note: scalar
-    * quantity in this problem cannot have reflective boundary conditions
-    * so we reset them to BdryCond::FLOW.
+    * Postprocess boundary data from input/restart values.
     */
-   for (int i = 0; i < NUM_3D_FACES; ++i) {
-      if (d_scalar_bdry_face_conds[i] == BdryCond::REFLECT) {
-         d_scalar_bdry_face_conds[i] = BdryCond::FLOW;
-      }
-   }
 
    for (int i = 0; i < NUM_3D_EDGES; ++i) {
-      if (d_scalar_bdry_edge_conds[i] == BdryCond::XREFLECT) {
-         d_scalar_bdry_edge_conds[i] = BdryCond::XFLOW;
-      }
-      if (d_scalar_bdry_edge_conds[i] == BdryCond::YREFLECT) {
-         d_scalar_bdry_edge_conds[i] = BdryCond::YFLOW;
-      }
-      if (d_scalar_bdry_edge_conds[i] == BdryCond::ZREFLECT) {
-         d_scalar_bdry_edge_conds[i] = BdryCond::ZFLOW;
-      }
-
       if (d_scalar_bdry_edge_conds[i] != BOGUS_BDRY_DATA) {
          d_edge_bdry_face[i] =
             CartesianBoundaryUtilities3::getFaceLocationForEdgeBdry(
@@ -222,16 +192,6 @@ CVODEModel::CVODEModel(
    }
 
    for (int i = 0; i < NUM_3D_NODES; ++i) {
-      if (d_scalar_bdry_node_conds[i] == BdryCond::XREFLECT) {
-         d_scalar_bdry_node_conds[i] = BdryCond::XFLOW;
-      }
-      if (d_scalar_bdry_node_conds[i] == BdryCond::YREFLECT) {
-         d_scalar_bdry_node_conds[i] = BdryCond::YFLOW;
-      }
-      if (d_scalar_bdry_node_conds[i] == BdryCond::ZREFLECT) {
-         d_scalar_bdry_node_conds[i] = BdryCond::ZFLOW;
-      }
-
       if (d_scalar_bdry_node_conds[i] != BOGUS_BDRY_DATA) {
          d_node_bdry_face[i] =
             CartesianBoundaryUtilities3::getFaceLocationForNodeBdry(
@@ -396,7 +356,6 @@ CVODEModel::setPhysicalBoundaryConditions(
       ghost_width_to_fill,
       d_scalar_bdry_node_conds,
       d_bdry_face_val);
-
 
 //    plog << "----Boundary Conditions "  << endl;
 //    soln_data->print(soln_data->getGhostBox());
@@ -632,14 +591,13 @@ int CVODEModel::CVSpgmrPrecondSet(
    NULL_USE(vtemp2);
    NULL_USE(vtemp3);
 
+   plog<<"CVSpgmrPrecondSet..."<<endl;
+
    /*
     * Convert passed-in CVODE vectors into SAMRAI vectors
     */
    boost::shared_ptr<SAMRAIVectorReal<double> > y_samvect(
       Sundials_SAMRAIVector::getSAMRAIVector(y));
-
-   boost::shared_ptr<PatchHierarchy> hierarchy(
-      y_samvect->getPatchHierarchy());
 
    int y_indx = y_samvect->getComponentDescriptorIndex(0);
 
@@ -671,6 +629,9 @@ int CVODEModel::CVSpgmrPrecondSet(
    /*
     * Step through levels - largest to smallest
     */
+   boost::shared_ptr<PatchHierarchy> hierarchy(
+      y_samvect->getPatchHierarchy());
+
    for (int amr_level = hierarchy->getFinestLevelNumber();
         amr_level >= 0;
         --amr_level) {
@@ -820,6 +781,8 @@ int CVODEModel::CVSpgmrPrecondSolve(
    NULL_USE(delta);
    NULL_USE(lr);
 
+   plog<<"CVSpgmrPrecondSolve..."<<endl;
+
    /*
     * Convert passed-in CVODE vectors into SAMRAI vectors
     */
@@ -861,8 +824,7 @@ int CVODEModel::CVSpgmrPrecondSolve(
     * Set initial guess for z (if applicable) and copy z data into the
     * solution scratch context.
     */
-   int ln;
-   for (ln = hierarchy->getFinestLevelNumber(); ln >= 0; --ln) {
+   for (int ln = hierarchy->getFinestLevelNumber(); ln >= 0; --ln) {
       boost::shared_ptr<PatchLevel> level(hierarchy->getPatchLevel(ln));
 
       if (!level->checkAllocated(d_soln_scr_id)) {
@@ -949,11 +911,13 @@ int CVODEModel::CVSpgmrPrecondSolve(
     * When upgrading to the new FAC solver from the old, I noticed
     * that the old solver only solved on level 0.  BTNG.
     */
+   plog<<"solve system..."<<endl;
    bool converge = d_FAC_solver->solveSystem(d_soln_scr_id,
          r_indx,
          hierarchy,
          coarsest_solve_ln,
          finest_solve_ln);
+   plog<<"system solved..."<<endl;
 
    if (d_print_solver_info) {
       double avg_convergence, final_convergence;
@@ -973,7 +937,7 @@ int CVODEModel::CVSpgmrPrecondSolve(
    * into the z vector.
    *
    ******************************************************************/
-   for (ln = hierarchy->getFinestLevelNumber(); ln >= 0; --ln) {
+   for (int ln = hierarchy->getFinestLevelNumber(); ln >= 0; --ln) {
       boost::shared_ptr<PatchLevel> level(hierarchy->getPatchLevel(ln));
 
       for (PatchLevel::iterator p(level->begin()); p != level->end(); ++p) {
@@ -1103,9 +1067,6 @@ CVODEModel::setInitialConditions(
 
             /*
              * Set initial diffusion coeff values.
-             * NOTE: in a "real" application, the diffusion coefficient is
-             * some function of y.  Here, we just do a simple minded
-             * approach and set it to 1.
              */
             boost::shared_ptr<SideData<double> > diffusion(
                BOOST_CAST<SideData<double>, PatchData>(
@@ -1222,7 +1183,6 @@ void CVODEModel::putToRestart(
  */
 void CVODEModel::getFromRestart()
 {
-
    boost::shared_ptr<Database> root_db(
       RestartManager::getManager()->getRootDatabase());
 
@@ -1248,7 +1208,6 @@ void CVODEModel::getFromRestart()
       db->getIntegerVector("d_scalar_bdry_face_conds");
 
    d_bdry_face_val = db->getDoubleVector("d_bdry_face_val");
-
 }
 
 /*

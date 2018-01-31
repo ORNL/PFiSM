@@ -136,7 +136,7 @@ int main(
        */
       boost::shared_ptr<tbox::Database> main_db(input_db->getDatabase("Main"));
 
-      const tbox::Dimension dim(static_cast<unsigned short>(main_db->getInteger("dim")));
+      const tbox::Dimension dim(static_cast<unsigned short>(3));
 
       int max_order = main_db->getInteger("max_order");
       int max_internal_steps = main_db->getInteger("max_internal_steps");
@@ -180,7 +180,6 @@ int main(
       std::string fac_precond_name = fac_solver_name + "::fac_precond";
       std::string hypre_poisson_name = fac_ops_name + "::hypre_solver";
 
-#ifdef HAVE_HYPRE
       boost::shared_ptr<solv::CellPoissonHypreSolver> hypre_poisson(
          new solv::CellPoissonHypreSolver(
             dim,
@@ -197,15 +196,6 @@ int main(
             input_db->isDatabase("fac_ops") ?
             input_db->getDatabase("fac_ops") :
             boost::shared_ptr<tbox::Database>()));
-#else
-      boost::shared_ptr<solv::CellPoissonFACOps> fac_ops(
-         new solv::CellPoissonFACOps(
-            dim,
-            fac_ops_name,
-            input_db->isDatabase("fac_ops") ?
-            input_db->getDatabase("fac_ops") :
-            boost::shared_ptr<tbox::Database>()));
-#endif
 
       boost::shared_ptr<solv::FACPreconditioner> fac_precond(
          new solv::FACPreconditioner(
@@ -258,6 +248,8 @@ int main(
             error_est,
             box_generator,
             load_balancer));
+
+      input_db->printClassData(tbox::plog);
 
       /*
        * Setup hierarchy.
@@ -320,8 +312,6 @@ int main(
          neq += i->size();
       }
       cvode_solver->setIterationType(uses_newton ? CV_NEWTON : CV_FUNCTIONAL);
-      //cvode_solver->setToleranceType(SV); // this is in craig's code, but
-      // causes mine to bomb.  Why??
       cvode_solver->setRelativeTolerance(relative_tolerance);
       cvode_solver->setAbsoluteTolerance(absolute_tolerance);
       cvode_solver->setMaximumNumberOfInternalSteps(max_internal_steps);
@@ -347,9 +337,8 @@ int main(
             y_init->getPatchHierarchy());
 
          tbox::pout << "Initial solution vector y() at initial time: " << endl;
-         int ln;
          tbox::pout << "y(" << init_time << "): " << endl;
-         for (ln = 0; ln < init_hierarchy->getNumberOfLevels(); ++ln) {
+         for (int ln = 0; ln < init_hierarchy->getNumberOfLevels(); ++ln) {
             boost::shared_ptr<hier::PatchLevel> level(
                init_hierarchy->getPatchLevel(ln));
             tbox::plog << "level = " << ln << endl;
@@ -390,6 +379,8 @@ int main(
       int interval;
       for (interval = 1; interval <= num_print_intervals; ++interval) {
 
+         tbox::plog << "interval = "<<interval<<endl;
+
          /*
           * Set time interval
           */
@@ -404,6 +395,7 @@ int main(
          t_cvode_solve->stop();
          double actual_time =
             cvode_solver->getActualFinalValueOfIndependentVariable();
+         tbox::plog << "time = "<<actual_time<<endl;
 
          /*
           * Print statistics
@@ -420,6 +412,7 @@ int main(
          l2norm[interval - 1] = y_result->L2Norm();
 
          if (solution_logging) {
+            tbox::plog << "CVODE stastistics:"<<endl;
             cvode_solver->printStatistics(tbox::pout);
          }
 

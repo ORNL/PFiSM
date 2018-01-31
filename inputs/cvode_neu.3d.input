@@ -13,8 +13,6 @@
 
 Main {
 
-   dim                      = 3
-
    init_time                = 0.0
    init_cycle               = 0
    print_interval           = 1.0e-2

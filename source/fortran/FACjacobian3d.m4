@@ -36,11 +36,16 @@ c
       double precision dgrade0p, dgrade0m, 
      &                 dgrade1p, dgrade1m,
      &                 dgrade2p, dgrade2m
+      double precision invdx2(0:NDIM-1)
+
+      invdx2(0)=1./(dx(0)*dx(0))
+      invdx2(1)=1./(dx(1)*dx(1))
+      invdx2(2)=1./(dx(2)*dx(2))
 
 c
 c  Computes RHS for 1 eqn radiation diffusion application
 c
-c      dE/dt = grad dot ( D(E)grad(E) ) = RHS
+c      RHS = div ( D * grad(y) )
 c
       do ic2=ifirst2,ilast2
          do ic1=ifirst1,ilast1
@@ -48,24 +53,24 @@ c
 
 c        compute  D(E)grad(E) in X, Y, and Z
 
-            dgrade0p = diff0(ic0+1,ic1,ic2)/dx(0) *
+            dgrade0p = diff0(ic0+1,ic1,ic2) *
      &                 (y(ic0+1,ic1,ic2) - y(ic0,ic1,ic2))
-            dgrade0m = diff0(ic0,ic1,ic2)/dx(0) *
+            dgrade0m = diff0(ic0,ic1,ic2) *
      &                 (y(ic0,ic1,ic2) - y(ic0-1,ic1,ic2))
-            dgrade1p = diff1(ic0,ic1+1,ic2)/dx(1) *
+            dgrade1p = diff1(ic0,ic1+1,ic2) *
      &                 (y(ic0,ic1+1,ic2) - y(ic0,ic1,ic2))
-            dgrade1m = diff1(ic0,ic1,ic2)/dx(1) *
+            dgrade1m = diff1(ic0,ic1,ic2) *
      &                 (y(ic0,ic1,ic2) - y(ic0,ic1-1,ic2))
-            dgrade2p = diff2(ic0,ic1,ic2+1)/dx(2) *
+            dgrade2p = diff2(ic0,ic1,ic2+1) *
      &                 (y(ic0,ic1,ic2+1) - y(ic0,ic1,ic2))
-            dgrade2m = diff1(ic0,ic1,ic2)/dx(1) *
+            dgrade2m = diff1(ic0,ic1,ic2) *
      &                 (y(ic0,ic1,ic2) - y(ic0,ic1,ic2-1))
 
 c        compute  RHS
 
-            rhs(ic0,ic1,ic2) = (dgrade0p - dgrade0m)/dx(0) +
-     &                         (dgrade1p - dgrade1m)/dx(1) +
-     &                         (dgrade2p - dgrade2m)/dx(2)
+            rhs(ic0,ic1,ic2) = (dgrade0p - dgrade0m)*invdx2(0) +
+     &                         (dgrade1p - dgrade1m)*invdx2(1) +
+     &                         (dgrade2p - dgrade2m)*invdx2(2)
 
             enddo
          enddo

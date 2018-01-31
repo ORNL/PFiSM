@@ -326,14 +326,9 @@ public:
     *
     * The function arguments are:
     *
-    *
-    *
     * - \b t        (INPUT) {current value of the independent variable}
     * - \b y        (INPUT) {current value of dependent variable vector}
     * - \b y_dot   (OUTPUT){current value of the derivative of y}
-    *
-    *
-    *
     *
     * IMPORTANT: This function must not modify the vector y. (KTC??)
     */
