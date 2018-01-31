@@ -38,6 +38,7 @@ using namespace std;
 #include "SAMRAI/xfer/RefineSchedule.h"
 
 #include "SAMRAI/solv/CellPoissonFACSolver.h"
+#include "SAMRAI/appu/VisItDataWriter.h"
 /*
  * Header files for CVODE wrapper classes
  */
@@ -427,6 +428,15 @@ public:
       int bdry_location_index);
 
    /**
+    * Register a VisIt data writer so this class will write
+    * plot files that may be postprocessed with the VisIt
+    * visualization tool.
+    */
+   void
+   registerVisItDataWriter(
+      boost::shared_ptr<appu::VisItDataWriter> viz_writer);
+
+   /**
     * Prints all class data members, if assertion is thrown.
     */
    void
@@ -513,6 +523,8 @@ private:
     * Grid geometry
     */
    boost::shared_ptr<CartesianGridGeometry> d_grid_geometry;
+
+   boost::shared_ptr<appu::VisItDataWriter> d_visit_writer;
 
    /*
     * Initial value

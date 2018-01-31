@@ -198,7 +198,6 @@ CVODEModel::CVODEModel(
                i, d_scalar_bdry_node_conds[i]);
       }
    }
-
 }
 
 CVODEModel::~CVODEModel()
@@ -1266,6 +1265,28 @@ void CVODEModel::readStateDataEntry(
    }
 
 }
+
+/*
+ *************************************************************************
+ *
+ * Register VisIt data writer to write data to plot files that may
+ * be postprocessed by the VisIt tool.
+ *
+ *************************************************************************
+ */
+void CVODEModel::registerVisItDataWriter(
+   boost::shared_ptr<appu::VisItDataWriter> viz_writer)
+{
+   TBOX_ASSERT(viz_writer);
+   d_visit_writer = viz_writer;
+
+   if (d_visit_writer) {
+      d_visit_writer->
+         registerPlotQuantity("temperature", "SCALAR",
+         d_soln_cur_id, 0);
+   }
+}
+
 /*
  *************************************************************************
  *

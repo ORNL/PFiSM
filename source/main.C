@@ -49,6 +49,8 @@ using namespace SAMRAI;
 #include "SAMRAI/solv/SundialsAbstractVector.h"
 #include "SAMRAI/solv/CVODESolver.h"
 #include "SAMRAI/solv/Sundials_SAMRAIVector.h"
+#include "SAMRAI/appu/VisItDataWriter.h"
+
 #include "CVODEModel.h"
 
 // CVODE includes
@@ -284,6 +286,20 @@ int main(
          tbox::TimerManager::getManager()->
          getTimer("apps::main::Solution log dump"));
       /*
+       * Set up Visualization plot file writer(s).
+       */
+      int visit_number_procs_per_file=1;
+      const std::string visit_dump_dirname 
+         = "v."+input_filename.substr( 0, input_filename.rfind( "." ) );
+      boost::shared_ptr<appu::VisItDataWriter> visit_data_writer(
+         new appu::VisItDataWriter(
+            dim,
+            "PFiSM VisIt Writer",
+            visit_dump_dirname,
+            visit_number_procs_per_file));
+      cvode_model->registerVisItDataWriter(visit_data_writer);
+
+      /*
        * Setup solution vector.
        */
       cvode_model->setupSolutionVector(hierarchy);
@@ -416,6 +432,11 @@ int main(
             cvode_solver->printStatistics(tbox::pout);
          }
 
+         visit_data_writer->writePlotData(
+            result_hierarchy,
+            interval,
+            final_time);
+
          /*
           * Write solution (if desired).
           */
@@ -532,6 +553,7 @@ int main(
       box_generator.reset();
       hierarchy.reset();
       geometry.reset();
+      visit_data_writer.reset();
 
 #endif // HAVE_SUNDIALS
 
