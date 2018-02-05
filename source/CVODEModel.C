@@ -328,32 +328,13 @@ CVODEModel::setPhysicalBoundaryConditions(
 
    /*
     *  Set boundary conditions for cells corresponding to patch faces.
+    *  Edge and node values are not used and need not be set
     */
    CartesianBoundaryUtilities3::
    fillFaceBoundaryData("soln_data", soln_data,
       patch,
       ghost_width_to_fill,
       d_scalar_bdry_face_conds,
-      d_bdry_face_val);
-
-   /*
-    *  Set boundary conditions for cells corresponding to patch edges.
-    */
-   CartesianBoundaryUtilities3::
-   fillEdgeBoundaryData("soln_data", soln_data,
-      patch,
-      ghost_width_to_fill,
-      d_scalar_bdry_edge_conds,
-      d_bdry_face_val);
-
-   /*
-    *  Set boundary conditions for cells corresponding to patch nodes.
-    */
-   CartesianBoundaryUtilities3::
-   fillNodeBoundaryData("soln_data", soln_data,
-      patch,
-      ghost_width_to_fill,
-      d_scalar_bdry_node_conds,
       d_bdry_face_val);
 
 //    plog << "----Boundary Conditions "  << endl;
@@ -802,26 +783,12 @@ int CVODEModel::CVSpgmrPrecondSolve(
     * We need to supply to the FAC solver a "version" of the z vector
     * that contains ghost cells.  The operations below allocate
     * on the patches a scratch context of the solution vector z and
-    * fill it with z vector data
+    * fill it with 0
     *
     *****************************************************************/
 
    /*
-    * Construct a communication schedule which will fill ghosts of
-    * soln_scratch with z vector data (z -> soln_scratch).
-    */
-   RefineAlgorithm fill_z_vector_bounds;
-   boost::shared_ptr<RefineOperator> refine_op(d_grid_geometry->
-                                               lookupRefineOperator(d_soln_var,
-                                                  "CONSERVATIVE_LINEAR_REFINE"));
-   fill_z_vector_bounds.registerRefine(d_soln_scr_id,
-      z_indx,
-      d_soln_scr_id,
-      refine_op);
-
-   /*
-    * Set initial guess for z (if applicable) and copy z data into the
-    * solution scratch context.
+    * Set initial guess for z (and solution scratch context to 0)
     */
    for (int ln = hierarchy->getFinestLevelNumber(); ln >= 0; --ln) {
       boost::shared_ptr<PatchLevel> level(hierarchy->getPatchLevel(ln));
@@ -839,9 +806,6 @@ int CVODEModel::CVSpgmrPrecondSolve(
                patch->getPatchData(z_indx)));
          TBOX_ASSERT(z_data);
 
-         /*
-          * Set initial guess for z here.
-          */
          z_data->fillAll(0.);
 
          /*
@@ -855,28 +819,14 @@ int CVODEModel::CVSpgmrPrecondSolve(
          math_ops.scale(r_data, 1.0 / gamma, r_data, r_data->getBox());
 
          /*
-          * Copy interior data from z vector to soln_scratch
+          * Also set to 0 soln_scratch
           */
          boost::shared_ptr<CellData<double> > z_scr_data(
             BOOST_CAST<CellData<double>, PatchData>(
                patch->getPatchData(d_soln_scr_id)));
          TBOX_ASSERT(z_scr_data);
-         z_scr_data->copy(*z_data);
+         z_scr_data->fillAll(0.);
       }
-
-      /*
-       * Fill ghost boundaries of soln_scratch.
-       * Construct a schedule for each level, from the algorithm
-       * constructed above.
-       */
-
-      boost::shared_ptr<RefineSchedule> fill_z_vector_bounds_sched(
-         fill_z_vector_bounds.createSchedule(level,
-            ln - 1,
-            hierarchy,
-            this));
-
-      fill_z_vector_bounds_sched->fillData(t);
 
    }
 
@@ -910,13 +860,11 @@ int CVODEModel::CVSpgmrPrecondSolve(
     * When upgrading to the new FAC solver from the old, I noticed
     * that the old solver only solved on level 0.  BTNG.
     */
-   plog<<"solve system..."<<endl;
    bool converge = d_FAC_solver->solveSystem(d_soln_scr_id,
          r_indx,
          hierarchy,
          coarsest_solve_ln,
          finest_solve_ln);
-   plog<<"system solved..."<<endl;
 
    if (d_print_solver_info) {
       double avg_convergence, final_convergence;
@@ -1320,19 +1268,6 @@ void CVODEModel::printClassData(
       }
    }
    os << endl;
-   for (j = 0; j < static_cast<int>(d_scalar_bdry_edge_conds.size()); ++j) {
-      os << "       d_scalar_bdry_edge_conds[" << j << "] = "
-         << d_scalar_bdry_edge_conds[j] << endl;
-      os << "       d_edge_bdry_face[" << j << "] = "
-         << d_edge_bdry_face[j] << endl;
-   }
-   os << endl;
-   for (j = 0; j < static_cast<int>(d_scalar_bdry_node_conds.size()); ++j) {
-      os << "       d_scalar_bdry_node_conds[" << j << "] = "
-         << d_scalar_bdry_node_conds[j] << endl;
-      os << "       d_node_bdry_face[" << j << "] = "
-         << d_node_bdry_face[j] << endl;
-   }
 
 }
 

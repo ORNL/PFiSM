@@ -13,8 +13,6 @@
 
 using namespace std;
 
-using namespace SAMRAI;
-
 #ifndef _MSC_VER
 #include <unistd.h>
 #endif
@@ -282,9 +280,7 @@ int main(
       boost::shared_ptr<tbox::Timer> t_cvode_solve(
          tbox::TimerManager::getManager()->
          getTimer("apps::main::cvode_solver"));
-      boost::shared_ptr<tbox::Timer> t_log_dump(
-         tbox::TimerManager::getManager()->
-         getTimer("apps::main::Solution log dump"));
+
       /*
        * Set up Visualization plot file writer(s).
        */
@@ -342,40 +338,12 @@ int main(
       cvode_solver->initialize(solution_vector);
 
       /*
-       * Print initial vector (if solution logging is enabled)
-       */
-      boost::shared_ptr<solv::SAMRAIVectorReal<double> > y_init(
-         solv::Sundials_SAMRAIVector::getSAMRAIVector(solution_vector));
-
-      if (solution_logging) {
-
-         boost::shared_ptr<hier::PatchHierarchy> init_hierarchy(
-            y_init->getPatchHierarchy());
-
-         tbox::pout << "Initial solution vector y() at initial time: " << endl;
-         tbox::pout << "y(" << init_time << "): " << endl;
-         for (int ln = 0; ln < init_hierarchy->getNumberOfLevels(); ++ln) {
-            boost::shared_ptr<hier::PatchLevel> level(
-               init_hierarchy->getPatchLevel(ln));
-            tbox::plog << "level = " << ln << endl;
-
-            for (hier::PatchLevel::iterator p(level->begin());
-                 p != level->end(); ++p) {
-               const boost::shared_ptr<hier::Patch>& patch = *p;
-
-               boost::shared_ptr<CellData<double> > y_data(
-                  BOOST_CAST<CellData<double>, hier::PatchData>(
-                     y_init->getComponentPatchData(0, *patch)));
-               TBOX_ASSERT(y_data);
-               y_data->print(y_data->getBox());
-            }
-         }
-      }
-
-      /*
        * Compute maxNorm and L1Norm of initial vector
        */
       if (solution_logging) {
+         boost::shared_ptr<solv::SAMRAIVectorReal<double> > y_init(
+            solv::Sundials_SAMRAIVector::getSAMRAIVector(solution_vector));
+
          tbox::pout << "\n\nBefore solve..." << endl;
          tbox::pout << "Max Norm of y()= " << y_init->maxNorm() << endl;
          tbox::pout << "L1 Norm of y()= " << y_init->L1Norm() << endl;
@@ -437,31 +405,6 @@ int main(
             interval,
             final_time);
 
-         /*
-          * Write solution (if desired).
-          */
-         if (solution_logging) {
-            tbox::plog << "y(" << final_time << "): " << endl << endl;
-            t_log_dump->start();
-            for (int ln = 0; ln < result_hierarchy->getNumberOfLevels();
-                 ++ln) {
-               boost::shared_ptr<hier::PatchLevel> level(
-                  result_hierarchy->getPatchLevel(ln));
-               tbox::plog << "level = " << ln << endl;
-
-               for (hier::PatchLevel::iterator p(level->begin());
-                    p != level->end(); ++p) {
-                  const boost::shared_ptr<hier::Patch>& patch = *p;
-
-                  boost::shared_ptr<CellData<double> > y_data(
-                     BOOST_CAST<CellData<double>, hier::PatchData>(
-                        y_result->getComponentPatchData(0, *patch)));
-                  TBOX_ASSERT(y_data);
-                  y_data->print(y_data->getBox());
-               }
-            }
-            t_log_dump->stop();
-         }
       } // end of timestep loop
 
       /*************************************************************************
@@ -473,7 +416,8 @@ int main(
       std::vector<int> counters;
       cvode_model->getCounters(counters);
 
-#if (TESTING == 1)
+//#if (TESTING == 1)
+#if 1
       int correct_rhs_evals = main_db->getInteger("correct_rhs_evals");
       int correct_precond_setups = main_db->getInteger("correct_precond_setups");
       int correct_precond_solves = main_db->getInteger("correct_precond_solves");
@@ -537,9 +481,7 @@ int main(
       /*
        * Write out timings
        */
-#if (TESTING != 1)
       tbox::TimerManager::getManager()->print(tbox::pout);
-#endif
 
       /*
        * Memory cleanup.
