@@ -571,7 +571,7 @@ int CVODEModel::CVSpgmrPrecondSet(
    NULL_USE(vtemp2);
    NULL_USE(vtemp3);
 
-   plog<<"CVSpgmrPrecondSet..."<<endl;
+   //plog<<"CVSpgmrPrecondSet..."<<endl;
 
    /*
     * Convert passed-in CVODE vectors into SAMRAI vectors
@@ -584,14 +584,14 @@ int CVODEModel::CVSpgmrPrecondSet(
    /*
     * Construct refine algorithm to fill boundaries of solution vector
     */
-   RefineAlgorithm fill_soln_vector_bounds;
-   boost::shared_ptr<RefineOperator> refine_op(d_grid_geometry->
-                                               lookupRefineOperator(d_soln_var,
-                                                  "CONSERVATIVE_LINEAR_REFINE"));
-   fill_soln_vector_bounds.registerRefine(d_soln_scr_id,
-      y_samvect->getComponentDescriptorIndex(0),
-      d_soln_scr_id,
-      refine_op);
+   //RefineAlgorithm fill_soln_vector_bounds;
+   //boost::shared_ptr<RefineOperator> refine_op(d_grid_geometry->
+   //                                            lookupRefineOperator(d_soln_var,
+   //                                               "CONSERVATIVE_LINEAR_REFINE"));
+   //fill_soln_vector_bounds.registerRefine(d_soln_scr_id, // dst
+   //   y_samvect->getComponentDescriptorIndex(0), // src
+   //   d_soln_scr_id, // scratch
+   //   refine_op);
 
    /*
     * Construct coarsen algorithm to fill interiors on coarser levels
@@ -618,16 +618,16 @@ int CVODEModel::CVSpgmrPrecondSet(
       boost::shared_ptr<PatchLevel> level(
          hierarchy->getPatchLevel(amr_level));
 
-      boost::shared_ptr<RefineSchedule> fill_soln_vector_bounds_sched =
-         fill_soln_vector_bounds.createSchedule(level,
-            amr_level - 1,
-            hierarchy,
-            this);
+      //boost::shared_ptr<RefineSchedule> fill_soln_vector_bounds_sched =
+      //   fill_soln_vector_bounds.createSchedule(level,
+      //      amr_level - 1,
+      //      hierarchy,
+      //      this);
 
-      if (!level->checkAllocated(d_soln_scr_id)) {
-         level->allocatePatchData(d_soln_scr_id);
-      }
-      fill_soln_vector_bounds_sched->fillData(t);
+      //if (!level->checkAllocated(d_soln_scr_id)) {
+      //   level->allocatePatchData(d_soln_scr_id);
+      //}
+      //fill_soln_vector_bounds_sched->fillData(t);
 
       /*
        * Construct a coarsen schedule for all levels larger than coarsest,
@@ -703,7 +703,7 @@ int CVODEModel::CVSpgmrPrecondSet(
 
       } // patch loop
 
-      level->deallocatePatchData(d_soln_scr_id);
+      //level->deallocatePatchData(d_soln_scr_id);
 
    } // level loop
 
@@ -761,7 +761,7 @@ int CVODEModel::CVSpgmrPrecondSolve(
    NULL_USE(delta);
    NULL_USE(lr);
 
-   plog<<"CVSpgmrPrecondSolve..."<<endl;
+   //plog<<"CVSpgmrPrecondSolve..."<<endl;
 
    /*
     * Convert passed-in CVODE vectors into SAMRAI vectors
