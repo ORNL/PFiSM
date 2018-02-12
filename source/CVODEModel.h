@@ -527,9 +527,9 @@ private:
    boost::shared_ptr<appu::VisItDataWriter> d_visit_writer;
 
    /*
-    * Initial value
+    * Value of diffusion coefficient
     */
-   double d_initial_value;
+   double d_diffusion_value;
 
    /*
     * Program counters

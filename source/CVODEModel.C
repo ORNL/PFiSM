@@ -656,7 +656,7 @@ int CVODEModel::CVSpgmrPrecondSet(
                patch->getPatchData(d_diff_id)));
          TBOX_ASSERT(diffusion);
 
-         diffusion->fillAll(1.0);
+         diffusion->fillAll(d_diffusion_value);
 
          TBOX_ASSERT((t - d_current_soln_time) >= 0.);
 
@@ -1003,6 +1003,13 @@ CVODEModel::setInitialConditions(
          for (PatchLevel::iterator p(level->begin()); p != level->end(); ++p) {
             const boost::shared_ptr<Patch>& patch = *p;
 
+            boost::shared_ptr<geom::CartesianPatchGeometry> pg(
+               BOOST_CAST<geom::CartesianPatchGeometry, hier::PatchGeometry>(
+               patch->getPatchGeometry()));
+            TBOX_ASSERT(pg);
+
+            const double* h = pg->getDx();
+
             /*
              * Set initial conditions for y
              */
@@ -1010,7 +1017,22 @@ CVODEModel::setInitialConditions(
                BOOST_CAST<CellData<double>, PatchData>(
                   soln_init_samvect->getComponentPatchData(cn, *patch)));
             TBOX_ASSERT(y_init);
-            y_init->fillAll(d_initial_value);
+
+            const hier::Box patch_box = patch->getBox();
+
+
+            pdat::CellIterator ic(pdat::CellGeometry::begin(patch_box));
+            pdat::CellIterator icend(pdat::CellGeometry::end(patch_box));
+
+            for ( ; ic != icend; ++ic) {
+
+               hier::IntVector icell = *ic;
+               const double yval=h[1]*icell[1];
+               const double val=2.*yval+sin(2.*M_PI*yval)+1.;
+
+               (*y_init)(*ic)=val;
+
+            }
 
             /*
              * Set initial diffusion coeff values.
@@ -1020,7 +1042,7 @@ CVODEModel::setInitialConditions(
                   patch->getPatchData(d_diff_id)));
             TBOX_ASSERT(diffusion);
 
-            diffusion->fillAll(1.0);
+            diffusion->fillAll(d_diffusion_value);
          }
       }
    }
@@ -1062,7 +1084,7 @@ CVODEModel::getFromInput(
 {
    NULL_USE(is_from_restart);
 
-   d_initial_value = input_db->getDoubleWithDefault("initial_value", 0.0);
+   d_diffusion_value = input_db->getDouble("diffusion_value");
 
    IntVector periodic(d_grid_geometry->getPeriodicShift(IntVector(d_dim,
                             1)));
@@ -1109,7 +1131,7 @@ void CVODEModel::putToRestart(
 
    restart_db->putInteger("CVODE_MODEL_VERSION", CVODE_MODEL_VERSION);
 
-   restart_db->putDouble("d_initial_value", d_initial_value);
+   restart_db->putDouble("d_diffusion_value", d_diffusion_value);
 
    restart_db->putIntegerVector("d_scalar_bdry_edge_conds",
       d_scalar_bdry_edge_conds);
@@ -1146,7 +1168,7 @@ void CVODEModel::getFromRestart()
                        << "Restart file version different than class version.");
    }
 
-   d_initial_value = db->getDouble("d_initial_value");
+   d_diffusion_value = db->getDouble("d_diffusion_value");
 
    d_scalar_bdry_edge_conds = db->getIntegerVector("d_scalar_bdry_edge_conds");
    d_scalar_bdry_node_conds = db->getIntegerVector("d_scalar_bdry_node_conds");
@@ -1256,7 +1278,7 @@ void CVODEModel::printClassData(
    os << "d_soln_cur_id = " << d_soln_cur_id << endl;
    os << "d_soln_scr_id = " << d_soln_scr_id << endl;
 
-   os << "d_initial_value = " << d_initial_value << endl;
+   os << "d_diffusion_value = " << d_diffusion_value << endl;
 
    os << "Boundary Condition data..." << endl;
    for (j = 0; j < static_cast<int>(d_scalar_bdry_face_conds.size()); ++j) {
