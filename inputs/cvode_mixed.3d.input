@@ -8,7 +8,7 @@ Main {
    init_time                = 0.0
    init_cycle               = 0
    print_interval           = 1.0e1
-   num_print_intervals      = 10
+   num_print_intervals      = 100
    solution_logging         = FALSE
 
    max_internal_steps       = 1500
@@ -19,14 +19,14 @@ Main {
 // stepping_method          = timestepping mode for CVODE
     NORMAL                  = 1
     ONESTEP                 = 2
-   stepping_method          = NORMAL
-   uses_newton              = TRUE
+   //stepping_method          = NORMAL
+   stepping_method          = ONESTEP
    uses_preconditioning     = TRUE
 
 // Used for testing only
-   correct_rhs_evals        = 1194
-   correct_precond_setups   = 927
-   correct_precond_solves   = 661
+   correct_rhs_evals        = 579
+   correct_precond_setups   = 58
+   correct_precond_solves   = 575
 
 }
 
@@ -147,11 +147,12 @@ CVODEModel {
 
 fac_precond {
    max_cycles           = 1
-   residual_tol         = 1.e-40
+   residual_tol         = 1.e-8
 }
 
 hypre_solver {
    use_smg              = FALSE
+   relative_residual_tol = 1.e-2
 }
 
 StandardTagAndInitialize{

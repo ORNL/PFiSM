@@ -147,7 +147,6 @@ int main(
 
       double relative_tolerance = main_db->getDouble("relative_tolerance");
       double absolute_tolerance = main_db->getDouble("absolute_tolerance");
-      bool uses_newton = main_db->getBool("uses_newton");
       int stepping_method = main_db->getInteger("stepping_method");
       bool uses_preconditioning =
          main_db->getBoolWithDefault("uses_preconditioning", false);
@@ -323,7 +322,7 @@ int main(
            i != level_0_boxes.end(); ++i) {
          neq += i->size();
       }
-      cvode_solver->setIterationType(uses_newton ? CV_NEWTON : CV_FUNCTIONAL);
+      cvode_solver->setIterationType( CV_NEWTON );
       cvode_solver->setRelativeTolerance(relative_tolerance);
       cvode_solver->setAbsoluteTolerance(absolute_tolerance);
       cvode_solver->setMaximumNumberOfInternalSteps(max_internal_steps);
@@ -363,7 +362,7 @@ int main(
       int interval;
       for (interval = 1; interval <= num_print_intervals; ++interval) {
 
-         tbox::plog << "interval = "<<interval<<endl;
+         //tbox::plog << "interval = "<<interval<<endl;
 
          /*
           * Set time interval
@@ -375,11 +374,14 @@ int main(
           * Perform CVODE solve to the requested interval time.
           */
          t_cvode_solve->start();
-         tbox::plog << "return code = " << cvode_solver->solve() << endl;
+         int ret = cvode_solver->solve();
+         if( ret!=0 )tbox::plog << "return code = " << ret << endl;
          t_cvode_solve->stop();
          double actual_time =
             cvode_solver->getActualFinalValueOfIndependentVariable();
-         tbox::plog << "time = "<<actual_time<<endl;
+         double dt =
+            cvode_solver->getStepSizeForLastInternalStep();
+         tbox::pout << "# time = "<<actual_time<<", dt = "<<dt<<endl;
 
          /*
           * Print statistics
