@@ -1027,7 +1027,7 @@ CVODEModel::setInitialConditions(
             for ( ; ic != icend; ++ic) {
 
                hier::IntVector icell = *ic;
-               const double yval=h[1]*icell[1];
+               const double yval=h[1]*(0.5+icell[1]);
                const double val=2.*yval+sin(2.*M_PI*yval)+1.;
 
                (*y_init)(*ic)=val;
