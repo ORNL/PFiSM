@@ -139,15 +139,13 @@ int main(
       const tbox::Dimension dim(static_cast<unsigned short>(3));
 
       int max_order = main_db->getInteger("max_order");
-      int max_internal_steps = main_db->getInteger("max_internal_steps");
+      int max_steps = main_db->getInteger("max_steps");
       double init_time = main_db->getDouble("init_time");
       int init_cycle = main_db->getInteger("init_cycle");
       double print_interval = main_db->getDouble("print_interval");
-      int num_print_intervals = main_db->getInteger("num_print_intervals");
 
       double relative_tolerance = main_db->getDouble("relative_tolerance");
       double absolute_tolerance = main_db->getDouble("absolute_tolerance");
-      int stepping_method = main_db->getInteger("stepping_method");
       bool uses_preconditioning =
          main_db->getBoolWithDefault("uses_preconditioning", false);
       bool solution_logging =
@@ -314,19 +312,11 @@ int main(
             cvode_model.get(),
             uses_preconditioning);
 
-      size_t neq = 0;
-      boost::shared_ptr<hier::PatchLevel> level_zero(
-         hierarchy->getPatchLevel(0));
-      const hier::BoxContainer& level_0_boxes = level_zero->getBoxes();
-      for (hier::BoxContainer::const_iterator i = level_0_boxes.begin();
-           i != level_0_boxes.end(); ++i) {
-         neq += i->size();
-      }
       cvode_solver->setIterationType( CV_NEWTON );
       cvode_solver->setRelativeTolerance(relative_tolerance);
       cvode_solver->setAbsoluteTolerance(absolute_tolerance);
-      cvode_solver->setMaximumNumberOfInternalSteps(max_internal_steps);
-      cvode_solver->setSteppingMethod(stepping_method);
+      cvode_solver->setMaximumNumberOfInternalSteps(max_steps);
+      cvode_solver->setSteppingMethod(CV_ONE_STEP);
       cvode_solver->setMaximumLinearMultistepMethodOrder(max_order);
       if (uses_preconditioning) {
          cvode_solver->setPreconditioningType(PREC_LEFT);
@@ -345,7 +335,6 @@ int main(
 
          tbox::pout << "\n\nBefore solve..." << endl;
          tbox::pout << "Max Norm of y()= " << y_init->maxNorm() << endl;
-         tbox::pout << "L1 Norm of y()= " << y_init->L1Norm() << endl;
          tbox::pout << "L2 Norm of y()= " << y_init->L2Norm() << endl;
       }
 
@@ -353,14 +342,14 @@ int main(
       * Start time-stepping.
       **************************************************************************/
 
-      std::vector<double> time(num_print_intervals);
-      std::vector<double> maxnorm(num_print_intervals);
-      std::vector<double> l1norm(num_print_intervals);
-      std::vector<double> l2norm(num_print_intervals);
+      std::vector<double> time(max_steps);
+      std::vector<double> maxnorm(max_steps);
+      std::vector<double> l2norm(max_steps);
 
       double final_time = init_time;
+      double print_time=0.;
       int interval;
-      for (interval = 1; interval <= num_print_intervals; ++interval) {
+      for (interval = 1; interval <= max_steps; ++interval) {
 
          //tbox::plog << "interval = "<<interval<<endl;
 
@@ -395,7 +384,6 @@ int main(
 
          time[interval - 1] = actual_time;
          maxnorm[interval - 1] = y_result->maxNorm();
-         l1norm[interval - 1] = y_result->L1Norm();
          l2norm[interval - 1] = y_result->L2Norm();
 
          if (solution_logging) {
@@ -403,10 +391,13 @@ int main(
             cvode_solver->printStatistics(tbox::pout);
          }
 
-         visit_data_writer->writePlotData(
-            result_hierarchy,
-            interval,
-            actual_time);
+         if( actual_time > print_time ){
+            visit_data_writer->writePlotData(
+               result_hierarchy,
+               interval,
+               actual_time);
+            print_time+=print_interval;
+         }
 
       } // end of timestep loop
 
@@ -416,52 +407,10 @@ int main(
       /*
        * Write CVODEModel stats
        */
-      std::vector<int> counters;
-      cvode_model->getCounters(counters);
-
-//#if (TESTING == 1)
-#if 1
-      int correct_rhs_evals = main_db->getInteger("correct_rhs_evals");
-      int correct_precond_setups = main_db->getInteger("correct_precond_setups");
-      int correct_precond_solves = main_db->getInteger("correct_precond_solves");
-
-      if (counters[0] == correct_rhs_evals) {
-         tbox::plog << "Test 0: Number RHS evals CORRECT" << endl;
-      } else {
-         tbox::perr << "Test 0 FAILED: Number RHS evals INCORRECT" << endl;
-         tbox::perr << "Correct Number RHS evals:  " << correct_rhs_evals
-                    << endl;
-         tbox::perr << "Number RHS evals computed: " << counters[0] << endl;
-      }
-
-      if (counters[1] == correct_precond_setups) {
-         tbox::plog << "Test 1: Number precond setups CORRECT" << endl;
-      } else {
-         tbox::perr << "Test 1 FAILED: Number precond setups INCORRECT" << endl;
-         tbox::perr << "Correct number precond setups:  "
-                    << correct_precond_setups << endl;
-         tbox::perr << "Number precond setups computed: " << counters[1]
-                    << endl;
-      }
-
-      if (counters[2] == correct_precond_solves) {
-         tbox::plog << "Test 2: Number precond solves CORRECT" << endl;
-      } else {
-         tbox::perr << "Test 2 FAILED: Number precond solves INCORRECT" << endl;
-         tbox::perr << "Correct number precond solves:  "
-                    << correct_precond_solves << endl;
-         tbox::perr << "Number precond solves computed: " << counters[2]
-                    << endl;
-      }
-#endif
-
       if (solution_logging) {
-         tbox::plog << "\n\nEnd Timesteps - final time = " << final_time
-                    << "\n\tTotal number of RHS evaluations = " << counters[0]
-                    << "\n\tTotal number of precond setups = " << counters[1]
-                    << "\n\tTotal number of precond solves = " << counters[2]
-                    << endl;
-
+         cvode_model->printCounters(final_time);
+      }
+      if (solution_logging) {
          /*
           * Write out timestep sequence information
           */
@@ -471,12 +420,11 @@ int main(
                     << "  L1 Norm  \t"
                     << "  L2 Norm  " << endl;
 
-         for (interval = 0; interval < num_print_intervals; ++interval) {
+         for (interval = 0; interval < max_steps; ++interval) {
             tbox::pout.precision(18);
             tbox::pout << "  " << time[interval] << "  \t";
             tbox::pout.precision(6);
             tbox::pout << "  " << maxnorm[interval] << "  \t"
-                       << "  " << l1norm[interval] << "  \t"
                        << "  " << l2norm[interval] << endl;
          }
       }

@@ -6,7 +6,6 @@
 
 #include "CVODEModel.h"
 
-#include "SAMRAI/hier/BoundaryBox.h"
 #include "SAMRAI/geom/CartesianPatchGeometry.h"
 #include "SAMRAI/pdat/CellData.h"
 #include "SAMRAI/pdat/CellIndex.h"
@@ -26,6 +25,8 @@
 #include "SAMRAI/tbox/MathUtilities.h"
 #include "SAMRAI/tbox/Utilities.h"
 #include "SAMRAI/hier/VariableDatabase.h"
+
+using namespace std;
 
 // Define class version number
 #define CVODE_MODEL_VERSION (1)
@@ -55,7 +56,6 @@ void SAMRAI_F77_FUNC(comprhs3d, COMPRHS3D) (
  * Constructor and Destructor for CVODEModel class.
  *
  ************************************************************************/
-
 CVODEModel::CVODEModel(
    const string& object_name,
    const Dimension& dim,
@@ -127,7 +127,10 @@ CVODEModel::CVODEModel(
    d_soln_bc_helper->setTargetDataId( d_soln_scr_id );
    d_soln_bc_helper->setCoefImplementation( d_soln_bc_coeffs );
 
-
+   /*
+    * Boundary conditions for FAC solvers should be homogeneous
+    * since solver computes corrections to current guess
+    */
    d_soln_bc_corr_coeffs =
       new solv::LocationIndexRobinBcCoefs(d_dim,"BCcorrcoeffs",
          input_db->getDatabase( "BoundaryConditions" ));
@@ -163,9 +166,7 @@ CVODEModel::~CVODEModel()
  * Methods inherited from mesh::StandardTagAndInitStrategy.
  *
  ************************************************************************/
-
-void
-CVODEModel::initializeLevelData(
+void CVODEModel::initializeLevelData(
    const boost::shared_ptr<PatchHierarchy>& hierarchy,
    const int level_number,
    const double time,
@@ -187,11 +188,9 @@ CVODEModel::initializeLevelData(
    // by the setInitialConditions() method below.  If there is any
    // data that is not managed inside the SAMRAI CVODESolver class
    // but that must be set on the level, do it here.
-
 }
 
-void
-CVODEModel::resetHierarchyConfiguration(
+void CVODEModel::resetHierarchyConfiguration(
    const boost::shared_ptr<PatchHierarchy>& hierarchy,
    const int coarsest_level,
    const int finest_level)
@@ -205,18 +204,14 @@ CVODEModel::resetHierarchyConfiguration(
    // This is a subject for future work...
 }
 
-/*
- *************************************************************************
+/*************************************************************************
  *
  * Cell tagging and patch level data initialization routines declared
  * in the GradientDetectorStrategy interface.  They are used to
  * construct the hierarchy initially.
  *
- *************************************************************************
- */
-
-void
-CVODEModel::applyGradientDetector(
+ *************************************************************************/
+void CVODEModel::applyGradientDetector(
    const boost::shared_ptr<PatchHierarchy>& hierarchy,
    const int level_number,
    const double time,
@@ -244,13 +239,11 @@ CVODEModel::applyGradientDetector(
    }
 }
 
-/*
- *************************************************************************
+/*************************************************************************
  *
  * Methods inherited from RefinePatchStrategy.
  *
- ***********************************************************************
- */
+ ***********************************************************************/
 void CVODEModel::setPhysicalBoundaryConditions(
    Patch& patch,
    const double time,
@@ -268,8 +261,7 @@ void CVODEModel::setPhysicalBoundaryConditions(
    //soln_data->print(soln_data->getGhostBox());
 }
 
-void
-CVODEModel::preprocessRefine(
+void CVODEModel::preprocessRefine(
    Patch& fine,
    const Patch& coarse,
    const Box& fine_box,
@@ -281,8 +273,7 @@ CVODEModel::preprocessRefine(
    NULL_USE(ratio);
 }
 
-void
-CVODEModel::postprocessRefine(
+void CVODEModel::postprocessRefine(
    Patch& fine,
    const Patch& coarse,
    const Box& fine_box,
@@ -299,9 +290,7 @@ CVODEModel::postprocessRefine(
  * Methods inherited from CoarsenPatchStrategy.
  *
  ************************************************************************/
-
-void
-CVODEModel::preprocessCoarsen(
+void CVODEModel::preprocessCoarsen(
    Patch& coarse,
    const Patch& fine,
    const Box& coarse_box,
@@ -313,8 +302,7 @@ CVODEModel::preprocessCoarsen(
    NULL_USE(ratio);
 }
 
-void
-CVODEModel::postprocessCoarsen(
+void CVODEModel::postprocessCoarsen(
    Patch& coarse,
    const Patch& fine,
    const Box& coarse_box,
@@ -331,9 +319,7 @@ CVODEModel::postprocessCoarsen(
  * Methods inherited from CVODEAbstractFunction
  *
  ************************************************************************/
-
-int
-CVODEModel::evaluateRHSFunction(
+int CVODEModel::evaluateRHSFunction(
    double time,
    SundialsAbstractVector* y,
    SundialsAbstractVector* y_dot)
@@ -347,14 +333,6 @@ CVODEModel::evaluateRHSFunction(
       Sundials_SAMRAIVector::getSAMRAIVector(y_dot));
 
    boost::shared_ptr<PatchHierarchy> hierarchy(y_samvect->getPatchHierarchy());
-
-   /*
-    * Compute max norm of solution vector.
-    */
-   //boost::shared_ptr<HierarchyDataOpsReal<double> > hierops(
-   //   new HierarchyCellDataOpsReal<double>(hierarchy));
-   //double max_norm = hierops->maxNorm(y_samvect->
-   //                                   getComponentDescriptorIndex(0));
 
    if (d_print_solver_info) {
       pout << "\t\tEval RHS: "
@@ -431,15 +409,11 @@ CVODEModel::evaluateRHSFunction(
 
          IntVector ghost_cells(y->getGhostCellWidth());
 
-         /*
-          * 1 eqn radiation diffusion
-          */
          SAMRAI_F77_FUNC(comprhs3d, COMPRHS3D) (
             ifirst(0), ilast(0),
             ifirst(1), ilast(1),
             ifirst(2), ilast(2),
-            ghost_cells(0), ghost_cells(1),
-            ghost_cells(2),
+            ghost_cells(0), ghost_cells(1), ghost_cells(2),
             dx,
             y->getPointer(),
             diff->getPointer(0),
@@ -467,17 +441,14 @@ CVODEModel::evaluateRHSFunction(
    return 0;
 }
 
-/*
- *****************************************************************
+/*****************************************************************
  *
  * Set up FAC preconditioner for Jacobian system.  Here we
  * use the FAC hierarchy solver in SAMRAI which automatically sets
  * up the composite grid system and uses hypre as a solver on each
  * level.
  *
- *****************************************************************
- */
-
+ *****************************************************************/
 int CVODEModel::CVSpgmrPrecondSet(
    double t,
    SundialsAbstractVector* y, // current value of the dependent variable vector, namely the predicted value of y(t)
@@ -583,9 +554,6 @@ int CVODEModel::CVSpgmrPrecondSet(
 
          diffusion->fillAll(d_diffusion_value);
 
-         TBOX_ASSERT((t - d_current_soln_time) >= 0.);
-
-
       } // patch loop
 
       //level->deallocatePatchData(d_soln_scr_id);
@@ -612,17 +580,14 @@ int CVODEModel::CVSpgmrPrecondSet(
    return 0;
 }
 
-/*
- *************************************************************************
+/*************************************************************************
  *
  * Apply preconditioner where right-hand-side is "r" and "z" is the
  * solution.   This routine assumes that the preconditioner setup call
  * has already been invoked.  Return 0 if preconditioner fails;
  * return 1 otherwise.
  *
- *************************************************************************
- */
-
+ *************************************************************************/
 int CVODEModel::CVSpgmrPrecondSolve(
    double t,
    SundialsAbstractVector* y,
@@ -657,16 +622,12 @@ int CVODEModel::CVSpgmrPrecondSolve(
 
    int r_indx = r_samvect->getComponentDescriptorIndex(0);
    int z_indx = z_samvect->getComponentDescriptorIndex(0);
-   /******************************************************************
-    *
+   /*
     * We need to supply to the FAC solver a "version" of the z vector
     * that contains ghost cells.  The operations below allocate
     * on the patches a scratch context of the solution vector z and
     * fill it with z vector data
     *
-    *****************************************************************/
-
-   /*
     * Set initial guess for z (if applicable) and copy z data into the
     * solution scratch context.
     */
@@ -793,9 +754,7 @@ int CVODEModel::CVSpgmrPrecondSolve(
  * Methods specific to CVODEModel class.
  *
  ************************************************************************/
-
-void
-CVODEModel::setupSolutionVector(
+void CVODEModel::setupSolutionVector(
    boost::shared_ptr<PatchHierarchy> hierarchy)
 {
    /* create SAMRAIVector */
@@ -835,15 +794,12 @@ CVODEModel::getSolutionVector(
    return d_solution_vector;
 }
 
-/*
- *************************************************************************
+/*************************************************************************
  *
  * Set initial conditions for CVODE solver
  *
- *************************************************************************
- */
-void
-CVODEModel::setInitialConditions(
+ *************************************************************************/
+void CVODEModel::setInitialConditions(
    SundialsAbstractVector* soln_init)
 {
    boost::shared_ptr<SAMRAIVectorReal<double> > soln_init_samvect(
@@ -885,7 +841,6 @@ CVODEModel::setInitialConditions(
                const double val=2.*yval+sin(2.*M_PI*yval)+1.;
 
                (*y_init)(*ic)=val;
-
             }
 
             /*
@@ -902,26 +857,27 @@ CVODEModel::setInitialConditions(
    }
 }
 
-/*
- *************************************************************************
+/*************************************************************************
  *
- * Return array of program counters.  Currently, the array holds the
+ * Print program counters.  Currently, the array holds the
  * following entries:
  *    1) number of RHS evaluations
  *    2) number of precond setup calls
  *    3) number of precond solve calls
- * More counters may be added, as desired.
  *
- *************************************************************************
- */
-void
-CVODEModel::getCounters(
-   std::vector<int>& counters)
+ *************************************************************************/
+void CVODEModel::printCounters(const double final_time)
 {
-   counters.resize(3);
+   std::vector<int> counters(3);
    counters[0] = d_number_rhs_eval;
    counters[1] = d_number_precond_setup;
    counters[2] = d_number_precond_solve;
+
+   tbox::plog << "\n\nEnd Timesteps - final time = " << final_time
+              << "\n\tTotal number of RHS evaluations = " << counters[0]
+              << "\n\tTotal number of precond setups = " << counters[1]
+              << "\n\tTotal number of precond solves = " << counters[2]
+              << endl;
 }
 
 /*
@@ -940,16 +896,8 @@ CVODEModel::getFromInput(
 
    d_diffusion_value = input_db->getDouble("diffusion_value");
 
-   IntVector periodic(d_grid_geometry->getPeriodicShift(IntVector(d_dim,
-                            1)));
-   int num_per_dirs = 0;
-   for (int id = 0; id < d_dim.getValue(); ++id) {
-      if (periodic(id)) ++num_per_dirs;
-   }
-
    d_print_solver_info =
       input_db->getBoolWithDefault("print_solver_info", d_print_solver_info);
-
 }
 
 /*
@@ -969,13 +917,11 @@ void CVODEModel::putToRestart(
    restart_db->putDouble("d_diffusion_value", d_diffusion_value);
 }
 
-/*
- *************************************************************************
+/*************************************************************************
  *
  * Read data from restart database.
  *
- *************************************************************************
- */
+ *************************************************************************/
 void CVODEModel::getFromRestart()
 {
    boost::shared_ptr<Database> root_db(
@@ -998,35 +944,12 @@ void CVODEModel::getFromRestart()
 
 }
 
-void CVODEModel::readStateDataEntry(
-   boost::shared_ptr<Database> db,
-   const string& db_name,
-   int array_indx,
-   std::vector<double>& val)
-{
-   TBOX_ASSERT(db);
-   TBOX_ASSERT(!db_name.empty());
-   TBOX_ASSERT(array_indx >= 0);
-   TBOX_ASSERT(static_cast<int>(val.size()) > array_indx);
-
-   if (db->keyExists("val")) {
-      val[array_indx] = db->getDouble("val");
-   } else {
-      TBOX_ERROR(d_object_name << ": "
-                               << "`val' entry missing from " << db_name
-                               << " input database. " << endl);
-   }
-
-}
-
-/*
- *************************************************************************
+/*************************************************************************
  *
  * Register VisIt data writer to write data to plot files that may
  * be postprocessed by the VisIt tool.
  *
- *************************************************************************
- */
+ *************************************************************************/
 void CVODEModel::registerVisItDataWriter(
    boost::shared_ptr<appu::VisItDataWriter> viz_writer)
 {
@@ -1040,19 +963,15 @@ void CVODEModel::registerVisItDataWriter(
    }
 }
 
-/*
- *************************************************************************
+/*************************************************************************
  *
  * Prints class data - writes out info in class if assertion is thrown
  *
- *************************************************************************
- */
-
+ *************************************************************************/
 void CVODEModel::printClassData(
    ostream& os) const
 {
    fflush(stdout);
-   int j;
 
    os << "ptr CVODEModel = " << (CVODEModel *)this << endl;
 
@@ -1063,7 +982,6 @@ void CVODEModel::printClassData(
 
    os << "d_diffusion_value = " << d_diffusion_value << endl;
    os << endl;
-
 }
 
 void CVODEModel::setPrintSolverInfo(

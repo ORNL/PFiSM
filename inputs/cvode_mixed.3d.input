@@ -1,22 +1,9 @@
-/*************************************************************************
- *
- * This file is part of the SAMRAI distribution.  For full copyright 
- * information, see COPYRIGHT and COPYING.LESSER. 
- *
- * Copyright:     (c) 1997-2016 Lawrence Livermore National Security, LLC
- * Description:   Input file for SAMRAI CVODE test program 
- *
- ************************************************************************/
-
-//See cvode_dir.2d.input for documentation of input specific to this test.
-
-
 Main {
 
    init_time                = 0.0
    init_cycle               = 0
-   print_interval           = 1.e1
-   num_print_intervals      = 1000
+   print_interval           = 100.
+   max_steps                = 1000
    solution_logging         = FALSE
 
    max_internal_steps       = 1500
@@ -24,18 +11,7 @@ Main {
    absolute_tolerance       = 1e-6
 // 0=use default
    max_order                = 2
-// stepping_method          = timestepping mode for CVODE
-    NORMAL                  = 1
-    ONESTEP                 = 2
-//   stepping_method          = NORMAL
-   stepping_method          = ONESTEP
    uses_preconditioning     = TRUE
-
-// Used for testing only
-   correct_rhs_evals        = 498
-   correct_precond_setups   = 372
-   correct_precond_solves   = 246
-
 }
 
 CVODEModel {

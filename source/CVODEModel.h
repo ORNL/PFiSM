@@ -40,7 +40,7 @@
 
 #include <vector>
 #include <iostream>
-using namespace std;
+//using namespace std;
 
 using namespace SAMRAI;
 using namespace tbox;
@@ -90,7 +90,7 @@ public:
     * Default constructor for CVODEModel.
     */
    CVODEModel(
-      const string& object_name,
+      const std::string& object_name,
       const Dimension& dim,
       boost::shared_ptr<CellPoissonFACSolver> fac_solver,
       boost::shared_ptr<Database> input_db,
@@ -378,11 +378,9 @@ public:
       SundialsAbstractVector* y_init);
 
    /**
-    * Return array of program counters.
+    * Print program counters.
     */
-   void
-   getCounters(
-      std::vector<int>& counters);
+   void printCounters(const double);
 
    /**
     * Writes state of CVODEModel object to the specified restart database.
@@ -393,26 +391,6 @@ public:
    void
    putToRestart(
       const boost::shared_ptr<Database>& restart_db) const;
-
-   /**
-    * This routine is a concrete implementation of the virtual function
-    * in the base class BoundaryUtilityStrategy.  It reads DIRICHLET
-    * and NEUMANN boundary state values from the given database with the
-    * given name string idenifier.  The integer location index
-    * indicates the face (in 3D) to which the boundary
-    * condition applies.
-    */
-   void
-   readDirichletBoundaryDataEntry(
-      const boost::shared_ptr<Database>& db,
-      string& db_name,
-      int bdry_location_index);
-
-   void
-   readNeumannBoundaryDataEntry(
-      const boost::shared_ptr<Database>& db,
-      string& db_name,
-      int bdry_location_index);
 
    /**
     * Register a VisIt data writer so this class will write
@@ -428,7 +406,7 @@ public:
     */
    void
    printClassData(
-      ostream& os) const;
+      std::ostream& os) const;
 
 private:
    /*
@@ -448,18 +426,11 @@ private:
    virtual void
    getFromRestart();
 
-   void
-   readStateDataEntry(
-      boost::shared_ptr<Database> db,
-      const string& db_name,
-      int array_indx,
-      std::vector<double>& uval);
-
    /*
     * Object name used for error/warning reporting and as a label
     * for restart database entries.
     */
-   string d_object_name;
+   std::string d_object_name;
 
    const Dimension d_dim;
 
@@ -472,6 +443,7 @@ private:
     * Variables
     */
    boost::shared_ptr<CellVariable<double> > d_soln_var;
+   boost::shared_ptr<SideVariable<double> > d_diff_var;
 
    /*
     * Variable Contexts
@@ -484,9 +456,6 @@ private:
     */
    int d_soln_cur_id;
    int d_soln_scr_id;
-
-   boost::shared_ptr<SideVariable<double> > d_diff_var;
-
    int d_diff_id;
 
    boost::shared_ptr<CellPoissonFACSolver> d_FAC_solver;
@@ -508,7 +477,7 @@ private:
    boost::shared_ptr<appu::VisItDataWriter> d_visit_writer;
 
    /*
-    * Initial value
+    * Diffusion value
     */
    double d_diffusion_value;
 
@@ -522,9 +491,15 @@ private:
    int d_number_precond_setup;
    int d_number_precond_solve;
 
+   /*
+    * Utilities to setup physical boundary conditions
+    */
    solv::CartesianRobinBcHelper* d_soln_bc_helper;
    solv::LocationIndexRobinBcCoefs* d_soln_bc_coeffs;
 
-//   solv::CartesianRobinBcHelper* d_soln_bc_corr_helper;
+   /*
+    * Utilities to setup physical boundary conditions
+    * in FAC solver
+    */
    solv::LocationIndexRobinBcCoefs* d_soln_bc_corr_coeffs;
 };
