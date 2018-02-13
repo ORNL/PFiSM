@@ -100,10 +100,10 @@ int main(
     * then there will be memory leaks reported.
     */
    {
-      tbox::PIO::logAllNodes("cvode_test.log");
+      tbox::PIO::logOnlyNodeZero("cvode_test.log");
 
 #if !defined(HAVE_SUNDIALS) || !defined(HAVE_HYPRE)
-      tbox::pout << "Library compiled WITHOUT CVODE -and- HYPRE...\n"
+      tbox::pout << "SAMRAI library compiled WITHOUT CVODE -and- HYPRE...\n"
                  << "SAMRAI was not configured with one, or both, of "
                  << "these packages.  Cannot run this example." << endl;
 #else
