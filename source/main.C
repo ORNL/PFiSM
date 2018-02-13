@@ -375,13 +375,14 @@ int main(
           */
          t_cvode_solve->start();
          int ret = cvode_solver->solve();
-         if( ret!=0 )tbox::plog << "return code = " << ret << endl;
          t_cvode_solve->stop();
+         if( ret!=0 )tbox::plog << "return code = " << ret << endl;
+
          double actual_time =
             cvode_solver->getActualFinalValueOfIndependentVariable();
          double dt =
             cvode_solver->getStepSizeForLastInternalStep();
-         tbox::pout << "# time = "<<actual_time<<", dt = "<<dt<<endl;
+         tbox::pout << "# step = "<<interval<<", time = "<<actual_time<<", dt = "<<dt<<endl;
 
          /*
           * Print statistics
@@ -405,7 +406,7 @@ int main(
          visit_data_writer->writePlotData(
             result_hierarchy,
             interval,
-            final_time);
+            actual_time);
 
       } // end of timestep loop
 

@@ -13,12 +13,10 @@
 #include "SAMRAI/xfer/CoarsenAlgorithm.h"
 #include "SAMRAI/hier/CoarsenOperator.h"
 #include "SAMRAI/xfer/CoarsenSchedule.h"
-#include "SAMRAI/pdat/FaceData.h"
 #include "SAMRAI/math/HierarchyDataOpsReal.h"
 #include "SAMRAI/math/HierarchyCellDataOpsReal.h"
 #include "SAMRAI/hier/Index.h"
 #include "SAMRAI/math/PatchCellDataOpsReal.h"
-#include "SAMRAI/pdat/OuterfaceData.h"
 #include "SAMRAI/hier/Patch.h"
 #include "SAMRAI/hier/PatchData.h"
 #include "SAMRAI/hier/RefineOperator.h"
@@ -28,16 +26,6 @@
 #include "SAMRAI/tbox/MathUtilities.h"
 #include "SAMRAI/tbox/Utilities.h"
 #include "SAMRAI/hier/VariableDatabase.h"
-
-//integer constants for boundary conditions
-#include "SAMRAI/appu/CartesianBoundaryDefines.h"
-
-//integer constant for debugging improperly set boundary dat
-#define BOGUS_BDRY_DATA (-9999)
-
-// routines for managing boundary data
-#include "SAMRAI/appu/CartesianBoundaryUtilities2.h"
-#include "SAMRAI/appu/CartesianBoundaryUtilities3.h"
 
 // Define class version number
 #define CVODE_MODEL_VERSION (1)
@@ -60,13 +48,6 @@ void SAMRAI_F77_FUNC(comprhs3d, COMPRHS3D) (
    const double *,
    const double *, const double *, const double *,
    double *);
-void SAMRAI_F77_FUNC(setneufluxvalues3d, SETNEUFLUXVALUES3D) (
-   const int&, const int&,
-   const int&, const int&,
-   const int&, const int&,
-   const int *, const double *,
-   int *, int *, int *, int *, int *, int *,
-   double *, double *, double *, double *, double *, double *);
 }
 
 /*************************************************************************
@@ -114,8 +95,6 @@ CVODEModel::CVODEModel(
    /*
     * Set default values for preconditioner.
     */
-   d_use_neumann_bcs = false;
-
    d_current_soln_time = 0.;
 
    /*
@@ -131,19 +110,6 @@ CVODEModel::CVODEModel(
    d_number_precond_solve = 0;
 
    /*
-    * Boundary condition initialization.
-    */
-   d_scalar_bdry_face_conds.resize(NUM_3D_FACES,BOGUS_BDRY_DATA);
-
-   d_scalar_bdry_edge_conds.resize(NUM_3D_EDGES,BOGUS_BDRY_DATA);
-   d_edge_bdry_face.resize(NUM_3D_EDGES,BOGUS_BDRY_DATA);
-   d_scalar_bdry_node_conds.resize(NUM_3D_NODES,BOGUS_BDRY_DATA);
-   d_node_bdry_face.resize(NUM_3D_NODES,BOGUS_BDRY_DATA);
-
-   d_bdry_face_val.resize(NUM_3D_FACES);
-   MathUtilities<double>::setVectorToSignalingNaN(d_bdry_face_val);
-
-   /*
     * Initialize object with data read from given input/restart databases.
     */
    bool is_from_restart = RestartManager::getManager()->isFromRestart();
@@ -152,52 +118,28 @@ CVODEModel::CVODEModel(
    }
    getFromInput(input_db, is_from_restart);
 
-   /*
-    * Construct outerface variable to hold boundary flags and Neumann fluxes.
-    */
-   if (d_use_neumann_bcs) {
-      d_flag_var.reset(new OuterfaceVariable<int>(d_dim, "bdryflag", 1));
-      d_flag_id = variable_db->registerVariableAndContext(d_flag_var,
-            d_cur_cxt,
-            IntVector(d_dim, 0));
-      d_neuf_var.reset(new OuterfaceVariable<double>(d_dim, "neuflux", 1));
-      d_neuf_id = variable_db->registerVariableAndContext(d_neuf_var,
-            d_cur_cxt,
-            IntVector(d_dim, 0));
-   } else {
-      d_flag_id = -1;
-      d_neuf_id = -1;
+   d_soln_bc_helper =
+      new solv::CartesianRobinBcHelper(d_dim,"BChelper");
+   d_soln_bc_coeffs =
+      new solv::LocationIndexRobinBcCoefs(d_dim,"BCcoeffs",
+         input_db->getDatabase( "BoundaryConditions" )); 
+
+   d_soln_bc_helper->setTargetDataId( d_soln_scr_id );
+   d_soln_bc_helper->setCoefImplementation( d_soln_bc_coeffs );
+
+
+   d_soln_bc_corr_coeffs =
+      new solv::LocationIndexRobinBcCoefs(d_dim,"BCcorrcoeffs",
+         input_db->getDatabase( "BoundaryConditions" ));
+   for(int i=0;i<d_dim.getValue()*2;i++){
+      double a,b,g;
+      d_soln_bc_corr_coeffs->getCoefficients(i,a,b,g);
+      //cout<<"a="<<a<<", b="<<b<<",g="<<g<<endl;
+      g=0.;
+      d_soln_bc_corr_coeffs->setRawCoefficients(i,a,b,g);
    }
 
-   /*
-    * Set boundary types for FAC preconditioner.
-    *  bdry_types holds a flag where 0 = dirichlet, 1 = neumann
-    */
-   for (int i = 0; i < NUM_3D_FACES; ++i) {
-      d_bdry_types[i] = 0;
-      if (d_scalar_bdry_face_conds[i] == BdryCond::DIRICHLET) d_bdry_types[i] = 0;
-      if (d_scalar_bdry_face_conds[i] == BdryCond::NEUMANN) d_bdry_types[i] = 1;
-   }
-
-   /*
-    * Postprocess boundary data from input/restart values.
-    */
-
-   for (int i = 0; i < NUM_3D_EDGES; ++i) {
-      if (d_scalar_bdry_edge_conds[i] != BOGUS_BDRY_DATA) {
-         d_edge_bdry_face[i] =
-            CartesianBoundaryUtilities3::getFaceLocationForEdgeBdry(
-               i, d_scalar_bdry_edge_conds[i]);
-      }
-   }
-
-   for (int i = 0; i < NUM_3D_NODES; ++i) {
-      if (d_scalar_bdry_node_conds[i] != BOGUS_BDRY_DATA) {
-         d_node_bdry_face[i] =
-            CartesianBoundaryUtilities3::getFaceLocationForNodeBdry(
-               i, d_scalar_bdry_node_conds[i]);
-      }
-   }
+   d_FAC_solver->setBcObject(d_soln_bc_corr_coeffs);
 }
 
 CVODEModel::~CVODEModel()
@@ -309,37 +251,21 @@ CVODEModel::applyGradientDetector(
  *
  ***********************************************************************
  */
-
-void
-CVODEModel::setPhysicalBoundaryConditions(
+void CVODEModel::setPhysicalBoundaryConditions(
    Patch& patch,
    const double time,
    const IntVector& ghost_width_to_fill)
 {
-   NULL_USE(time);
-
-   boost::shared_ptr<CellData<double> > soln_data(
-      BOOST_CAST<CellData<double>, PatchData>(
-         patch.getPatchData(d_soln_scr_id)));
-
-   TBOX_ASSERT(soln_data);
-
-   IntVector ghost_cells(soln_data->getGhostCellWidth());
-
-   /*
-    *  Set boundary conditions for cells corresponding to patch faces.
-    *  Edge and node values are not used and need not be set
-    */
-   CartesianBoundaryUtilities3::
-   fillFaceBoundaryData("soln_data", soln_data,
+   d_soln_bc_helper->setPhysicalBoundaryConditions(
       patch,
-      ghost_width_to_fill,
-      d_scalar_bdry_face_conds,
-      d_bdry_face_val);
+      time,
+      ghost_width_to_fill);
 
-//    plog << "----Boundary Conditions "  << endl;
-//    soln_data->print(soln_data->getGhostBox());
-
+   //plog << "----Boundary Conditions "  << endl;
+   //boost::shared_ptr<CellData<double> > soln_data(
+   //   BOOST_CAST<CellData<double>, PatchData>(
+   //      patch.getPatchData(d_soln_scr_id)));
+   //soln_data->print(soln_data->getGhostBox());
 }
 
 void
@@ -447,12 +373,11 @@ CVODEModel::evaluateRHSFunction(
     */
    boost::shared_ptr<RefineAlgorithm> bdry_fill_alg(
       new RefineAlgorithm());
-   boost::shared_ptr<RefineOperator> refine_op(d_grid_geometry->
-                                               lookupRefineOperator(d_soln_var,
-                                                  "CONSERVATIVE_LINEAR_REFINE"));
+   boost::shared_ptr<RefineOperator> refine_op(
+      d_grid_geometry->lookupRefineOperator(d_soln_var,
+                                            "CONSERVATIVE_LINEAR_REFINE"));
    bdry_fill_alg->registerRefine(d_soln_scr_id,  // dest
-      y_samvect->
-      getComponentDescriptorIndex(0),                            // src
+      y_samvect->getComponentDescriptorIndex(0), //src
       d_soln_scr_id,                            // scratch
       refine_op);
 
@@ -555,7 +480,7 @@ CVODEModel::evaluateRHSFunction(
 
 int CVODEModel::CVSpgmrPrecondSet(
    double t,
-   SundialsAbstractVector* y,
+   SundialsAbstractVector* y, // current value of the dependent variable vector, namely the predicted value of y(t)
    SundialsAbstractVector* fy,
    int jok,
    int* jcurPtr,
@@ -588,9 +513,9 @@ int CVODEModel::CVSpgmrPrecondSet(
    //boost::shared_ptr<RefineOperator> refine_op(d_grid_geometry->
    //                                            lookupRefineOperator(d_soln_var,
    //                                               "CONSERVATIVE_LINEAR_REFINE"));
-   //fill_soln_vector_bounds.registerRefine(d_soln_scr_id, // dst
-   //   y_samvect->getComponentDescriptorIndex(0), // src
-   //   d_soln_scr_id, // scratch
+   //fill_soln_vector_bounds.registerRefine(d_soln_scr_id,
+   //   y_samvect->getComponentDescriptorIndex(0),
+   //   d_soln_scr_id,
    //   refine_op);
 
    /*
@@ -660,46 +585,6 @@ int CVODEModel::CVSpgmrPrecondSet(
 
          TBOX_ASSERT((t - d_current_soln_time) >= 0.);
 
-         /*
-          * Set Neumann fluxes and flag array (if desired)
-          */
-         if (d_use_neumann_bcs) {
-
-            boost::shared_ptr<OuterfaceData<int> > flag_data(
-               BOOST_CAST<OuterfaceData<int>, PatchData>(
-                  patch->getPatchData(d_flag_id)));
-            boost::shared_ptr<OuterfaceData<double> > neuf_data(
-               BOOST_CAST<OuterfaceData<double>, PatchData>(
-                  patch->getPatchData(d_neuf_id)));
-            TBOX_ASSERT(flag_data);
-            TBOX_ASSERT(neuf_data);
-
-            /*
-             * Outerface data access:
-             *    neuf_data->getPointer(axis,face);
-             * where axis specifies X, Y, or Z (0,1,2 respectively)
-             * and face specifies lower or upper (0,1 respectively)
-             */
-
-            SAMRAI_F77_FUNC(setneufluxvalues3d, SETNEUFLUXVALUES3D) (
-               ifirst(0), ilast(0),
-               ifirst(1), ilast(1),
-               ifirst(2), ilast(2),
-               d_bdry_types,
-               &d_bdry_face_val[0],
-               flag_data->getPointer(0, 0), // x lower
-               flag_data->getPointer(0, 1), // x upper
-               flag_data->getPointer(1, 0), // y lower
-               flag_data->getPointer(1, 1), // y upper
-               flag_data->getPointer(2, 0), // z lower
-               flag_data->getPointer(2, 1), // z lower
-               neuf_data->getPointer(0, 0), // x lower
-               neuf_data->getPointer(0, 1), // x upper
-               neuf_data->getPointer(1, 0), // y lower
-               neuf_data->getPointer(1, 1), // y upper
-               neuf_data->getPointer(2, 0), // z lower
-               neuf_data->getPointer(2, 1)); // z upper
-         }
 
       } // patch loop
 
@@ -708,14 +593,8 @@ int CVODEModel::CVSpgmrPrecondSet(
    } // level loop
 
    /*
-    * Set boundaries.  The "bdry_types" array holds a set of integers
-    * where 0 = dirichlet and 1 = neumann boundary conditions.
+    * Override internal implementation to set boundary condition coefficients with user-provided implementation
     */
-   if (d_use_neumann_bcs) {
-      d_FAC_solver->setBoundaries("Mixed", d_neuf_id, d_flag_id, d_bdry_types);
-   } else {
-      d_FAC_solver->setBoundaries("Dirichlet");
-   }
 
    d_FAC_solver->setCConstant(1.0 / gamma);
    d_FAC_solver->setDPatchDataId(d_diff_id);
@@ -783,12 +662,13 @@ int CVODEModel::CVSpgmrPrecondSolve(
     * We need to supply to the FAC solver a "version" of the z vector
     * that contains ghost cells.  The operations below allocate
     * on the patches a scratch context of the solution vector z and
-    * fill it with 0
+    * fill it with z vector data
     *
     *****************************************************************/
 
    /*
-    * Set initial guess for z (and solution scratch context to 0)
+    * Set initial guess for z (if applicable) and copy z data into the
+    * solution scratch context.
     */
    for (int ln = hierarchy->getFinestLevelNumber(); ln >= 0; --ln) {
       boost::shared_ptr<PatchLevel> level(hierarchy->getPatchLevel(ln));
@@ -806,6 +686,9 @@ int CVODEModel::CVSpgmrPrecondSolve(
                patch->getPatchData(z_indx)));
          TBOX_ASSERT(z_data);
 
+         /*
+          * Set initial guess for z here.
+          */
          z_data->fillAll(0.);
 
          /*
@@ -819,7 +702,7 @@ int CVODEModel::CVSpgmrPrecondSolve(
          math_ops.scale(r_data, 1.0 / gamma, r_data, r_data->getBox());
 
          /*
-          * Also set to 0 soln_scratch
+          * Copy interior data from z vector to soln_scratch
           */
          boost::shared_ptr<CellData<double> > z_scr_data(
             BOOST_CAST<CellData<double>, PatchData>(
@@ -854,12 +737,7 @@ int CVODEModel::CVSpgmrPrecondSolve(
     */
 
    const int coarsest_solve_ln = 0;
-   const int finest_solve_ln = 0;
-   /*
-    * Note: I don't know why we are only solving on level 0 here.
-    * When upgrading to the new FAC solver from the old, I noticed
-    * that the old solver only solved on level 0.  BTNG.
-    */
+   const int finest_solve_ln = hierarchy->getFinestLevelNumber();
    bool converge = d_FAC_solver->solveSystem(d_soln_scr_id,
          r_indx,
          hierarchy,
@@ -881,28 +759,11 @@ int CVODEModel::CVSpgmrPrecondSolve(
    *
    * The FAC solver has computed a solution to z but it is stored
    * in the soln_scratch data space.  Copy it from soln_scratch back
-   * into the z vector.
+   * into the z vector, including ghost values
    *
    ******************************************************************/
-   for (int ln = hierarchy->getFinestLevelNumber(); ln >= 0; --ln) {
-      boost::shared_ptr<PatchLevel> level(hierarchy->getPatchLevel(ln));
-
-      for (PatchLevel::iterator p(level->begin()); p != level->end(); ++p) {
-         const boost::shared_ptr<Patch>& patch = *p;
-
-         boost::shared_ptr<CellData<double> > soln_scratch(
-            BOOST_CAST<CellData<double>, PatchData>(
-               patch->getPatchData(d_soln_scr_id)));
-         boost::shared_ptr<CellData<double> > z(
-            BOOST_CAST<CellData<double>, PatchData>(
-               patch->getPatchData(z_indx)));
-         TBOX_ASSERT(soln_scratch);
-         TBOX_ASSERT(z);
-
-         z->copy(*soln_scratch);
-      }
-
-   }
+   math::HierarchyCellDataOpsReal<double> cell_ops( hierarchy );
+   cell_ops.copyData( z_indx, d_soln_scr_id, false);
 
    if (d_print_solver_info) {
       double avg_convergence, final_convergence;
@@ -963,11 +824,6 @@ CVODEModel::setupSolutionVector(
       boost::shared_ptr<PatchLevel> level(hierarchy->getPatchLevel(ln));
       TBOX_ASSERT(level);
       level->allocatePatchData(d_diff_id);
-      if (d_use_neumann_bcs) {
-         level->allocatePatchData(d_flag_id);
-         level->allocatePatchData(d_neuf_id);
-      }
-
    }
 
 }
@@ -1019,8 +875,6 @@ CVODEModel::setInitialConditions(
             TBOX_ASSERT(y_init);
 
             const hier::Box patch_box = patch->getBox();
-
-
             pdat::CellIterator ic(pdat::CellGeometry::begin(patch_box));
             pdat::CellIterator icend(pdat::CellGeometry::end(patch_box));
 
@@ -1093,25 +947,6 @@ CVODEModel::getFromInput(
       if (periodic(id)) ++num_per_dirs;
    }
 
-   if (input_db->keyExists("Boundary_data")) {
-      boost::shared_ptr<Database> boundary_db(
-         input_db->getDatabase("Boundary_data"));
-
-      CartesianBoundaryUtilities3::getFromInput(this,
-         boundary_db,
-         d_scalar_bdry_face_conds,
-         d_scalar_bdry_edge_conds,
-         d_scalar_bdry_node_conds,
-         periodic);
-
-   } else {
-      TBOX_WARNING(
-         d_object_name << ": "
-                       << "Key data `Boundary_data' not found in input. " << endl);
-   }
-
-   d_use_neumann_bcs =
-      input_db->getBoolWithDefault("use_neumann_bcs", d_use_neumann_bcs);
    d_print_solver_info =
       input_db->getBoolWithDefault("print_solver_info", d_print_solver_info);
 
@@ -1132,15 +967,6 @@ void CVODEModel::putToRestart(
    restart_db->putInteger("CVODE_MODEL_VERSION", CVODE_MODEL_VERSION);
 
    restart_db->putDouble("d_diffusion_value", d_diffusion_value);
-
-   restart_db->putIntegerVector("d_scalar_bdry_edge_conds",
-      d_scalar_bdry_edge_conds);
-   restart_db->putIntegerVector("d_scalar_bdry_node_conds",
-      d_scalar_bdry_node_conds);
-
-   restart_db->putIntegerVector("d_scalar_bdry_face_conds",
-      d_scalar_bdry_face_conds);
-   restart_db->putDoubleVector("d_bdry_face_val", d_bdry_face_val);
 }
 
 /*
@@ -1170,49 +996,6 @@ void CVODEModel::getFromRestart()
 
    d_diffusion_value = db->getDouble("d_diffusion_value");
 
-   d_scalar_bdry_edge_conds = db->getIntegerVector("d_scalar_bdry_edge_conds");
-   d_scalar_bdry_node_conds = db->getIntegerVector("d_scalar_bdry_node_conds");
-
-   d_scalar_bdry_face_conds =
-      db->getIntegerVector("d_scalar_bdry_face_conds");
-
-   d_bdry_face_val = db->getDoubleVector("d_bdry_face_val");
-}
-
-/*
- *************************************************************************
- *
- * Routines to read boundary data from input database.
- *
- *************************************************************************
- */
-
-void CVODEModel::readDirichletBoundaryDataEntry(
-   const boost::shared_ptr<Database>& db,
-   string& db_name,
-   int bdry_location_index)
-{
-   TBOX_ASSERT(db);
-   TBOX_ASSERT(!db_name.empty());
-
-   readStateDataEntry(db,
-      db_name,
-      bdry_location_index,
-      d_bdry_face_val);
-}
-
-void CVODEModel::readNeumannBoundaryDataEntry(
-   const boost::shared_ptr<Database>& db,
-   string& db_name,
-   int bdry_location_index)
-{
-   TBOX_ASSERT(db);
-   TBOX_ASSERT(!db_name.empty());
-
-   readStateDataEntry(db,
-      db_name,
-      bdry_location_index,
-      d_bdry_face_val);
 }
 
 void CVODEModel::readStateDataEntry(
@@ -1279,16 +1062,6 @@ void CVODEModel::printClassData(
    os << "d_soln_scr_id = " << d_soln_scr_id << endl;
 
    os << "d_diffusion_value = " << d_diffusion_value << endl;
-
-   os << "Boundary Condition data..." << endl;
-   for (j = 0; j < static_cast<int>(d_scalar_bdry_face_conds.size()); ++j) {
-      os << "       d_scalar_bdry_face_conds[" << j << "] = "
-         << d_scalar_bdry_face_conds[j] << endl;
-      if (d_scalar_bdry_face_conds[j] == BdryCond::DIRICHLET) {
-         os << "         d_bdry_face_val[" << j << "] = "
-            << d_bdry_face_val[j] << endl;
-      }
-   }
    os << endl;
 
 }

@@ -6,19 +6,6 @@
 
 #include "SAMRAI/SAMRAI_config.h"
 
-#include <iostream>
-using namespace std;
-
-
-/*
- * Header file for base classes.
- */
-#include "SAMRAI/appu/BoundaryUtilityStrategy.h"
-#include "SAMRAI/mesh/StandardTagAndInitStrategy.h"
-#include "SAMRAI/xfer/RefinePatchStrategy.h"
-#include "SAMRAI/xfer/CoarsenPatchStrategy.h"
-#include "SAMRAI/solv/CVODEAbstractFunctions.h"
-
 /*
  * Header file for SAMRAI classes referenced in this class.
  */
@@ -26,28 +13,34 @@ using namespace std;
 #include "SAMRAI/pdat/CellVariable.h"
 #include "SAMRAI/geom/CartesianGridGeometry.h"
 #include "SAMRAI/tbox/Database.h"
-#include "SAMRAI/pdat/FaceVariable.h"
 #include "SAMRAI/hier/IntVector.h"
 #include "SAMRAI/hier/Patch.h"
 #include "SAMRAI/hier/PatchHierarchy.h"
 #include "SAMRAI/hier/PatchLevel.h"
-#include "SAMRAI/pdat/OuterfaceVariable.h"
 #include "SAMRAI/pdat/SideVariable.h"
 #include "SAMRAI/hier/VariableContext.h"
 #include "SAMRAI/xfer/RefineAlgorithm.h"
 #include "SAMRAI/xfer/RefineSchedule.h"
-
+#include "SAMRAI/xfer/RefinePatchStrategy.h"
+#include "SAMRAI/xfer/CoarsenPatchStrategy.h"
+#include "SAMRAI/mesh/StandardTagAndInitStrategy.h"
 #include "SAMRAI/solv/CellPoissonFACSolver.h"
 #include "SAMRAI/appu/VisItDataWriter.h"
+#include "SAMRAI/solv/LocationIndexRobinBcCoefs.h"
+#include "SAMRAI/solv/CartesianRobinBcHelper.h"
+
 /*
  * Header files for CVODE wrapper classes
  */
 #include "SAMRAI/solv/SundialsAbstractVector.h"
 #include "SAMRAI/solv/Sundials_SAMRAIVector.h"
+#include "SAMRAI/solv/CVODEAbstractFunctions.h"
 
 #include "boost/shared_ptr.hpp"
 
 #include <vector>
+#include <iostream>
+using namespace std;
 
 using namespace SAMRAI;
 using namespace tbox;
@@ -58,20 +51,15 @@ using namespace math;
 using namespace mesh;
 using namespace geom;
 using namespace solv;
-using namespace appu;
 
 /**
  * The cvode_Model class tests the CVODE-SAMRAI interface using
- * two problems: (1) y' = k * d/dx (dy/dx) and (2) y' = y.
+ * problem: (1) y' = k * d/dx (dy/dx).
  *
- * The choice of which problem to solve and other input parameters
+ * The choice of other input parameters
  * are specified through the input database.
  *
  * Input Parameters:
- *
- *    - \b Problem_type
- *       1 for diffusion equation, 2 for y' = y.  By default, the heat
- *       equation is solved.
  *
  *    - \b Diffusion_coefficient
  *       specifies the diffusion coefficient to use when the
@@ -95,7 +83,6 @@ class CVODEModel:
    public StandardTagAndInitStrategy,
    public RefinePatchStrategy,
    public CoarsenPatchStrategy,
-   public BoundaryUtilityStrategy,
    public CVODEAbstractFunctions
 {
 public:
@@ -499,18 +486,12 @@ private:
    int d_soln_scr_id;
 
    boost::shared_ptr<SideVariable<double> > d_diff_var;
-   boost::shared_ptr<OuterfaceVariable<int> > d_flag_var;
-   boost::shared_ptr<OuterfaceVariable<double> > d_neuf_var;
 
    int d_diff_id;
-   int d_flag_id;
-   int d_neuf_id;
-   int d_bdry_types[2 * MAX_DIM_VAL];
 
    boost::shared_ptr<CellPoissonFACSolver> d_FAC_solver;
    bool d_FAC_solver_allocated;
    bool d_level_solver_allocated;
-   bool d_use_neumann_bcs;
 
    double d_current_soln_time;
 
@@ -527,7 +508,7 @@ private:
    boost::shared_ptr<appu::VisItDataWriter> d_visit_writer;
 
    /*
-    * Value of diffusion coefficient
+    * Initial value
     */
    double d_diffusion_value;
 
@@ -541,28 +522,9 @@ private:
    int d_number_precond_setup;
    int d_number_precond_solve;
 
-   /*
-    * Boundary condition cases and boundary values.
-    * Options are: FLOW, REFLECT, DIRICHLET, NEUMANN
-    * and variants for nodes and edges.
-    *
-    * Input file values are read into these arrays.
-    */
-   std::vector<int> d_scalar_bdry_edge_conds;
-   std::vector<int> d_scalar_bdry_node_conds;
-   std::vector<int> d_scalar_bdry_face_conds; // Only used for 3D.
+   solv::CartesianRobinBcHelper* d_soln_bc_helper;
+   solv::LocationIndexRobinBcCoefs* d_soln_bc_coeffs;
 
-   /*
-    * Boundary condition cases for scalar and vector (i.e., depth > 1)
-    * variables.  These are post-processed input values and are passed
-    * to the boundary routines.
-    */
-   std::vector<int> d_edge_bdry_face; // Only used for 3D.
-   std::vector<int> d_node_bdry_face; // Only used for 3D.
-
-   /*
-    * Arrays of face (3d) boundary values for DIRICHLET case.
-    */
-   std::vector<double> d_bdry_face_val; // Only used for 3D
-
+//   solv::CartesianRobinBcHelper* d_soln_bc_corr_helper;
+   solv::LocationIndexRobinBcCoefs* d_soln_bc_corr_coeffs;
 };
