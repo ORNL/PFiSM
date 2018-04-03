@@ -1,0 +1,52 @@
+
+VPATH = $(HOME)/GIT/PFiSM/source
+
+HYPRE_DIR = $(HOME)/hypre/summitdev/install
+SUNDIALS_DIR = $(HOME)/sundials/build_summitdev_xl
+SAMRAI_DIR = $(HOME)/SAMRAI/SAMRAI-v3.11.2/build_summitdev_xl
+
+include $(SAMRAI_DIR)/config/Makefile.config
+
+NVCC = nvcc
+CXX = mpicxx
+
+CXXFLAGS += 
+LDLIBS= \
+	-L$(HYPRE_DIR)/lib -lHYPRE \
+	-L$(SUNDIALS_DIR)/lib -lsundials_cvode \
+	-lhdf5 -lm
+
+# how to produce objects from source files
+
+%.o:%.cc
+	$(CXX) $(CXXFLAGS) -c $<
+FORTRAN         = $(VPATH)/fortran
+%.o:            $(FORTRAN)/%.f
+	cp $(FORTRAN)/$*.f $*.f
+	$(F77) $(FFLAGS) -c $*.f -o $@
+%.o:            $(FORTCOMM)/%.m4
+	$(M4) $(M4DIRS) $(FORTCOMM)/$*.m4 > $*.f
+	$(F77) $(FFLAGS) -c $*.f -o $@
+
+TARGET = main
+
+all: $(TARGET)
+
+OBJS = CVODEModel.o main.o 
+
+F77_OBJS = FACjacobian3d.o
+
+NVCCFLAGS = -ccbin=mpicxx -gencode arch=compute_60,"code=sm_60" \
+	-Xcompiler -fopenmp  -lcudart -lcuda  -lstdc++ -lm  \
+	-L/lib64 -lcusparse -lcudart -lcublas -lnvToolsExt
+
+# rules
+$(TARGET):	$(OBJS) $(F77_OBJS)
+	$(NVCC) $(NVCCFLAGS) -o $(TARGET) $(OBJS) $(F77_OBJS) \
+	$(LIBSAMRAI) $(LDLIBS)
+
+clean:
+	rm -f *.o
+	rm -f *.f
+	rm -f main
+	
