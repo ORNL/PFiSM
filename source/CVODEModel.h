@@ -36,8 +36,6 @@
 #include "SAMRAI/solv/Sundials_SAMRAIVector.h"
 #include "SAMRAI/solv/CVODEAbstractFunctions.h"
 
-#include "boost/shared_ptr.hpp"
-
 #include <vector>
 #include <iostream>
 //using namespace std;
@@ -92,9 +90,9 @@ public:
    CVODEModel(
       const std::string& object_name,
       const Dimension& dim,
-      boost::shared_ptr<CellPoissonFACSolver> fac_solver,
-      boost::shared_ptr<Database> input_db,
-      boost::shared_ptr<CartesianGridGeometry> grid_geom);
+      std::shared_ptr<CellPoissonFACSolver> fac_solver,
+      std::shared_ptr<Database> input_db,
+      std::shared_ptr<CartesianGridGeometry> grid_geom);
 
    /**
     * Empty destructor for CVODEModel.
@@ -131,13 +129,13 @@ public:
     */
    virtual void
    initializeLevelData(
-      const boost::shared_ptr<PatchHierarchy>& hierarchy,
+      const std::shared_ptr<PatchHierarchy>& hierarchy,
       const int level_number,
       const double time,
       const bool can_be_refined,
       const bool initial_time,
-      const boost::shared_ptr<PatchLevel>& old_level =
-         boost::shared_ptr<PatchLevel>(),
+      const std::shared_ptr<PatchLevel>& old_level =
+         std::shared_ptr<PatchLevel>(),
       const bool allocate_data = true);
 
    /**
@@ -160,7 +158,7 @@ public:
     */
    virtual void
    resetHierarchyConfiguration(
-      const boost::shared_ptr<PatchHierarchy>& hierarchy,
+      const std::shared_ptr<PatchHierarchy>& hierarchy,
       const int coarsest_level,
       const int finest_level);
 
@@ -178,7 +176,7 @@ public:
     */
    virtual void
    applyGradientDetector(
-      const boost::shared_ptr<PatchHierarchy>& hierarchy,
+      const std::shared_ptr<PatchHierarchy>& hierarchy,
       const int level_number,
       const double time,
       const int tag_index,
@@ -361,7 +359,7 @@ public:
     */
    void
    setupSolutionVector(
-      boost::shared_ptr<PatchHierarchy> hierarchy);
+      std::shared_ptr<PatchHierarchy> hierarchy);
 
    /**
     * Get pointer to the solution vector.
@@ -390,7 +388,7 @@ public:
     */
    void
    putToRestart(
-      const boost::shared_ptr<Database>& restart_db) const;
+      const std::shared_ptr<Database>& restart_db) const;
 
    /**
     * Register a VisIt data writer so this class will write
@@ -399,7 +397,7 @@ public:
     */
    void
    registerVisItDataWriter(
-      boost::shared_ptr<appu::VisItDataWriter> viz_writer);
+      std::shared_ptr<appu::VisItDataWriter> viz_writer);
 
    /**
     * Prints all class data members, if assertion is thrown.
@@ -420,7 +418,7 @@ private:
     */
    virtual void
    getFromInput(
-      boost::shared_ptr<Database> input_db,
+      std::shared_ptr<Database> input_db,
       bool is_from_restart);
 
    virtual void
@@ -442,14 +440,14 @@ private:
    /*
     * Variables
     */
-   boost::shared_ptr<CellVariable<double> > d_soln_var;
-   boost::shared_ptr<SideVariable<double> > d_diff_var;
+   std::shared_ptr<CellVariable<double> > d_soln_var;
+   std::shared_ptr<SideVariable<double> > d_diff_var;
 
    /*
     * Variable Contexts
     */
-   boost::shared_ptr<VariableContext> d_cur_cxt;
-   boost::shared_ptr<VariableContext> d_scr_cxt;
+   std::shared_ptr<VariableContext> d_cur_cxt;
+   std::shared_ptr<VariableContext> d_scr_cxt;
 
    /*
     * Patch Data ids
@@ -458,7 +456,7 @@ private:
    int d_soln_scr_id;
    int d_diff_id;
 
-   boost::shared_ptr<CellPoissonFACSolver> d_FAC_solver;
+   std::shared_ptr<CellPoissonFACSolver> d_FAC_solver;
    bool d_FAC_solver_allocated;
    bool d_level_solver_allocated;
 
@@ -472,9 +470,9 @@ private:
    /*
     * Grid geometry
     */
-   boost::shared_ptr<CartesianGridGeometry> d_grid_geometry;
+   std::shared_ptr<CartesianGridGeometry> d_grid_geometry;
 
-   boost::shared_ptr<appu::VisItDataWriter> d_visit_writer;
+   std::shared_ptr<appu::VisItDataWriter> d_visit_writer;
 
    /*
     * Diffusion value

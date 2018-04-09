@@ -59,9 +59,9 @@ void SAMRAI_F77_FUNC(comprhs3d, COMPRHS3D) (
 CVODEModel::CVODEModel(
    const string& object_name,
    const Dimension& dim,
-   boost::shared_ptr<CellPoissonFACSolver> fac_solver,
-   boost::shared_ptr<Database> input_db,
-   boost::shared_ptr<CartesianGridGeometry> grid_geom):
+   std::shared_ptr<CellPoissonFACSolver> fac_solver,
+   std::shared_ptr<Database> input_db,
+   std::shared_ptr<CartesianGridGeometry> grid_geom):
    RefinePatchStrategy(),
    CoarsenPatchStrategy(),
    d_object_name(object_name),
@@ -147,7 +147,7 @@ CVODEModel::CVODEModel(
 
 CVODEModel::~CVODEModel()
 {
-   boost::shared_ptr<SAMRAIVectorReal<double> > soln_samvect =
+   std::shared_ptr<SAMRAIVectorReal<double> > soln_samvect =
       Sundials_SAMRAIVector::getSAMRAIVector(d_solution_vector);
    Sundials_SAMRAIVector::destroySundialsVector(d_solution_vector);
 
@@ -167,12 +167,12 @@ CVODEModel::~CVODEModel()
  *
  ************************************************************************/
 void CVODEModel::initializeLevelData(
-   const boost::shared_ptr<PatchHierarchy>& hierarchy,
+   const std::shared_ptr<PatchHierarchy>& hierarchy,
    const int level_number,
    const double time,
    const bool can_be_refined,
    const bool initial_time,
-   const boost::shared_ptr<PatchLevel>& old_level,
+   const std::shared_ptr<PatchLevel>& old_level,
    const bool allocate_data)
 {
    NULL_USE(hierarchy);
@@ -191,7 +191,7 @@ void CVODEModel::initializeLevelData(
 }
 
 void CVODEModel::resetHierarchyConfiguration(
-   const boost::shared_ptr<PatchHierarchy>& hierarchy,
+   const std::shared_ptr<PatchHierarchy>& hierarchy,
    const int coarsest_level,
    const int finest_level)
 {
@@ -212,7 +212,7 @@ void CVODEModel::resetHierarchyConfiguration(
  *
  *************************************************************************/
 void CVODEModel::applyGradientDetector(
-   const boost::shared_ptr<PatchHierarchy>& hierarchy,
+   const std::shared_ptr<PatchHierarchy>& hierarchy,
    const int level_number,
    const double time,
    const int tag_index,
@@ -223,14 +223,14 @@ void CVODEModel::applyGradientDetector(
    NULL_USE(initial_time);
    NULL_USE(uses_richardson_extrapolation_too);
 
-   boost::shared_ptr<PatchLevel> level(
+   std::shared_ptr<PatchLevel> level(
       hierarchy->getPatchLevel(level_number));
 
    for (PatchLevel::iterator p(level->begin()); p != level->end(); ++p) {
-      const boost::shared_ptr<Patch>& patch = *p;
+      const std::shared_ptr<Patch>& patch = *p;
 
-      boost::shared_ptr<CellData<int> > tag_data(
-         BOOST_CAST<CellData<int>, PatchData>(
+      std::shared_ptr<CellData<int> > tag_data(
+         SAMRAI_SHARED_PTR_CAST<CellData<int>, PatchData>(
             patch->getPatchData(tag_index)));
       TBOX_ASSERT(tag_data);
 
@@ -255,8 +255,8 @@ void CVODEModel::setPhysicalBoundaryConditions(
       ghost_width_to_fill);
 
    //plog << "----Boundary Conditions "  << endl;
-   //boost::shared_ptr<CellData<double> > soln_data(
-   //   BOOST_CAST<CellData<double>, PatchData>(
+   //std::shared_ptr<CellData<double> > soln_data(
+   //   SAMRAI_SHARED_PTR_CAST<CellData<double>, PatchData>(
    //      patch.getPatchData(d_soln_scr_id)));
    //soln_data->print(soln_data->getGhostBox());
 }
@@ -327,12 +327,12 @@ int CVODEModel::evaluateRHSFunction(
    /*
     * Convert Sundials vectors to SAMRAI vectors
     */
-   boost::shared_ptr<SAMRAIVectorReal<double> > y_samvect(
+   std::shared_ptr<SAMRAIVectorReal<double> > y_samvect(
       Sundials_SAMRAIVector::getSAMRAIVector(y));
-   boost::shared_ptr<SAMRAIVectorReal<double> > y_dot_samvect(
+   std::shared_ptr<SAMRAIVectorReal<double> > y_dot_samvect(
       Sundials_SAMRAIVector::getSAMRAIVector(y_dot));
 
-   boost::shared_ptr<PatchHierarchy> hierarchy(y_samvect->getPatchHierarchy());
+   std::shared_ptr<PatchHierarchy> hierarchy(y_samvect->getPatchHierarchy());
 
    if (d_print_solver_info) {
       pout << "\t\tEval RHS: "
@@ -349,9 +349,9 @@ int CVODEModel::evaluateRHSFunction(
     * 3) Use the refine algorithm to construct a refine schedule
     * 4) Use the refine schedule to fill data on fine level.
     */
-   boost::shared_ptr<RefineAlgorithm> bdry_fill_alg(
+   std::shared_ptr<RefineAlgorithm> bdry_fill_alg(
       new RefineAlgorithm());
-   boost::shared_ptr<RefineOperator> refine_op(
+   std::shared_ptr<RefineOperator> refine_op(
       d_grid_geometry->lookupRefineOperator(d_soln_var,
                                             "CONSERVATIVE_LINEAR_REFINE"));
    bdry_fill_alg->registerRefine(d_soln_scr_id,  // dest
@@ -360,14 +360,14 @@ int CVODEModel::evaluateRHSFunction(
       refine_op);
 
    for (int ln = hierarchy->getFinestLevelNumber(); ln >= 0; --ln) {
-      boost::shared_ptr<PatchLevel> level(hierarchy->getPatchLevel(ln));
+      std::shared_ptr<PatchLevel> level(hierarchy->getPatchLevel(ln));
       if (!level->checkAllocated(d_soln_scr_id)) {
          level->allocatePatchData(d_soln_scr_id);
       }
 
       // Note:  a pointer to "this" tells the refine schedule to invoke
       // the setPhysicalBCs defined in this class.
-      boost::shared_ptr<RefineSchedule> bdry_fill_alg_schedule(
+      std::shared_ptr<RefineSchedule> bdry_fill_alg_schedule(
          bdry_fill_alg->createSchedule(level,
             ln - 1,
             hierarchy,
@@ -380,19 +380,19 @@ int CVODEModel::evaluateRHSFunction(
     * Step through the levels and compute rhs
     */
    for (int ln = hierarchy->getFinestLevelNumber(); ln >= 0; --ln) {
-      boost::shared_ptr<PatchLevel> level(hierarchy->getPatchLevel(ln));
+      std::shared_ptr<PatchLevel> level(hierarchy->getPatchLevel(ln));
 
       for (PatchLevel::iterator ip(level->begin()); ip != level->end(); ++ip) {
-         const boost::shared_ptr<Patch>& patch = *ip;
+         const std::shared_ptr<Patch>& patch = *ip;
 
-         boost::shared_ptr<CellData<double> > y(
-            BOOST_CAST<CellData<double>, PatchData>(
+         std::shared_ptr<CellData<double> > y(
+            SAMRAI_SHARED_PTR_CAST<CellData<double>, PatchData>(
                patch->getPatchData(d_soln_scr_id)));
-         boost::shared_ptr<SideData<double> > diff(
-            BOOST_CAST<SideData<double>, PatchData>(
+         std::shared_ptr<SideData<double> > diff(
+            SAMRAI_SHARED_PTR_CAST<SideData<double>, PatchData>(
                patch->getPatchData(d_diff_id)));
-         boost::shared_ptr<CellData<double> > rhs(
-            BOOST_CAST<CellData<double>, PatchData>(
+         std::shared_ptr<CellData<double> > rhs(
+            SAMRAI_SHARED_PTR_CAST<CellData<double>, PatchData>(
                patch->getPatchData(y_dot_samvect->getComponentDescriptorIndex(0))));
          TBOX_ASSERT(y);
          TBOX_ASSERT(diff);
@@ -401,8 +401,8 @@ int CVODEModel::evaluateRHSFunction(
          const Index ifirst(patch->getBox().lower());
          const Index ilast(patch->getBox().upper());
 
-         const boost::shared_ptr<CartesianPatchGeometry> patch_geom(
-            BOOST_CAST<CartesianPatchGeometry, PatchGeometry>(
+         const std::shared_ptr<CartesianPatchGeometry> patch_geom(
+            SAMRAI_SHARED_PTR_CAST<CartesianPatchGeometry, PatchGeometry>(
                patch->getPatchGeometry()));
          TBOX_ASSERT(patch_geom);
          const double* dx = patch_geom->getDx();
@@ -472,7 +472,7 @@ int CVODEModel::CVSpgmrPrecondSet(
    /*
     * Convert passed-in CVODE vectors into SAMRAI vectors
     */
-   boost::shared_ptr<SAMRAIVectorReal<double> > y_samvect(
+   std::shared_ptr<SAMRAIVectorReal<double> > y_samvect(
       Sundials_SAMRAIVector::getSAMRAIVector(y));
 
    int y_indx = y_samvect->getComponentDescriptorIndex(0);
@@ -481,7 +481,7 @@ int CVODEModel::CVSpgmrPrecondSet(
     * Construct refine algorithm to fill boundaries of solution vector
     */
    //RefineAlgorithm fill_soln_vector_bounds;
-   //boost::shared_ptr<RefineOperator> refine_op(d_grid_geometry->
+   //std::shared_ptr<RefineOperator> refine_op(d_grid_geometry->
    //                                            lookupRefineOperator(d_soln_var,
    //                                               "CONSERVATIVE_LINEAR_REFINE"));
    //fill_soln_vector_bounds.registerRefine(d_soln_scr_id,
@@ -494,7 +494,7 @@ int CVODEModel::CVSpgmrPrecondSet(
     * with solution on finer level.
     */
    CoarsenAlgorithm fill_soln_interior_on_coarser(d_dim);
-   boost::shared_ptr<CoarsenOperator> coarsen_op(d_grid_geometry->
+   std::shared_ptr<CoarsenOperator> coarsen_op(d_grid_geometry->
                                                  lookupCoarsenOperator(d_soln_var,
                                                     "CONSERVATIVE_COARSEN"));
 
@@ -505,16 +505,16 @@ int CVODEModel::CVSpgmrPrecondSet(
    /*
     * Step through levels - largest to smallest
     */
-   boost::shared_ptr<PatchHierarchy> hierarchy(
+   std::shared_ptr<PatchHierarchy> hierarchy(
       y_samvect->getPatchHierarchy());
 
    for (int amr_level = hierarchy->getFinestLevelNumber();
         amr_level >= 0;
         --amr_level) {
-      boost::shared_ptr<PatchLevel> level(
+      std::shared_ptr<PatchLevel> level(
          hierarchy->getPatchLevel(amr_level));
 
-      //boost::shared_ptr<RefineSchedule> fill_soln_vector_bounds_sched =
+      //std::shared_ptr<RefineSchedule> fill_soln_vector_bounds_sched =
       //   fill_soln_vector_bounds.createSchedule(level,
       //      amr_level - 1,
       //      hierarchy,
@@ -531,10 +531,10 @@ int CVODEModel::CVSpgmrPrecondSet(
        * data.
        */
       if (amr_level > 0) {
-         boost::shared_ptr<PatchLevel> coarser_level(
+         std::shared_ptr<PatchLevel> coarser_level(
             hierarchy->getPatchLevel(amr_level - 1));
 
-         boost::shared_ptr<CoarsenSchedule> fill_soln_interior_on_coarser_sched(
+         std::shared_ptr<CoarsenSchedule> fill_soln_interior_on_coarser_sched(
             fill_soln_interior_on_coarser.createSchedule(coarser_level,
                level));
 
@@ -542,13 +542,13 @@ int CVODEModel::CVSpgmrPrecondSet(
       }
 
       for (PatchLevel::iterator p(level->begin()); p != level->end(); ++p) {
-         const boost::shared_ptr<Patch>& patch = *p;
+         const std::shared_ptr<Patch>& patch = *p;
 
          const Index ifirst(patch->getBox().lower());
          const Index ilast(patch->getBox().upper());
 
-         boost::shared_ptr<SideData<double> > diffusion(
-            BOOST_CAST<SideData<double>, PatchData>(
+         std::shared_ptr<SideData<double> > diffusion(
+            SAMRAI_SHARED_PTR_CAST<SideData<double>, PatchData>(
                patch->getPatchData(d_diff_id)));
          TBOX_ASSERT(diffusion);
 
@@ -610,14 +610,14 @@ int CVODEModel::CVSpgmrPrecondSolve(
    /*
     * Convert passed-in CVODE vectors into SAMRAI vectors
     */
-   boost::shared_ptr<SAMRAIVectorReal<double> > r_samvect(
+   std::shared_ptr<SAMRAIVectorReal<double> > r_samvect(
       Sundials_SAMRAIVector::getSAMRAIVector(r));
-   boost::shared_ptr<SAMRAIVectorReal<double> > z_samvect(
+   std::shared_ptr<SAMRAIVectorReal<double> > z_samvect(
       Sundials_SAMRAIVector::getSAMRAIVector(z));
 
    int ret_val = 0;
 
-   boost::shared_ptr<PatchHierarchy> hierarchy(
+   std::shared_ptr<PatchHierarchy> hierarchy(
       r_samvect->getPatchHierarchy());
 
    int r_indx = r_samvect->getComponentDescriptorIndex(0);
@@ -632,7 +632,7 @@ int CVODEModel::CVSpgmrPrecondSolve(
     * solution scratch context.
     */
    for (int ln = hierarchy->getFinestLevelNumber(); ln >= 0; --ln) {
-      boost::shared_ptr<PatchLevel> level(hierarchy->getPatchLevel(ln));
+      std::shared_ptr<PatchLevel> level(hierarchy->getPatchLevel(ln));
 
       if (!level->checkAllocated(d_soln_scr_id)) {
          level->allocatePatchData(d_soln_scr_id);
@@ -640,10 +640,10 @@ int CVODEModel::CVSpgmrPrecondSolve(
 
       for (PatchLevel::iterator p(level->begin()); p != level->end(); ++p) {
 
-         const boost::shared_ptr<Patch>& patch = *p;
+         const std::shared_ptr<Patch>& patch = *p;
 
-         boost::shared_ptr<CellData<double> > z_data(
-            BOOST_CAST<CellData<double>, PatchData>(
+         std::shared_ptr<CellData<double> > z_data(
+            SAMRAI_SHARED_PTR_CAST<CellData<double>, PatchData>(
                patch->getPatchData(z_indx)));
          TBOX_ASSERT(z_data);
 
@@ -656,8 +656,8 @@ int CVODEModel::CVSpgmrPrecondSolve(
           * Scale RHS by 1/gamma
           */
          PatchCellDataOpsReal<double> math_ops;
-         boost::shared_ptr<CellData<double> > r_data(
-            BOOST_CAST<CellData<double>, PatchData>(
+         std::shared_ptr<CellData<double> > r_data(
+            SAMRAI_SHARED_PTR_CAST<CellData<double>, PatchData>(
                patch->getPatchData(r_indx)));
          TBOX_ASSERT(r_data);
          math_ops.scale(r_data, 1.0 / gamma, r_data, r_data->getBox());
@@ -665,8 +665,8 @@ int CVODEModel::CVSpgmrPrecondSolve(
          /*
           * Copy interior data from z vector to soln_scratch
           */
-         boost::shared_ptr<CellData<double> > z_scr_data(
-            BOOST_CAST<CellData<double>, PatchData>(
+         std::shared_ptr<CellData<double> > z_scr_data(
+            SAMRAI_SHARED_PTR_CAST<CellData<double>, PatchData>(
                patch->getPatchData(d_soln_scr_id)));
          TBOX_ASSERT(z_scr_data);
          z_scr_data->fillAll(0.);
@@ -755,10 +755,10 @@ int CVODEModel::CVSpgmrPrecondSolve(
  *
  ************************************************************************/
 void CVODEModel::setupSolutionVector(
-   boost::shared_ptr<PatchHierarchy> hierarchy)
+   std::shared_ptr<PatchHierarchy> hierarchy)
 {
    /* create SAMRAIVector */
-   boost::shared_ptr<SAMRAIVectorReal<double> > soln_samvect(
+   std::shared_ptr<SAMRAIVectorReal<double> > soln_samvect(
       new SAMRAIVectorReal<double>(
          "solution",
          hierarchy,
@@ -780,7 +780,7 @@ void CVODEModel::setupSolutionVector(
    const int nlevels = hierarchy->getNumberOfLevels();
 
    for (int ln = 0; ln < nlevels; ++ln) {
-      boost::shared_ptr<PatchLevel> level(hierarchy->getPatchLevel(ln));
+      std::shared_ptr<PatchLevel> level(hierarchy->getPatchLevel(ln));
       TBOX_ASSERT(level);
       level->allocatePatchData(d_diff_id);
    }
@@ -802,21 +802,21 @@ CVODEModel::getSolutionVector(
 void CVODEModel::setInitialConditions(
    SundialsAbstractVector* soln_init)
 {
-   boost::shared_ptr<SAMRAIVectorReal<double> > soln_init_samvect(
+   std::shared_ptr<SAMRAIVectorReal<double> > soln_init_samvect(
       Sundials_SAMRAIVector::getSAMRAIVector(soln_init));
 
-   boost::shared_ptr<PatchHierarchy> hierarchy(
+   std::shared_ptr<PatchHierarchy> hierarchy(
       soln_init_samvect->getPatchHierarchy());
 
    for (int ln = 0; ln < hierarchy->getNumberOfLevels(); ++ln) {
-      boost::shared_ptr<PatchLevel> level(hierarchy->getPatchLevel(ln));
+      std::shared_ptr<PatchLevel> level(hierarchy->getPatchLevel(ln));
 
       for (int cn = 0; cn < soln_init_samvect->getNumberOfComponents(); ++cn) {
          for (PatchLevel::iterator p(level->begin()); p != level->end(); ++p) {
-            const boost::shared_ptr<Patch>& patch = *p;
+            const std::shared_ptr<Patch>& patch = *p;
 
-            boost::shared_ptr<geom::CartesianPatchGeometry> pg(
-               BOOST_CAST<geom::CartesianPatchGeometry, hier::PatchGeometry>(
+            std::shared_ptr<geom::CartesianPatchGeometry> pg(
+               SAMRAI_SHARED_PTR_CAST<geom::CartesianPatchGeometry, hier::PatchGeometry>(
                patch->getPatchGeometry()));
             TBOX_ASSERT(pg);
 
@@ -825,8 +825,8 @@ void CVODEModel::setInitialConditions(
             /*
              * Set initial conditions for y
              */
-            boost::shared_ptr<CellData<double> > y_init(
-               BOOST_CAST<CellData<double>, PatchData>(
+            std::shared_ptr<CellData<double> > y_init(
+               SAMRAI_SHARED_PTR_CAST<CellData<double>, PatchData>(
                   soln_init_samvect->getComponentPatchData(cn, *patch)));
             TBOX_ASSERT(y_init);
 
@@ -846,8 +846,8 @@ void CVODEModel::setInitialConditions(
             /*
              * Set initial diffusion coeff values.
              */
-            boost::shared_ptr<SideData<double> > diffusion(
-               BOOST_CAST<SideData<double>, PatchData>(
+            std::shared_ptr<SideData<double> > diffusion(
+               SAMRAI_SHARED_PTR_CAST<SideData<double>, PatchData>(
                   patch->getPatchData(d_diff_id)));
             TBOX_ASSERT(diffusion);
 
@@ -889,7 +889,7 @@ void CVODEModel::printCounters(const double final_time)
  */
 void
 CVODEModel::getFromInput(
-   boost::shared_ptr<Database> input_db,
+   std::shared_ptr<Database> input_db,
    bool is_from_restart)
 {
    NULL_USE(is_from_restart);
@@ -908,7 +908,7 @@ CVODEModel::getFromInput(
  *************************************************************************
  */
 void CVODEModel::putToRestart(
-   const boost::shared_ptr<Database>& restart_db) const
+   const std::shared_ptr<Database>& restart_db) const
 {
    TBOX_ASSERT(restart_db);
 
@@ -924,14 +924,14 @@ void CVODEModel::putToRestart(
  *************************************************************************/
 void CVODEModel::getFromRestart()
 {
-   boost::shared_ptr<Database> root_db(
+   std::shared_ptr<Database> root_db(
       RestartManager::getManager()->getRootDatabase());
 
    if (!root_db->isDatabase(d_object_name)) {
       TBOX_ERROR("Restart database corresponding to "
          << d_object_name << " not found in the restart file.");
    }
-   boost::shared_ptr<Database> db(root_db->getDatabase(d_object_name));
+   std::shared_ptr<Database> db(root_db->getDatabase(d_object_name));
 
    int ver = db->getInteger("CVODE_MODEL_VERSION");
    if (ver != CVODE_MODEL_VERSION) {
@@ -951,7 +951,7 @@ void CVODEModel::getFromRestart()
  *
  *************************************************************************/
 void CVODEModel::registerVisItDataWriter(
-   boost::shared_ptr<appu::VisItDataWriter> viz_writer)
+   std::shared_ptr<appu::VisItDataWriter> viz_writer)
 {
    TBOX_ASSERT(viz_writer);
    d_visit_writer = viz_writer;

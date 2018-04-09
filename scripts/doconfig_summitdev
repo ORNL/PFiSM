@@ -1,5 +1,6 @@
-cmake -DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_CC_COMPILER=mpicc -DCMAKE_Fortran_COMPILER=mpif77 \
-        -DSAMRAI_DIR=$HOME/SAMRAI/SAMRAI-v3.11.2/build_summitdev \
+cmake -DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_CC_COMPILER=mpicc \
+        -DCMAKE_Fortran_COMPILER=mpif77 \
+        -DSAMRAI_DIR=$HOME/GIT/SAMRAI/build_summitdev \
         -DHYPRE_DIR=$OLCF_HYPRE_ROOT \
         -DSUNDIALS_DIR=$HOME/sundials/build_summitdev \
 	../source

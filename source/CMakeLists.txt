@@ -5,7 +5,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 
 enable_language(Fortran C CXX)
 
-set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g")
+set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g --std=c++11")
 
 link_directories( ${SAMRAI_DIR}/lib )
 link_directories( ${HYPRE_DIR}/lib )
@@ -32,9 +32,6 @@ include_directories( ${SUNDIALS_DIR}/include )
 find_package(HDF5)
 include_directories(${HDF5_INCLUDE_DIR})
 set(_hdf5_libs hdf5 hdf5_cpp)
-
-find_package(Boost REQUIRED)
-include_directories(${Boost_INCLUDE_DIRS})
 
 # we need the M4 macro processor
 find_program( M4_EXECUTABLE m4 DOC "The M4 macro processor" )

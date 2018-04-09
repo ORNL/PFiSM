@@ -59,8 +59,6 @@ using namespace std;
 #endif
 #endif
 
-#include "boost/shared_ptr.hpp"
-
 using namespace SAMRAI;
 
 /*
@@ -123,7 +121,7 @@ int main(
       /*
        * Create input database and parse all data in input file.
        */
-      boost::shared_ptr<tbox::InputDatabase> input_db(
+      std::shared_ptr<tbox::InputDatabase> input_db(
          new tbox::InputDatabase("input_db"));
       tbox::InputManager::getManager()->parseInputFile(input_filename, input_db);
 
@@ -134,7 +132,7 @@ int main(
       /*
        * Retreive "Main" section of input db.
        */
-      boost::shared_ptr<tbox::Database> main_db(input_db->getDatabase("Main"));
+      std::shared_ptr<tbox::Database> main_db(input_db->getDatabase("Main"));
 
       const tbox::Dimension dim(static_cast<unsigned short>(3));
 
@@ -154,13 +152,13 @@ int main(
       /*
        * Create geometry and hierarchy objects.
        */
-      boost::shared_ptr<geom::CartesianGridGeometry> geometry(
+      std::shared_ptr<geom::CartesianGridGeometry> geometry(
          new geom::CartesianGridGeometry(
             dim,
             "Geometry",
             input_db->getDatabase("Geometry")));
 
-      boost::shared_ptr<hier::PatchHierarchy> hierarchy(
+      std::shared_ptr<hier::PatchHierarchy> hierarchy(
          new hier::PatchHierarchy(
             "Hierarchy",
             geometry,
@@ -177,32 +175,32 @@ int main(
       std::string fac_precond_name = fac_solver_name + "::fac_precond";
       std::string hypre_poisson_name = fac_ops_name + "::hypre_solver";
 
-      boost::shared_ptr<solv::CellPoissonHypreSolver> hypre_poisson(
+      std::shared_ptr<solv::CellPoissonHypreSolver> hypre_poisson(
          new solv::CellPoissonHypreSolver(
             dim,
             hypre_poisson_name,
             input_db->isDatabase("hypre_solver") ?
             input_db->getDatabase("hypre_solver") :
-            boost::shared_ptr<tbox::Database>()));
+            std::shared_ptr<tbox::Database>()));
 
-      boost::shared_ptr<solv::CellPoissonFACOps> fac_ops(
+      std::shared_ptr<solv::CellPoissonFACOps> fac_ops(
          new solv::CellPoissonFACOps(
             hypre_poisson,
             dim,
             fac_ops_name,
             input_db->isDatabase("fac_ops") ?
             input_db->getDatabase("fac_ops") :
-            boost::shared_ptr<tbox::Database>()));
+            std::shared_ptr<tbox::Database>()));
 
-      boost::shared_ptr<solv::FACPreconditioner> fac_precond(
+      std::shared_ptr<solv::FACPreconditioner> fac_precond(
          new solv::FACPreconditioner(
             fac_precond_name,
             fac_ops,
             input_db->isDatabase("fac_precond") ?
             input_db->getDatabase("fac_precond") :
-            boost::shared_ptr<tbox::Database>()));
+            std::shared_ptr<tbox::Database>()));
 
-      boost::shared_ptr<solv::CellPoissonFACSolver> fac_solver(
+      std::shared_ptr<solv::CellPoissonFACSolver> fac_solver(
          new solv::CellPoissonFACSolver(
             dim,
             fac_solver_name,
@@ -210,9 +208,9 @@ int main(
             fac_ops,
             input_db->isDatabase("fac_solver") ?
             input_db->getDatabase("fac_solver") :
-            boost::shared_ptr<tbox::Database>()));
+            std::shared_ptr<tbox::Database>()));
 
-      boost::shared_ptr<CVODEModel> cvode_model(
+      std::shared_ptr<CVODEModel> cvode_model(
          new CVODEModel(
             cvode_model_name,
             dim,
@@ -220,24 +218,24 @@ int main(
             input_db->getDatabase("CVODEModel"),
             geometry));
 
-      boost::shared_ptr<mesh::StandardTagAndInitialize> error_est(
+      std::shared_ptr<mesh::StandardTagAndInitialize> error_est(
          new mesh::StandardTagAndInitialize(
             "StandardTagAndInitialize",
             cvode_model.get(),
             input_db->getDatabase("StandardTagAndInitialize")));
 
-      boost::shared_ptr<mesh::BergerRigoutsos> box_generator(
+      std::shared_ptr<mesh::BergerRigoutsos> box_generator(
          new mesh::BergerRigoutsos(dim,
             input_db->getDatabase("BergerRigoutsos")));
 
-      boost::shared_ptr<mesh::TreeLoadBalancer> load_balancer(
+      std::shared_ptr<mesh::TreeLoadBalancer> load_balancer(
          new mesh::TreeLoadBalancer(
             dim,
             "LoadBalancer",
             input_db->getDatabase("LoadBalancer")));
       load_balancer->setSAMRAI_MPI(tbox::SAMRAI_MPI::getSAMRAIWorld());
 
-      boost::shared_ptr<mesh::GriddingAlgorithm> gridding_algorithm(
+      std::shared_ptr<mesh::GriddingAlgorithm> gridding_algorithm(
          new mesh::GriddingAlgorithm(
             hierarchy,
             "GriddingAlgorithm",
@@ -274,7 +272,7 @@ int main(
        * Setup timer manager for profiling code.
        */
       tbox::TimerManager::createManager(input_db->getDatabase("TimerManager"));
-      boost::shared_ptr<tbox::Timer> t_cvode_solve(
+      std::shared_ptr<tbox::Timer> t_cvode_solve(
          tbox::TimerManager::getManager()->
          getTimer("apps::main::cvode_solver"));
 
@@ -284,7 +282,7 @@ int main(
       int visit_number_procs_per_file=1;
       const std::string visit_dump_dirname 
          = "v."+input_filename.substr( 0, input_filename.rfind( "." ) );
-      boost::shared_ptr<appu::VisItDataWriter> visit_data_writer(
+      std::shared_ptr<appu::VisItDataWriter> visit_data_writer(
          new appu::VisItDataWriter(
             dim,
             "PFiSM VisIt Writer",
@@ -330,7 +328,7 @@ int main(
        * Compute maxNorm and L1Norm of initial vector
        */
       if (solution_logging) {
-         boost::shared_ptr<solv::SAMRAIVectorReal<double> > y_init(
+         std::shared_ptr<solv::SAMRAIVectorReal<double> > y_init(
             solv::Sundials_SAMRAIVector::getSAMRAIVector(solution_vector));
 
          tbox::pout << "\n\nBefore solve..." << endl;
@@ -377,9 +375,9 @@ int main(
           * Print statistics
           * Format:  time  max norm   l1 norm   l2 norm
           */
-         boost::shared_ptr<solv::SAMRAIVectorReal<double> > y_result(
+         std::shared_ptr<solv::SAMRAIVectorReal<double> > y_result(
             solv::Sundials_SAMRAIVector::getSAMRAIVector(solution_vector));
-         boost::shared_ptr<hier::PatchHierarchy> result_hierarchy(
+         std::shared_ptr<hier::PatchHierarchy> result_hierarchy(
             y_result->getPatchHierarchy());
 
          time[interval - 1] = actual_time;

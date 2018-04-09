@@ -1,5 +1,4 @@
 #load modeules
-module load boost
 module load hdf5
 module load cmake
 module load gcc
@@ -22,11 +21,10 @@ sh ../SAMRAI/configure CFLAGS="-O2 " CXXFLAGS="-O2 " \
             --disable-shared \
             --disable-rpath \
             --with-mpi-lib-dirs=$MPI_ROOT \
-            --with-boost=$OLCF_BOOST_ROOT \
             --with-hdf5=$OLCF_HDF5_ROOT \
             --with-hypre=$OLCF_HYPRE_ROOT \
             --with-sundials=$HOME/sundials/build_summitdev \
-            --prefix=$HOME/SAMRAI/SAMRAI-v3.11.2/build_summitdev
+            --prefix=$HOME/GIT/SAMRAI/build_summitdev
 
 gmake library
 gmake install

@@ -1,10 +1,10 @@
 #load modules
 module swap PrgEnv-pgi PrgEnv-gnu
+module swap gcc gcc/7.2.0
 module load craype-network-gemini
 module load cray-mpich
 module load cray-netcdf
 module load cray-hdf5
-module load boost
 module load cmake3/3.9.0
 
 #build SAMRAI from SAMRAI-v3.11.2/objs:
@@ -18,13 +18,13 @@ sh ../SAMRAI/configure CFLAGS="-O2 " CXXFLAGS="-O2 " \
             --disable-shared \
             --disable-rpath \
             --with-mpi-lib-dirs=$MPICH_DIR \
-            --with-boost=$BOOST_DIR \
             --with-hdf5=$HDF5_DIR \
             --with-hypre=$HOME/hypre/hypre-2.11.1/src/hypre_gnu \
             --with-sundials=$HOME/sundials/build_titan \
-            --prefix=$HOME/SAMRAI/SAMRAI-v3.11.2/build_titan
+            --prefix=$HOME/GIT/SAMRAI/build_titan
 
 gmake library
+gmake install
 
 #build code from PFiSM/build_titan
 ../scripts/doconfig_titan
