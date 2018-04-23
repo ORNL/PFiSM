@@ -1,0 +1,13 @@
+#!/bin/csh
+module load hdf5
+module load cmake/3.6.1
+module load gcc
+
+cmake -DCMAKE_CXX_COMPILER=mpicxx \
+        -DCMAKE_CC_COMPILER=mpicc \
+        -DCMAKE_Fortran_COMPILER=gfortran \
+        -D CMAKE_BUILD_TYPE=Debug \
+        -DSAMRAI_DIR=$HOME/GIT/SAMRAI/build_summitdev_gnu \
+        -DHYPRE_DIR=$HOME/hypre/summitdev_gnu_cpu \
+        -DSUNDIALS_DIR=$HOME/sundials/build_summitdev_gnu \
+	../source

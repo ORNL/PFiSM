@@ -1,16 +1,17 @@
 
 VPATH = $(HOME)/GIT/PFiSM/source
 
-HYPRE_DIR = $(HOME)/hypre/summitdev/install
+HYPRE_DIR = $(HOME)/hypre/summitdev_xl_gpu
+#HYPRE_DIR = $(HOME)/hypre/summitdev_xl_cpu
 SUNDIALS_DIR = $(HOME)/sundials/build_summitdev_xl
-SAMRAI_DIR = $(HOME)/SAMRAI/SAMRAI-v3.11.2/build_summitdev_xl
+SAMRAI_DIR = $(HOME)/GIT/SAMRAI/build_summitdev_xl
 
 include $(SAMRAI_DIR)/config/Makefile.config
 
 NVCC = nvcc
 CXX = mpicxx
 
-CXXFLAGS += 
+CXXFLAGS += -g -O0 -I $(HYPRE_DIR)/include
 LDLIBS= \
 	-L$(HYPRE_DIR)/lib -lHYPRE \
 	-L$(SUNDIALS_DIR)/lib -lsundials_cvode \
