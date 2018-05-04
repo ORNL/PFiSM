@@ -8,7 +8,6 @@
 
 #include "SAMRAI/geom/CartesianPatchGeometry.h"
 #include "SAMRAI/pdat/CellData.h"
-#include "SAMRAI/pdat/CellIndex.h"
 #include "SAMRAI/xfer/CoarsenAlgorithm.h"
 #include "SAMRAI/hier/CoarsenOperator.h"
 #include "SAMRAI/xfer/CoarsenSchedule.h"
@@ -27,17 +26,6 @@
 #include "SAMRAI/hier/VariableDatabase.h"
 
 using namespace std;
-
-// Define class version number
-#define CVODE_MODEL_VERSION (1)
-
-// This is used in the cell tagging routine.
-#ifndef TRUE
-#define TRUE (1)
-#endif
-#ifndef FALSE
-#define FALSE (0)
-#endif
 
 extern "C" {
 void SAMRAI_F77_FUNC(comprhs3d, COMPRHS3D) (
@@ -137,7 +125,6 @@ CVODEModel::CVODEModel(
    for(int i=0;i<d_dim.getValue()*2;i++){
       double a,b,g;
       d_soln_bc_corr_coeffs->getCoefficients(i,a,b,g);
-      //cout<<"a="<<a<<", b="<<b<<",g="<<g<<endl;
       g=0.;
       d_soln_bc_corr_coeffs->setRawCoefficients(i,a,b,g);
    }
@@ -153,12 +140,6 @@ CVODEModel::~CVODEModel()
 
    soln_samvect->freeVectorComponents();
    soln_samvect.reset();
-
-   // if (d_level_solver_allocated) delete d_level_solver;
-   // d_level_solver_allocated = false;
-   // if (d_FAC_solver_allocated) delete d_FAC_solver;
-   // d_FAC_solver_allocated = false;
-
 }
 
 /*************************************************************************
@@ -235,7 +216,7 @@ void CVODEModel::applyGradientDetector(
       TBOX_ASSERT(tag_data);
 
       // dumb implementation that tags all cells.
-      tag_data->fillAll(TRUE);
+      tag_data->fillAll(1);
    }
 }
 
@@ -393,7 +374,8 @@ int CVODEModel::evaluateRHSFunction(
                patch->getPatchData(d_diff_id)));
          std::shared_ptr<CellData<double> > rhs(
             SAMRAI_SHARED_PTR_CAST<CellData<double>, PatchData>(
-               patch->getPatchData(y_dot_samvect->getComponentDescriptorIndex(0))));
+               patch->getPatchData(
+                  y_dot_samvect->getComponentDescriptorIndex(0))));
          TBOX_ASSERT(y);
          TBOX_ASSERT(diff);
          TBOX_ASSERT(rhs);
@@ -451,7 +433,8 @@ int CVODEModel::evaluateRHSFunction(
  *****************************************************************/
 int CVODEModel::CVSpgmrPrecondSet(
    double t,
-   SundialsAbstractVector* y, // current value of the dependent variable vector, namely the predicted value of y(t)
+   SundialsAbstractVector* y, // current value of variable vector,
+                              // the predicted value of y(t)
    SundialsAbstractVector* fy,
    int jok,
    int* jcurPtr,
@@ -494,9 +477,9 @@ int CVODEModel::CVSpgmrPrecondSet(
     * with solution on finer level.
     */
    CoarsenAlgorithm fill_soln_interior_on_coarser(d_dim);
-   std::shared_ptr<CoarsenOperator> coarsen_op(d_grid_geometry->
-                                                 lookupCoarsenOperator(d_soln_var,
-                                                    "CONSERVATIVE_COARSEN"));
+   std::shared_ptr<CoarsenOperator> coarsen_op(
+      d_grid_geometry->lookupCoarsenOperator(d_soln_var,
+                                             "CONSERVATIVE_COARSEN"));
 
    fill_soln_interior_on_coarser.registerCoarsen(y_indx,
       y_indx,
@@ -560,10 +543,6 @@ int CVODEModel::CVSpgmrPrecondSet(
 
    } // level loop
 
-   /*
-    * Override internal implementation to set boundary condition coefficients with user-provided implementation
-    */
-
    d_FAC_solver->setCConstant(1.0 / gamma);
    d_FAC_solver->setDPatchDataId(d_diff_id);
 
@@ -614,8 +593,6 @@ int CVODEModel::CVSpgmrPrecondSolve(
       Sundials_SAMRAIVector::getSAMRAIVector(r));
    std::shared_ptr<SAMRAIVectorReal<double> > z_samvect(
       Sundials_SAMRAIVector::getSAMRAIVector(z));
-
-   int ret_val = 0;
 
    std::shared_ptr<PatchHierarchy> hierarchy(
       r_samvect->getPatchHierarchy());
@@ -737,6 +714,7 @@ int CVODEModel::CVSpgmrPrecondSolve(
            << endl;
    }
 
+   int ret_val = 0;
    if (converge != true) {
       ret_val = 1;
    }
@@ -912,8 +890,6 @@ void CVODEModel::putToRestart(
 {
    TBOX_ASSERT(restart_db);
 
-   restart_db->putInteger("CVODE_MODEL_VERSION", CVODE_MODEL_VERSION);
-
    restart_db->putDouble("d_diffusion_value", d_diffusion_value);
 }
 
@@ -933,15 +909,7 @@ void CVODEModel::getFromRestart()
    }
    std::shared_ptr<Database> db(root_db->getDatabase(d_object_name));
 
-   int ver = db->getInteger("CVODE_MODEL_VERSION");
-   if (ver != CVODE_MODEL_VERSION) {
-      TBOX_ERROR(
-         d_object_name << ":  "
-                       << "Restart file version different than class version.");
-   }
-
    d_diffusion_value = db->getDouble("d_diffusion_value");
-
 }
 
 /*************************************************************************

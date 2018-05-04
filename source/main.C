@@ -52,11 +52,9 @@ using namespace std;
 #include "CVODEModel.h"
 
 // CVODE includes
-#ifdef HAVE_SUNDIALS
 #ifndef included_cvspgmr_h
 #define included_cvspgmr_h
 #include "cvode/cvode_spgmr.h"
-#endif
 #endif
 
 using namespace SAMRAI;
@@ -98,14 +96,6 @@ int main(
     * then there will be memory leaks reported.
     */
    {
-      tbox::PIO::logOnlyNodeZero("cvode_test.log");
-
-#if !defined(HAVE_SUNDIALS) || !defined(HAVE_HYPRE)
-      tbox::pout << "SAMRAI library compiled WITHOUT CVODE -and- HYPRE...\n"
-                 << "SAMRAI was not configured with one, or both, of "
-                 << "these packages.  Cannot run this example." << endl;
-#else
-
       /*
        * Process command line arguments.
        */
@@ -118,16 +108,23 @@ int main(
          input_filename = argv[1];
       }
 
+      std::string run_name =
+         input_filename.substr( 0, input_filename.rfind( "." ) );
+
+      std::string log_file_name = run_name + ".log";
+      tbox::PIO::logOnlyNodeZero( log_file_name );
+
       /*
        * Create input database and parse all data in input file.
        */
       std::shared_ptr<tbox::InputDatabase> input_db(
          new tbox::InputDatabase("input_db"));
-      tbox::InputManager::getManager()->parseInputFile(input_filename, input_db);
+      tbox::InputManager::getManager()->parseInputFile(
+         input_filename, input_db);
 
-      /**************************************************************************
-      * Read input data and setup objects.
-      **************************************************************************/
+      /*
+       * Read input data and setup objects.
+       */
 
       /*
        * Retreive "Main" section of input db.
@@ -369,7 +366,9 @@ int main(
             cvode_solver->getActualFinalValueOfIndependentVariable();
          double dt =
             cvode_solver->getStepSizeForLastInternalStep();
-         tbox::pout << "# step = "<<interval<<", time = "<<actual_time<<", dt = "<<dt<<endl;
+         tbox::pout << "# step = "<<interval
+                    <<", time = "<<actual_time
+                    <<", dt = "<<dt<<endl;
 
          /*
           * Print statistics
@@ -445,8 +444,6 @@ int main(
       hierarchy.reset();
       geometry.reset();
       visit_data_writer.reset();
-
-#endif // HAVE_SUNDIALS
 
       tbox::pout << "\nPASSED:  cvode" << endl;
 
