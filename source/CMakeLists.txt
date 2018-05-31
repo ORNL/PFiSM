@@ -53,10 +53,10 @@ MACRO(m4tof filename)
   ENDIF()
 ENDMACRO(m4tof)
 
-m4tof(FACjacobian3d)
+m4tof(rhs3d)
 
 set(SOURCES ${CMAKE_SOURCE_DIR}/main.C ${CMAKE_SOURCE_DIR}/PFModel.C 
-            ${CMAKE_SOURCE_DIR}/fortran/FACjacobian3d.f )
+            ${CMAKE_SOURCE_DIR}/fortran/rhs3d.f )
 add_executable(main ${SOURCES} )
 
 target_link_libraries(main ${PROJECT_LINK_LIBS9} 
