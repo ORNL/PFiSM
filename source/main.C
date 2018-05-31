@@ -49,7 +49,7 @@ using namespace std;
 #include "SAMRAI/solv/Sundials_SAMRAIVector.h"
 #include "SAMRAI/appu/VisItDataWriter.h"
 
-#include "CVODEModel.h"
+#include "PFModel.h"
 
 // CVODE includes
 #ifndef included_cvspgmr_h
@@ -64,7 +64,7 @@ using namespace SAMRAI;
  * CVODESolver interface.  The main stages of this program are:
  *
  * (1)  Retrieving integration parameters from the input database.
- * (2)  Creating hierarchy, geometry, gridding, and CVODEModel
+ * (2)  Creating hierarchy, geometry, gridding, and PFModel
  *      objects.
  * (3)  Setting up the hierarchy configuration (grid configuration).
  * (4)  Setting the initial condition vector.
@@ -166,8 +166,8 @@ int main(
        * of the patch levels in the hierarchy.
        */
 
-      std::string cvode_model_name = "CVODEModel";
-      std::string fac_solver_name = cvode_model_name + ":FAC solver";
+      std::string pf_model_name = "PFModel";
+      std::string fac_solver_name = pf_model_name + ":FAC solver";
       std::string fac_ops_name = fac_solver_name + "::fac_ops";
       std::string fac_precond_name = fac_solver_name + "::fac_precond";
       std::string hypre_poisson_name = fac_ops_name + "::hypre_solver";
@@ -207,18 +207,18 @@ int main(
             input_db->getDatabase("fac_solver") :
             std::shared_ptr<tbox::Database>()));
 
-      std::shared_ptr<CVODEModel> cvode_model(
-         new CVODEModel(
-            cvode_model_name,
+      std::shared_ptr<PFModel> pf_model(
+         new PFModel(
+            pf_model_name,
             dim,
             fac_solver,
-            input_db->getDatabase("CVODEModel"),
+            input_db->getDatabase("PFModel"),
             geometry));
 
       std::shared_ptr<mesh::StandardTagAndInitialize> error_est(
          new mesh::StandardTagAndInitialize(
             "StandardTagAndInitialize",
-            cvode_model.get(),
+            pf_model.get(),
             input_db->getDatabase("StandardTagAndInitialize")));
 
       std::shared_ptr<mesh::BergerRigoutsos> box_generator(
@@ -285,26 +285,26 @@ int main(
             "PFiSM VisIt Writer",
             visit_dump_dirname,
             visit_number_procs_per_file));
-      cvode_model->registerVisItDataWriter(visit_data_writer);
+      pf_model->registerVisItDataWriter(visit_data_writer);
 
       /*
        * Setup solution vector.
        */
-      cvode_model->setupSolutionVector(hierarchy);
+      pf_model->setupSolutionVector(hierarchy);
       SundialsAbstractVector* solution_vector =
-         cvode_model->getSolutionVector();
+         pf_model->getSolutionVector();
 
       /*
        * Set initial conditions vector.
        */
-      cvode_model->setInitialConditions(solution_vector);
+      pf_model->setInitialConditions(solution_vector);
 
       /**************************************************************************
       * Setup CVODESolver object.
       **************************************************************************/
       solv::CVODESolver* cvode_solver =
          new solv::CVODESolver("cvode_solver",
-            cvode_model.get(),
+            pf_model.get(),
             uses_preconditioning);
 
       cvode_solver->setIterationType( CV_NEWTON );
@@ -402,10 +402,10 @@ int main(
        * Write summary information
        ************************************************************************/
       /*
-       * Write CVODEModel stats
+       * Write PFModel stats
        */
       if (solution_logging) {
-         cvode_model->printCounters(final_time);
+         pf_model->printCounters(final_time);
       }
       if (solution_logging) {
          /*
@@ -436,7 +436,7 @@ int main(
        */
       if (cvode_solver) delete cvode_solver;
 
-      cvode_model.reset();
+      pf_model.reset();
       gridding_algorithm.reset();
       error_est.reset();
       load_balancer.reset();

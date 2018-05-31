@@ -4,7 +4,7 @@
  *
  ************************************************************************/
 
-#include "CVODEModel.h"
+#include "PFModel.h"
 
 #include "SAMRAI/geom/CartesianPatchGeometry.h"
 #include "SAMRAI/pdat/CellData.h"
@@ -41,10 +41,10 @@ void SAMRAI_F77_FUNC(comprhs3d, COMPRHS3D) (
 
 /*************************************************************************
  *
- * Constructor and Destructor for CVODEModel class.
+ * Constructor and Destructor for PFModel class.
  *
  ************************************************************************/
-CVODEModel::CVODEModel(
+PFModel::PFModel(
    const string& object_name,
    const Dimension& dim,
    std::shared_ptr<CellPoissonFACSolver> fac_solver,
@@ -66,10 +66,12 @@ CVODEModel::CVODEModel(
    d_cur_cxt = variable_db->getContext("CURRENT");
    d_scr_cxt = variable_db->getContext("SCRATCH");
 
-   d_temperature_cur_id = variable_db->registerVariableAndContext(d_temperature_var,
+   d_temperature_cur_id = variable_db->registerVariableAndContext(
+         d_temperature_var,
          d_cur_cxt,
          IntVector(d_dim, 0));
-   d_temperature_scr_id = variable_db->registerVariableAndContext(d_temperature_var,
+   d_temperature_scr_id = variable_db->registerVariableAndContext(
+         d_temperature_var,
          d_scr_cxt,
          IntVector(d_dim, 1));
 
@@ -132,7 +134,7 @@ CVODEModel::CVODEModel(
    d_FAC_solver->setBcObject(d_temperature_bc_corr_coeffs);
 }
 
-CVODEModel::~CVODEModel()
+PFModel::~PFModel()
 {
    std::shared_ptr<SAMRAIVectorReal<double> > temperature_samvect =
       Sundials_SAMRAIVector::getSAMRAIVector(d_solution_vector);
@@ -147,7 +149,7 @@ CVODEModel::~CVODEModel()
  * Methods inherited from mesh::StandardTagAndInitStrategy.
  *
  ************************************************************************/
-void CVODEModel::initializeLevelData(
+void PFModel::initializeLevelData(
    const std::shared_ptr<PatchHierarchy>& hierarchy,
    const int level_number,
    const double time,
@@ -171,7 +173,7 @@ void CVODEModel::initializeLevelData(
    // but that must be set on the level, do it here.
 }
 
-void CVODEModel::resetHierarchyConfiguration(
+void PFModel::resetHierarchyConfiguration(
    const std::shared_ptr<PatchHierarchy>& hierarchy,
    const int coarsest_level,
    const int finest_level)
@@ -192,7 +194,7 @@ void CVODEModel::resetHierarchyConfiguration(
  * construct the hierarchy initially.
  *
  *************************************************************************/
-void CVODEModel::applyGradientDetector(
+void PFModel::applyGradientDetector(
    const std::shared_ptr<PatchHierarchy>& hierarchy,
    const int level_number,
    const double time,
@@ -225,7 +227,7 @@ void CVODEModel::applyGradientDetector(
  * Methods inherited from RefinePatchStrategy.
  *
  ***********************************************************************/
-void CVODEModel::setPhysicalBoundaryConditions(
+void PFModel::setPhysicalBoundaryConditions(
    Patch& patch,
    const double time,
    const IntVector& ghost_width_to_fill)
@@ -242,7 +244,7 @@ void CVODEModel::setPhysicalBoundaryConditions(
    //temperature_data->print(temperature_data->getGhostBox());
 }
 
-void CVODEModel::preprocessRefine(
+void PFModel::preprocessRefine(
    Patch& fine,
    const Patch& coarse,
    const Box& fine_box,
@@ -254,7 +256,7 @@ void CVODEModel::preprocessRefine(
    NULL_USE(ratio);
 }
 
-void CVODEModel::postprocessRefine(
+void PFModel::postprocessRefine(
    Patch& fine,
    const Patch& coarse,
    const Box& fine_box,
@@ -271,7 +273,7 @@ void CVODEModel::postprocessRefine(
  * Methods inherited from CoarsenPatchStrategy.
  *
  ************************************************************************/
-void CVODEModel::preprocessCoarsen(
+void PFModel::preprocessCoarsen(
    Patch& coarse,
    const Patch& fine,
    const Box& coarse_box,
@@ -283,7 +285,7 @@ void CVODEModel::preprocessCoarsen(
    NULL_USE(ratio);
 }
 
-void CVODEModel::postprocessCoarsen(
+void PFModel::postprocessCoarsen(
    Patch& coarse,
    const Patch& fine,
    const Box& coarse_box,
@@ -300,7 +302,7 @@ void CVODEModel::postprocessCoarsen(
  * Methods inherited from CVODEAbstractFunction
  *
  ************************************************************************/
-int CVODEModel::evaluateRHSFunction(
+int PFModel::evaluateRHSFunction(
    double time,
    SundialsAbstractVector* y,
    SundialsAbstractVector* y_dot)
@@ -431,7 +433,7 @@ int CVODEModel::evaluateRHSFunction(
  * level.
  *
  *****************************************************************/
-int CVODEModel::CVSpgmrPrecondSet(
+int PFModel::CVSpgmrPrecondSet(
    double t,
    SundialsAbstractVector* y, // current value of variable vector,
                               // the predicted value of y(t)
@@ -567,7 +569,7 @@ int CVODEModel::CVSpgmrPrecondSet(
  * return 1 otherwise.
  *
  *************************************************************************/
-int CVODEModel::CVSpgmrPrecondSolve(
+int PFModel::CVSpgmrPrecondSolve(
    double t,
    SundialsAbstractVector* y,
    SundialsAbstractVector* fy,
@@ -729,10 +731,10 @@ int CVODEModel::CVSpgmrPrecondSolve(
 
 /*************************************************************************
  *
- * Methods specific to CVODEModel class.
+ * Methods specific to PFModel class.
  *
  ************************************************************************/
-void CVODEModel::setupSolutionVector(
+void PFModel::setupSolutionVector(
    std::shared_ptr<PatchHierarchy> hierarchy)
 {
    /* create SAMRAIVector */
@@ -766,7 +768,7 @@ void CVODEModel::setupSolutionVector(
 }
 
 SundialsAbstractVector *
-CVODEModel::getSolutionVector(
+PFModel::getSolutionVector(
    void)
 {
    return d_solution_vector;
@@ -777,7 +779,7 @@ CVODEModel::getSolutionVector(
  * Set initial conditions for CVODE solver
  *
  *************************************************************************/
-void CVODEModel::setInitialConditions(
+void PFModel::setInitialConditions(
    SundialsAbstractVector* temperature_init)
 {
    std::shared_ptr<SAMRAIVectorReal<double> > temperature_init_samvect(
@@ -789,13 +791,15 @@ void CVODEModel::setInitialConditions(
    for (int ln = 0; ln < hierarchy->getNumberOfLevels(); ++ln) {
       std::shared_ptr<PatchLevel> level(hierarchy->getPatchLevel(ln));
 
-      for (int cn = 0; cn < temperature_init_samvect->getNumberOfComponents(); ++cn) {
+      for (int cn = 0; cn < temperature_init_samvect->getNumberOfComponents();
+           ++cn) {
          for (PatchLevel::iterator p(level->begin()); p != level->end(); ++p) {
             const std::shared_ptr<Patch>& patch = *p;
 
             std::shared_ptr<geom::CartesianPatchGeometry> pg(
-               SAMRAI_SHARED_PTR_CAST<geom::CartesianPatchGeometry, hier::PatchGeometry>(
-               patch->getPatchGeometry()));
+               SAMRAI_SHARED_PTR_CAST<geom::CartesianPatchGeometry,
+                                      hier::PatchGeometry>(
+                  patch->getPatchGeometry()));
             TBOX_ASSERT(pg);
 
             const double* h = pg->getDx();
@@ -844,7 +848,7 @@ void CVODEModel::setInitialConditions(
  *    3) number of precond solve calls
  *
  *************************************************************************/
-void CVODEModel::printCounters(const double final_time)
+void PFModel::printCounters(const double final_time)
 {
    std::vector<int> counters(3);
    counters[0] = d_number_rhs_eval;
@@ -866,7 +870,7 @@ void CVODEModel::printCounters(const double final_time)
  *************************************************************************
  */
 void
-CVODEModel::getFromInput(
+PFModel::getFromInput(
    std::shared_ptr<Database> input_db,
    bool is_from_restart)
 {
@@ -888,7 +892,7 @@ CVODEModel::getFromInput(
  *
  *************************************************************************
  */
-void CVODEModel::putToRestart(
+void PFModel::putToRestart(
    const std::shared_ptr<Database>& restart_db) const
 {
    TBOX_ASSERT(restart_db);
@@ -901,7 +905,7 @@ void CVODEModel::putToRestart(
  * Read data from restart database.
  *
  *************************************************************************/
-void CVODEModel::getFromRestart()
+void PFModel::getFromRestart()
 {
    std::shared_ptr<Database> root_db(
       RestartManager::getManager()->getRootDatabase());
@@ -921,7 +925,7 @@ void CVODEModel::getFromRestart()
  * be postprocessed by the VisIt tool.
  *
  *************************************************************************/
-void CVODEModel::registerVisItDataWriter(
+void PFModel::registerVisItDataWriter(
    std::shared_ptr<appu::VisItDataWriter> viz_writer)
 {
    TBOX_ASSERT(viz_writer);
@@ -939,12 +943,12 @@ void CVODEModel::registerVisItDataWriter(
  * Prints class data - writes out info in class if assertion is thrown
  *
  *************************************************************************/
-void CVODEModel::printClassData(
+void PFModel::printClassData(
    ostream& os) const
 {
    fflush(stdout);
 
-   os << "ptr CVODEModel = " << (CVODEModel *)this << endl;
+   os << "ptr PFModel = " << (PFModel *)this << endl;
 
    os << "d_object_name = " << d_object_name << endl;
 
@@ -955,7 +959,7 @@ void CVODEModel::printClassData(
    os << endl;
 }
 
-void CVODEModel::setPrintSolverInfo(
+void PFModel::setPrintSolverInfo(
    const bool info)
 {
    d_print_solver_info = info;

@@ -14,7 +14,7 @@ Main {
    uses_preconditioning     = TRUE
 }
 
-CVODEModel {
+PFModel {
    Temperature{
       diffusion_value       = 1.0e-5
    }

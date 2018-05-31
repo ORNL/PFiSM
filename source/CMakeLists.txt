@@ -55,7 +55,7 @@ ENDMACRO(m4tof)
 
 m4tof(FACjacobian3d)
 
-set(SOURCES ${CMAKE_SOURCE_DIR}/main.C ${CMAKE_SOURCE_DIR}/CVODEModel.C 
+set(SOURCES ${CMAKE_SOURCE_DIR}/main.C ${CMAKE_SOURCE_DIR}/PFModel.C 
             ${CMAKE_SOURCE_DIR}/fortran/FACjacobian3d.f )
 add_executable(main ${SOURCES} )
 

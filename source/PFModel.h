@@ -51,7 +51,7 @@ using namespace geom;
 using namespace solv;
 
 /**
- * The cvode_Model class tests the CVODE-SAMRAI interface using
+ * The PFModel class uses the CVODE-SAMRAI interface to solve the
  * problem: (1) y' = k * d/dx (dy/dx).
  *
  * The choice of other input parameters
@@ -77,7 +77,7 @@ using namespace solv;
  *       boundary conditions applied to this problem.
  */
 
-class CVODEModel:
+class PFModel:
    public StandardTagAndInitStrategy,
    public RefinePatchStrategy,
    public CoarsenPatchStrategy,
@@ -85,9 +85,9 @@ class CVODEModel:
 {
 public:
    /**
-    * Default constructor for CVODEModel.
+    * Default constructor for PFModel.
     */
-   CVODEModel(
+   PFModel(
       const std::string& object_name,
       const Dimension& dim,
       std::shared_ptr<CellPoissonFACSolver> fac_solver,
@@ -95,9 +95,9 @@ public:
       std::shared_ptr<CartesianGridGeometry> grid_geom);
 
    /**
-    * Empty destructor for CVODEModel.
+    * Empty destructor for PFModel.
     */
-   virtual ~CVODEModel();
+   virtual ~PFModel();
 
 /*************************************************************************
  *
@@ -350,7 +350,7 @@ public:
 
 /*************************************************************************
  *
- * Methods particular to CVODEModel class.
+ * Methods particular to PFModel class.
  *
  ************************************************************************/
 
@@ -381,7 +381,7 @@ public:
    void printCounters(const double);
 
    /**
-    * Writes state of CVODEModel object to the specified restart database.
+    * Writes state of PFModel object to the specified restart database.
     *
     * This routine is a concrete implementation of the function
     * declared in the tbox::Serializable abstract base class.
