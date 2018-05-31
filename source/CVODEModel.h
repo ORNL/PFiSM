@@ -440,7 +440,7 @@ private:
    /*
     * Variables
     */
-   std::shared_ptr<CellVariable<double> > d_soln_var;
+   std::shared_ptr<CellVariable<double> > d_temperature_var;
    std::shared_ptr<SideVariable<double> > d_diff_var;
 
    /*
@@ -452,15 +452,15 @@ private:
    /*
     * Patch Data ids
     */
-   int d_soln_cur_id;
-   int d_soln_scr_id;
+   int d_temperature_cur_id;
+   int d_temperature_scr_id;
    int d_diff_id;
 
    std::shared_ptr<CellPoissonFACSolver> d_FAC_solver;
    bool d_FAC_solver_allocated;
    bool d_level_solver_allocated;
 
-   double d_current_soln_time;
+   double d_current_temperature_time;
 
    /*
     * Print CVODE solver information
@@ -477,7 +477,7 @@ private:
    /*
     * Diffusion value
     */
-   double d_diffusion_value;
+   double d_temperature_diffusion;
 
    /*
     * Program counters
@@ -492,12 +492,12 @@ private:
    /*
     * Utilities to setup physical boundary conditions
     */
-   solv::CartesianRobinBcHelper* d_soln_bc_helper;
-   solv::LocationIndexRobinBcCoefs* d_soln_bc_coeffs;
+   solv::CartesianRobinBcHelper* d_temperature_bc_helper;
+   solv::LocationIndexRobinBcCoefs* d_temperature_bc_coeffs;
 
    /*
     * Utilities to setup physical boundary conditions
     * in FAC solver
     */
-   solv::LocationIndexRobinBcCoefs* d_soln_bc_corr_coeffs;
+   solv::LocationIndexRobinBcCoefs* d_temperature_bc_corr_coeffs;
 };

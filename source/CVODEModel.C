@@ -54,7 +54,7 @@ CVODEModel::CVODEModel(
    CoarsenPatchStrategy(),
    d_object_name(object_name),
    d_dim(dim),
-   d_soln_var(new CellVariable<double>(dim, "soln", 1)),
+   d_temperature_var(new CellVariable<double>(dim, "temperature", 1)),
    d_FAC_solver(fac_solver),
    d_grid_geometry(grid_geom)
 {
@@ -66,10 +66,10 @@ CVODEModel::CVODEModel(
    d_cur_cxt = variable_db->getContext("CURRENT");
    d_scr_cxt = variable_db->getContext("SCRATCH");
 
-   d_soln_cur_id = variable_db->registerVariableAndContext(d_soln_var,
+   d_temperature_cur_id = variable_db->registerVariableAndContext(d_temperature_var,
          d_cur_cxt,
          IntVector(d_dim, 0));
-   d_soln_scr_id = variable_db->registerVariableAndContext(d_soln_var,
+   d_temperature_scr_id = variable_db->registerVariableAndContext(d_temperature_var,
          d_scr_cxt,
          IntVector(d_dim, 1));
 
@@ -83,7 +83,7 @@ CVODEModel::CVODEModel(
    /*
     * Set default values for preconditioner.
     */
-   d_current_soln_time = 0.;
+   d_current_temperature_time = 0.;
 
    /*
     * Print solver data.
@@ -106,40 +106,40 @@ CVODEModel::CVODEModel(
    }
    getFromInput(input_db, is_from_restart);
 
-   d_soln_bc_helper =
+   d_temperature_bc_helper =
       new solv::CartesianRobinBcHelper(d_dim,"BChelper");
-   d_soln_bc_coeffs =
+   d_temperature_bc_coeffs =
       new solv::LocationIndexRobinBcCoefs(d_dim,"BCcoeffs",
          input_db->getDatabase( "BoundaryConditions" )); 
 
-   d_soln_bc_helper->setTargetDataId( d_soln_scr_id );
-   d_soln_bc_helper->setCoefImplementation( d_soln_bc_coeffs );
+   d_temperature_bc_helper->setTargetDataId( d_temperature_scr_id );
+   d_temperature_bc_helper->setCoefImplementation( d_temperature_bc_coeffs );
 
    /*
     * Boundary conditions for FAC solvers should be homogeneous
     * since solver computes corrections to current guess
     */
-   d_soln_bc_corr_coeffs =
+   d_temperature_bc_corr_coeffs =
       new solv::LocationIndexRobinBcCoefs(d_dim,"BCcorrcoeffs",
          input_db->getDatabase( "BoundaryConditions" ));
    for(int i=0;i<d_dim.getValue()*2;i++){
       double a,b,g;
-      d_soln_bc_corr_coeffs->getCoefficients(i,a,b,g);
+      d_temperature_bc_corr_coeffs->getCoefficients(i,a,b,g);
       g=0.;
-      d_soln_bc_corr_coeffs->setRawCoefficients(i,a,b,g);
+      d_temperature_bc_corr_coeffs->setRawCoefficients(i,a,b,g);
    }
 
-   d_FAC_solver->setBcObject(d_soln_bc_corr_coeffs);
+   d_FAC_solver->setBcObject(d_temperature_bc_corr_coeffs);
 }
 
 CVODEModel::~CVODEModel()
 {
-   std::shared_ptr<SAMRAIVectorReal<double> > soln_samvect =
+   std::shared_ptr<SAMRAIVectorReal<double> > temperature_samvect =
       Sundials_SAMRAIVector::getSAMRAIVector(d_solution_vector);
    Sundials_SAMRAIVector::destroySundialsVector(d_solution_vector);
 
-   soln_samvect->freeVectorComponents();
-   soln_samvect.reset();
+   temperature_samvect->freeVectorComponents();
+   temperature_samvect.reset();
 }
 
 /*************************************************************************
@@ -230,16 +230,16 @@ void CVODEModel::setPhysicalBoundaryConditions(
    const double time,
    const IntVector& ghost_width_to_fill)
 {
-   d_soln_bc_helper->setPhysicalBoundaryConditions(
+   d_temperature_bc_helper->setPhysicalBoundaryConditions(
       patch,
       time,
       ghost_width_to_fill);
 
    //plog << "----Boundary Conditions "  << endl;
-   //std::shared_ptr<CellData<double> > soln_data(
+   //std::shared_ptr<CellData<double> > temperature_data(
    //   SAMRAI_SHARED_PTR_CAST<CellData<double>, PatchData>(
-   //      patch.getPatchData(d_soln_scr_id)));
-   //soln_data->print(soln_data->getGhostBox());
+   //      patch.getPatchData(d_temperature_scr_id)));
+   //temperature_data->print(temperature_data->getGhostBox());
 }
 
 void CVODEModel::preprocessRefine(
@@ -333,17 +333,17 @@ int CVODEModel::evaluateRHSFunction(
    std::shared_ptr<RefineAlgorithm> bdry_fill_alg(
       new RefineAlgorithm());
    std::shared_ptr<RefineOperator> refine_op(
-      d_grid_geometry->lookupRefineOperator(d_soln_var,
+      d_grid_geometry->lookupRefineOperator(d_temperature_var,
                                             "CONSERVATIVE_LINEAR_REFINE"));
-   bdry_fill_alg->registerRefine(d_soln_scr_id,  // dest
+   bdry_fill_alg->registerRefine(d_temperature_scr_id,  // dest
       y_samvect->getComponentDescriptorIndex(0), //src
-      d_soln_scr_id,                            // scratch
+      d_temperature_scr_id,                            // scratch
       refine_op);
 
    for (int ln = hierarchy->getFinestLevelNumber(); ln >= 0; --ln) {
       std::shared_ptr<PatchLevel> level(hierarchy->getPatchLevel(ln));
-      if (!level->checkAllocated(d_soln_scr_id)) {
-         level->allocatePatchData(d_soln_scr_id);
+      if (!level->checkAllocated(d_temperature_scr_id)) {
+         level->allocatePatchData(d_temperature_scr_id);
       }
 
       // Note:  a pointer to "this" tells the refine schedule to invoke
@@ -368,7 +368,7 @@ int CVODEModel::evaluateRHSFunction(
 
          std::shared_ptr<CellData<double> > y(
             SAMRAI_SHARED_PTR_CAST<CellData<double>, PatchData>(
-               patch->getPatchData(d_soln_scr_id)));
+               patch->getPatchData(d_temperature_scr_id)));
          std::shared_ptr<SideData<double> > diff(
             SAMRAI_SHARED_PTR_CAST<SideData<double>, PatchData>(
                patch->getPatchData(d_diff_id)));
@@ -410,14 +410,14 @@ int CVODEModel::evaluateRHSFunction(
     * Deallocate scratch space.
     */
    for (int ln = hierarchy->getFinestLevelNumber(); ln >= 0; --ln) {
-      hierarchy->getPatchLevel(ln)->deallocatePatchData(d_soln_scr_id);
+      hierarchy->getPatchLevel(ln)->deallocatePatchData(d_temperature_scr_id);
    }
 
    /*
     * record current time and increment counter for number of RHS
     * evaluations.
     */
-   d_current_soln_time = time;
+   d_current_temperature_time = time;
    ++d_number_rhs_eval;
 
    return 0;
@@ -463,25 +463,25 @@ int CVODEModel::CVSpgmrPrecondSet(
    /*
     * Construct refine algorithm to fill boundaries of solution vector
     */
-   //RefineAlgorithm fill_soln_vector_bounds;
+   //RefineAlgorithm fill_temperature_vector_bounds;
    //std::shared_ptr<RefineOperator> refine_op(d_grid_geometry->
-   //                                            lookupRefineOperator(d_soln_var,
+   //                                            lookupRefineOperator(d_temperature_var,
    //                                               "CONSERVATIVE_LINEAR_REFINE"));
-   //fill_soln_vector_bounds.registerRefine(d_soln_scr_id,
+   //fill_temperature_vector_bounds.registerRefine(d_temperature_scr_id,
    //   y_samvect->getComponentDescriptorIndex(0),
-   //   d_soln_scr_id,
+   //   d_temperature_scr_id,
    //   refine_op);
 
    /*
     * Construct coarsen algorithm to fill interiors on coarser levels
     * with solution on finer level.
     */
-   CoarsenAlgorithm fill_soln_interior_on_coarser(d_dim);
+   CoarsenAlgorithm fill_temperature_interior_on_coarser(d_dim);
    std::shared_ptr<CoarsenOperator> coarsen_op(
-      d_grid_geometry->lookupCoarsenOperator(d_soln_var,
+      d_grid_geometry->lookupCoarsenOperator(d_temperature_var,
                                              "CONSERVATIVE_COARSEN"));
 
-   fill_soln_interior_on_coarser.registerCoarsen(y_indx,
+   fill_temperature_interior_on_coarser.registerCoarsen(y_indx,
       y_indx,
       coarsen_op);
 
@@ -497,16 +497,16 @@ int CVODEModel::CVSpgmrPrecondSet(
       std::shared_ptr<PatchLevel> level(
          hierarchy->getPatchLevel(amr_level));
 
-      //std::shared_ptr<RefineSchedule> fill_soln_vector_bounds_sched =
-      //   fill_soln_vector_bounds.createSchedule(level,
+      //std::shared_ptr<RefineSchedule> fill_temperature_vector_bounds_sched =
+      //   fill_temperature_vector_bounds.createSchedule(level,
       //      amr_level - 1,
       //      hierarchy,
       //      this);
 
-      //if (!level->checkAllocated(d_soln_scr_id)) {
-      //   level->allocatePatchData(d_soln_scr_id);
+      //if (!level->checkAllocated(d_temperature_scr_id)) {
+      //   level->allocatePatchData(d_temperature_scr_id);
       //}
-      //fill_soln_vector_bounds_sched->fillData(t);
+      //fill_temperature_vector_bounds_sched->fillData(t);
 
       /*
        * Construct a coarsen schedule for all levels larger than coarsest,
@@ -517,11 +517,11 @@ int CVODEModel::CVSpgmrPrecondSet(
          std::shared_ptr<PatchLevel> coarser_level(
             hierarchy->getPatchLevel(amr_level - 1));
 
-         std::shared_ptr<CoarsenSchedule> fill_soln_interior_on_coarser_sched(
-            fill_soln_interior_on_coarser.createSchedule(coarser_level,
+         std::shared_ptr<CoarsenSchedule> fill_temperature_interior_on_coarser_sched(
+            fill_temperature_interior_on_coarser.createSchedule(coarser_level,
                level));
 
-         fill_soln_interior_on_coarser_sched->coarsenData();
+         fill_temperature_interior_on_coarser_sched->coarsenData();
       }
 
       for (PatchLevel::iterator p(level->begin()); p != level->end(); ++p) {
@@ -535,11 +535,11 @@ int CVODEModel::CVSpgmrPrecondSet(
                patch->getPatchData(d_diff_id)));
          TBOX_ASSERT(diffusion);
 
-         diffusion->fillAll(d_diffusion_value);
+         diffusion->fillAll(d_temperature_diffusion);
 
       } // patch loop
 
-      //level->deallocatePatchData(d_soln_scr_id);
+      //level->deallocatePatchData(d_temperature_scr_id);
 
    } // level loop
 
@@ -611,8 +611,8 @@ int CVODEModel::CVSpgmrPrecondSolve(
    for (int ln = hierarchy->getFinestLevelNumber(); ln >= 0; --ln) {
       std::shared_ptr<PatchLevel> level(hierarchy->getPatchLevel(ln));
 
-      if (!level->checkAllocated(d_soln_scr_id)) {
-         level->allocatePatchData(d_soln_scr_id);
+      if (!level->checkAllocated(d_temperature_scr_id)) {
+         level->allocatePatchData(d_temperature_scr_id);
       }
 
       for (PatchLevel::iterator p(level->begin()); p != level->end(); ++p) {
@@ -640,11 +640,11 @@ int CVODEModel::CVSpgmrPrecondSolve(
          math_ops.scale(r_data, 1.0 / gamma, r_data, r_data->getBox());
 
          /*
-          * Copy interior data from z vector to soln_scratch
+          * Copy interior data from z vector to temperature_scratch
           */
          std::shared_ptr<CellData<double> > z_scr_data(
             SAMRAI_SHARED_PTR_CAST<CellData<double>, PatchData>(
-               patch->getPatchData(d_soln_scr_id)));
+               patch->getPatchData(d_temperature_scr_id)));
          TBOX_ASSERT(z_scr_data);
          z_scr_data->fillAll(0.);
       }
@@ -676,7 +676,7 @@ int CVODEModel::CVSpgmrPrecondSolve(
 
    const int coarsest_solve_ln = 0;
    const int finest_solve_ln = hierarchy->getFinestLevelNumber();
-   bool converge = d_FAC_solver->solveSystem(d_soln_scr_id,
+   bool converge = d_FAC_solver->solveSystem(d_temperature_scr_id,
          r_indx,
          hierarchy,
          coarsest_solve_ln,
@@ -696,12 +696,12 @@ int CVODEModel::CVSpgmrPrecondSolve(
    /******************************************************************
    *
    * The FAC solver has computed a solution to z but it is stored
-   * in the soln_scratch data space.  Copy it from soln_scratch back
+   * in the temperature_scratch data space.  Copy it from temperature_scratch back
    * into the z vector, including ghost values
    *
    ******************************************************************/
    math::HierarchyCellDataOpsReal<double> cell_ops( hierarchy );
-   cell_ops.copyData( z_indx, d_soln_scr_id, false);
+   cell_ops.copyData( z_indx, d_temperature_scr_id, false);
 
    if (d_print_solver_info) {
       double avg_convergence, final_convergence;
@@ -736,20 +736,20 @@ void CVODEModel::setupSolutionVector(
    std::shared_ptr<PatchHierarchy> hierarchy)
 {
    /* create SAMRAIVector */
-   std::shared_ptr<SAMRAIVectorReal<double> > soln_samvect(
+   std::shared_ptr<SAMRAIVectorReal<double> > temperature_samvect(
       new SAMRAIVectorReal<double>(
          "solution",
          hierarchy,
          0,
          hierarchy->getFinestLevelNumber()));
-   soln_samvect->addComponent(d_soln_var, d_soln_cur_id);
+   temperature_samvect->addComponent(d_temperature_var, d_temperature_cur_id);
 
    /* allocate memory for vectors. */
-   soln_samvect->allocateVectorData();
+   temperature_samvect->allocateVectorData();
 
    /* create SundialsAbstractVector */
    d_solution_vector =
-      Sundials_SAMRAIVector::createSundialsVector(soln_samvect);
+      Sundials_SAMRAIVector::createSundialsVector(temperature_samvect);
 
    /*
     * Allocate memory for preconditioner variables.
@@ -778,18 +778,18 @@ CVODEModel::getSolutionVector(
  *
  *************************************************************************/
 void CVODEModel::setInitialConditions(
-   SundialsAbstractVector* soln_init)
+   SundialsAbstractVector* temperature_init)
 {
-   std::shared_ptr<SAMRAIVectorReal<double> > soln_init_samvect(
-      Sundials_SAMRAIVector::getSAMRAIVector(soln_init));
+   std::shared_ptr<SAMRAIVectorReal<double> > temperature_init_samvect(
+      Sundials_SAMRAIVector::getSAMRAIVector(temperature_init));
 
    std::shared_ptr<PatchHierarchy> hierarchy(
-      soln_init_samvect->getPatchHierarchy());
+      temperature_init_samvect->getPatchHierarchy());
 
    for (int ln = 0; ln < hierarchy->getNumberOfLevels(); ++ln) {
       std::shared_ptr<PatchLevel> level(hierarchy->getPatchLevel(ln));
 
-      for (int cn = 0; cn < soln_init_samvect->getNumberOfComponents(); ++cn) {
+      for (int cn = 0; cn < temperature_init_samvect->getNumberOfComponents(); ++cn) {
          for (PatchLevel::iterator p(level->begin()); p != level->end(); ++p) {
             const std::shared_ptr<Patch>& patch = *p;
 
@@ -805,7 +805,7 @@ void CVODEModel::setInitialConditions(
              */
             std::shared_ptr<CellData<double> > y_init(
                SAMRAI_SHARED_PTR_CAST<CellData<double>, PatchData>(
-                  soln_init_samvect->getComponentPatchData(cn, *patch)));
+                  temperature_init_samvect->getComponentPatchData(cn, *patch)));
             TBOX_ASSERT(y_init);
 
             const hier::Box patch_box = patch->getBox();
@@ -829,7 +829,7 @@ void CVODEModel::setInitialConditions(
                   patch->getPatchData(d_diff_id)));
             TBOX_ASSERT(diffusion);
 
-            diffusion->fillAll(d_diffusion_value);
+            diffusion->fillAll(d_temperature_diffusion);
          }
       }
    }
@@ -872,7 +872,10 @@ CVODEModel::getFromInput(
 {
    NULL_USE(is_from_restart);
 
-   d_diffusion_value = input_db->getDouble("diffusion_value");
+   std::shared_ptr<Database> temperature_db(
+      input_db->getDatabase("Temperature"));
+
+   d_temperature_diffusion = temperature_db->getDouble("diffusion_value");
 
    d_print_solver_info =
       input_db->getBoolWithDefault("print_solver_info", d_print_solver_info);
@@ -890,7 +893,7 @@ void CVODEModel::putToRestart(
 {
    TBOX_ASSERT(restart_db);
 
-   restart_db->putDouble("d_diffusion_value", d_diffusion_value);
+   restart_db->putDouble("d_temperature_diffusion", d_temperature_diffusion);
 }
 
 /*************************************************************************
@@ -909,7 +912,7 @@ void CVODEModel::getFromRestart()
    }
    std::shared_ptr<Database> db(root_db->getDatabase(d_object_name));
 
-   d_diffusion_value = db->getDouble("d_diffusion_value");
+   d_temperature_diffusion = db->getDouble("d_temperature_diffusion");
 }
 
 /*************************************************************************
@@ -927,7 +930,7 @@ void CVODEModel::registerVisItDataWriter(
    if (d_visit_writer) {
       d_visit_writer->
          registerPlotQuantity("temperature", "SCALAR",
-         d_soln_cur_id, 0);
+         d_temperature_cur_id, 0);
    }
 }
 
@@ -945,10 +948,10 @@ void CVODEModel::printClassData(
 
    os << "d_object_name = " << d_object_name << endl;
 
-   os << "d_soln_cur_id = " << d_soln_cur_id << endl;
-   os << "d_soln_scr_id = " << d_soln_scr_id << endl;
+   os << "d_temperature_cur_id = " << d_temperature_cur_id << endl;
+   os << "d_temperature_scr_id = " << d_temperature_scr_id << endl;
 
-   os << "d_diffusion_value = " << d_diffusion_value << endl;
+   os << "d_temperature_diffusion = " << d_temperature_diffusion << endl;
    os << endl;
 }
 
