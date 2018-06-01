@@ -15,19 +15,43 @@ Main {
 }
 
 PFModel {
-   Temperature{
-      diffusion_value       = 1.0e-5
+
+   PFM{
+      epsilon = 1.77669990185572 // sqrt(6.*delta*L*Gamma/Tm)
+      well_height = 0.022017765260778047 // ((eps/delta)**2)/32
+      mobility = 1.985e-3 // muk*Tm/(6.*delta*L)
+      initial_solid_fraction = 0.05
    }
+
+   Temperature{
+      initial_value     = 1000.
+      diffusion_coeff   = 1.e-3 // [cm^2/s]
+      melting           = 921.12
+      latent_heat       = 9.5e3 // rho*L in [J/mol]
+      cp                = 2.58e1 // rho*Cp in [J/mol*K]
+   }
+
+   molar_volume = 1.e-5 // [m^3/mol]
 
    print_solver_info    = FALSE
 
    BoundaryConditions {
-      boundary_0 = "slope", "0."
-      boundary_1 = "slope", "0."
-      boundary_2 = "value", "1."
-      boundary_3 = "slope", "2."
-      boundary_4 = "slope", "0."
-      boundary_5 = "slope", "0."
+      Temperature{
+         boundary_0 = "slope", "0.0"
+         boundary_1 = "slope", "0.0"
+         boundary_2 = "slope", "0.0"
+         boundary_3 = "slope", "0.0"
+         boundary_4 = "slope", "-1.e-4"
+         boundary_5 = "slope", "-1.e-6"
+      }
+      Phase{
+         boundary_0 = "slope", "0"
+         boundary_1 = "slope", "0"
+         boundary_2 = "slope", "0"
+         boundary_3 = "slope", "0"
+         boundary_4 = "slope", "0."
+         boundary_5 = "slope", "0."
+      }
    }
 
 }
@@ -70,9 +94,9 @@ TimerManager {
 }
 
 Geometry {
-   domain_boxes  = [ (0,0,0) , (19,19,19) ]
+   domain_boxes  = [ (0,0,0) , (29,29,59) ]
    x_lo          = 0.e0 , 0.e0 , 0.e0 // lower end of computational domain.
-   x_up          = 1. , 1. , 1. // upper end of computational domain.
+   x_up          = 90. , 90. , 180. // upper end of computational domain.
 }
 
 PatchHierarchy {

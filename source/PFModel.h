@@ -90,7 +90,8 @@ public:
    PFModel(
       const std::string& object_name,
       const Dimension& dim,
-      std::shared_ptr<CellPoissonFACSolver> fac_solver,
+      std::shared_ptr<CellPoissonFACSolver> fac_solver_temperature,
+      std::shared_ptr<CellPoissonFACSolver> fac_solver_phase,
       std::shared_ptr<Database> input_db,
       std::shared_ptr<CartesianGridGeometry> grid_geom);
 
@@ -441,7 +442,8 @@ private:
     * Variables
     */
    std::shared_ptr<CellVariable<double> > d_temperature_var;
-   std::shared_ptr<SideVariable<double> > d_diff_var;
+   std::shared_ptr<CellVariable<double> > d_phase_var;
+   std::shared_ptr<CellVariable<double> > d_cfield_phase_var;
 
    /*
     * Variable Contexts
@@ -454,13 +456,17 @@ private:
     */
    int d_temperature_cur_id;
    int d_temperature_scr_id;
-   int d_diff_id;
+   int d_phase_cur_id;
+   int d_phase_scr_id;
+   int d_cfield_phase_id;
 
-   std::shared_ptr<CellPoissonFACSolver> d_FAC_solver;
+   std::shared_ptr<CellPoissonFACSolver> d_FAC_solver_temperature;
+   std::shared_ptr<CellPoissonFACSolver> d_FAC_solver_phase;
+
    bool d_FAC_solver_allocated;
    bool d_level_solver_allocated;
 
-   double d_current_temperature_time;
+   double d_current_time;
 
    /*
     * Print CVODE solver information
@@ -479,6 +485,19 @@ private:
     */
    double d_temperature_diffusion;
 
+   double d_init_solid_fraction;
+   double d_temperature_init;
+
+   /*
+    * phase-field parameters
+    */
+   double d_epsilon;
+   double d_mobility;
+   double d_well_height;
+   double d_Tmelting;
+   double d_latent_heat;
+   double d_cp;
+
    /*
     * Program counters
     *   1 - number of RHS evaluations
@@ -495,9 +514,19 @@ private:
    solv::CartesianRobinBcHelper* d_temperature_bc_helper;
    solv::LocationIndexRobinBcCoefs* d_temperature_bc_coeffs;
 
+   solv::CartesianRobinBcHelper* d_phase_bc_helper;
+   solv::LocationIndexRobinBcCoefs* d_phase_bc_coeffs;
+
    /*
     * Utilities to setup physical boundary conditions
     * in FAC solver
     */
    solv::LocationIndexRobinBcCoefs* d_temperature_bc_corr_coeffs;
+   solv::LocationIndexRobinBcCoefs* d_phase_bc_corr_coeffs;
+
+   void setCforPhase(
+      const std::shared_ptr<PatchHierarchy>& hierarchy,
+      std::shared_ptr<SAMRAIVectorReal<double> > y_samvect,
+      const double gamma);
+
 };
