@@ -56,23 +56,44 @@ PFModel {
 
 }
 
-fac_precond {
-   max_cycles           = 1
-   residual_tol         = 1.e-8
+PhaseFACsolver{
+   fac_precond {
+      residual_tol         = 1.e-4
+   }
+
+   fac_solver{
+      //enable_logging = TRUE
+   }
+
+   fac_ops{
+      //enable_logging = TRUE
+      coarse_solver_tolerance      = 1.e-2
+   }
+
+   hypre_solver {
+      use_smg              = FALSE
+      relative_residual_tol = 1.e-2
+   }
 }
 
-fac_solver{
-   enable_logging = TRUE
-}
+TemperatureFACsolver{
+   fac_precond {
+      residual_tol         = 1.e-4
+   }
 
-fac_ops{
-   enable_logging = TRUE
-   coarse_solver_tolerance      = 1.e-2
-}
+   fac_solver{
+      //enable_logging = TRUE
+   }
 
-hypre_solver {
-   use_smg              = FALSE
-   relative_residual_tol = 1.e-2
+   fac_ops{
+      //enable_logging = TRUE
+      coarse_solver_tolerance      = 1.e-2
+   }
+
+   hypre_solver {
+      use_smg              = FALSE
+      relative_residual_tol = 1.e-2
+   }
 }
 
 StandardTagAndInitialize{
@@ -100,7 +121,7 @@ Geometry {
 }
 
 PatchHierarchy {
-   max_levels              = 2 // Maximum number of levels in hierarchy.
+   max_levels              = 1 // Maximum number of levels in hierarchy.
 
 // Note: For the following regridding information, data is required for each
 //       potential in the patch hierarchy; i.e., levels 0 thru max_levels-1.
