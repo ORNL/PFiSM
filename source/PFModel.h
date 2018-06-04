@@ -38,7 +38,6 @@
 
 #include <vector>
 #include <iostream>
-//using namespace std;
 
 using namespace SAMRAI;
 using namespace tbox;
@@ -49,33 +48,6 @@ using namespace math;
 using namespace mesh;
 using namespace geom;
 using namespace solv;
-
-/**
- * The PFModel class uses the CVODE-SAMRAI interface to solve the
- * problem: (1) y' = k * d/dx (dy/dx).
- *
- * The choice of other input parameters
- * are specified through the input database.
- *
- * Input Parameters:
- *
- *    - \b Diffusion_coefficient
- *       specifies the diffusion coefficient to use when the
- *       has been specified that the diffusion equation will be
- *       solved.
- *
- *    - \b Initial_condition_type
- *       0 for constant initial conditions, 1 for sinusoidal initial
- *       conditions
- *
- *    - \b Initial_value
- *       specifies the initial value to be used for all grid points
- *       when constant initial conditions is specified
- *
- *    - \b Boundary_value
- *       specifies what value should be used for the dirichlet
- *       boundary conditions applied to this problem.
- */
 
 class PFModel:
    public StandardTagAndInitStrategy,
@@ -95,9 +67,6 @@ public:
       std::shared_ptr<Database> input_db,
       std::shared_ptr<CartesianGridGeometry> grid_geom);
 
-   /**
-    * Empty destructor for PFModel.
-    */
    virtual ~PFModel();
 
 /*************************************************************************
@@ -365,16 +334,12 @@ public:
    /**
     * Get pointer to the solution vector.
     */
-   SundialsAbstractVector *
-   getSolutionVector(
-      void);
+   SundialsAbstractVector* getSolutionVector();
 
    /**
     * Set initial conditions for problem.
     */
-   void
-   setInitialConditions(
-      SundialsAbstractVector* y_init);
+   void setInitialConditions();
 
    /**
     * Print program counters.
@@ -460,10 +425,15 @@ private:
    int d_phase_scr_id;
    int d_cfield_phase_id;
 
+   /*
+    * component indexes for SAMRAI vectors
+    */
+   const int d_temperature_component;
+   const int d_phase_component;
+
    std::shared_ptr<CellPoissonFACSolver> d_FAC_solver_temperature;
    std::shared_ptr<CellPoissonFACSolver> d_FAC_solver_phase;
 
-   bool d_FAC_solver_allocated;
    bool d_level_solver_allocated;
 
    double d_current_time;

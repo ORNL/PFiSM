@@ -60,8 +60,7 @@ using namespace std;
 using namespace SAMRAI;
 
 /*
- * The cvode_test program is a general skeleton for using the
- * CVODESolver interface.  The main stages of this program are:
+ * The main stages of this program are:
  *
  * (1)  Retrieving integration parameters from the input database.
  * (2)  Creating hierarchy, geometry, gridding, and PFModel
@@ -70,22 +69,19 @@ using namespace SAMRAI;
  * (4)  Setting the initial condition vector.
  * (5)  Creating a CVODESolver object.
  * (6)  Setting the integration parameters for CVODESolver.
- * (7)  Printing out to the log file the initial condition vector
- *      and computing some norm for checking purposes.
- * (8)  Solving the ODE system.
- * (9)  Printing out to the log file the solution vector produced
+ * (7)  Solving the ODE system.
+ * (8)  Printing out to the log file the solution vector produced
  *      by CVODE and computing some norms.
- * (10) Printing out the CVODE statistics.
- * (11) Cleaning up the memory allocated for the program.
+ * (9) Printing out the CVODE statistics.
+ * (10) Cleaning up the memory allocated for the program.
  */
 
 int main(
    int argc,
    char* argv[])
 {
-
    /*
-    * Initialize tbox::MPI and SAMRAI.  Enable logging.
+    * Initialize tbox::MPI and SAMRAI.
     */
    tbox::SAMRAI_MPI::init(&argc, &argv);
    tbox::SAMRAIManager::initialize();
@@ -121,10 +117,6 @@ int main(
          new tbox::InputDatabase("input_db"));
       tbox::InputManager::getManager()->parseInputFile(
          input_filename, input_db);
-
-      /*
-       * Read input data and setup objects.
-       */
 
       /*
        * Retreive "Main" section of input db.
@@ -165,7 +157,6 @@ int main(
        * Create gridding algorithm objects that will handle construction of
        * of the patch levels in the hierarchy.
        */
-
       std::string pf_model_name = "PFModel";
 
       std::string fac_solver_temperature_name =
@@ -334,20 +325,15 @@ int main(
       pf_model->registerVisItDataWriter(visit_data_writer);
 
       /*
-       * Setup solution vector.
+       * Setup solution vector, and initialize it.
        */
       pf_model->setupSolutionVector(hierarchy);
-      SundialsAbstractVector* solution_vector =
-         pf_model->getSolutionVector();
 
-      /*
-       * Set initial conditions vector.
-       */
-      pf_model->setInitialConditions(solution_vector);
+      pf_model->setInitialConditions();
 
-      /**************************************************************************
+      /***********************************************************************
       * Setup CVODESolver object.
-      **************************************************************************/
+      ***********************************************************************/
       solv::CVODESolver* cvode_solver =
          new solv::CVODESolver("cvode_solver",
             pf_model.get(),
@@ -364,24 +350,14 @@ int main(
       }
 
       cvode_solver->setInitialValueOfIndependentVariable(init_time);
+      SundialsAbstractVector* solution_vector =
+         pf_model->getSolutionVector();
       cvode_solver->setInitialConditionVector(solution_vector);
       cvode_solver->initialize(solution_vector);
 
-      /*
-       * Compute maxNorm and L1Norm of initial vector
-       */
-      if (solution_logging) {
-         std::shared_ptr<solv::SAMRAIVectorReal<double> > y_init(
-            solv::Sundials_SAMRAIVector::getSAMRAIVector(solution_vector));
-
-         tbox::pout << "\n\nBefore solve..." << endl;
-         tbox::pout << "Max Norm of y()= " << y_init->maxNorm() << endl;
-         tbox::pout << "L2 Norm of y()= " << y_init->L2Norm() << endl;
-      }
-
-      /**************************************************************************
+      /**********************************************************************
       * Start time-stepping.
-      **************************************************************************/
+      ***********************************************************************/
 
       std::vector<double> time(max_steps);
       std::vector<double> maxnorm(max_steps);
@@ -389,8 +365,7 @@ int main(
 
       double final_time = init_time;
       double print_time=0.;
-      int interval;
-      for (interval = 1; interval <= max_steps; ++interval) {
+      for (int interval = 1; interval <= max_steps; ++interval) {
 
          //tbox::plog << "interval = "<<interval<<endl;
 
@@ -463,7 +438,7 @@ int main(
                     << "  L1 Norm  \t"
                     << "  L2 Norm  " << endl;
 
-         for (interval = 0; interval < max_steps; ++interval) {
+         for (int interval = 0; interval < max_steps; ++interval) {
             tbox::pout.precision(18);
             tbox::pout << "  " << time[interval] << "  \t";
             tbox::pout.precision(6);
@@ -480,7 +455,7 @@ int main(
       /*
        * Memory cleanup.
        */
-      if (cvode_solver) delete cvode_solver;
+      delete cvode_solver;
 
       pf_model.reset();
       gridding_algorithm.reset();
@@ -490,9 +465,6 @@ int main(
       hierarchy.reset();
       geometry.reset();
       visit_data_writer.reset();
-
-      tbox::pout << "\nPASSED:  cvode" << endl;
-
    }
 
    /*

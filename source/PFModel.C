@@ -58,11 +58,6 @@ void SAMRAI_F77_FUNC(compcforphase, COMPCFORPHASE) (
 );
 }
 
-/*************************************************************************
- *
- * Constructor and Destructor for PFModel class.
- *
- ************************************************************************/
 PFModel::PFModel(
    const string& object_name,
    const Dimension& dim,
@@ -78,6 +73,8 @@ PFModel::PFModel(
    d_temperature_var(new CellVariable<double>(dim, "temperature", 1)),
    d_phase_var(new CellVariable<double>(dim, "phase", 1)),
    d_cfield_phase_var(new CellVariable<double>(dim, "cfield", 1)),
+   d_temperature_component(0),
+   d_phase_component(1),
    d_FAC_solver_temperature(fac_solver_temperature),
    d_FAC_solver_phase(fac_solver_phase),
    d_grid_geometry(grid_geom)
@@ -114,14 +111,8 @@ PFModel::PFModel(
          d_cur_cxt,
          IntVector(d_dim, 0));
 
-   /*
-    * Set default values for preconditioner.
-    */
    d_current_time = 0.;
 
-   /*
-    * Print solver data.
-    */
    d_print_solver_info = false;
 
    /*
@@ -297,12 +288,6 @@ void PFModel::setPhysicalBoundaryConditions(
       patch,
       time,
       ghost_width_to_fill);
-
-   //plog << "----Boundary Conditions "  << endl;
-   //std::shared_ptr<CellData<double> > temperature_data(
-   //   SAMRAI_SHARED_PTR_CAST<CellData<double>, PatchData>(
-   //      patch.getPatchData(d_temperature_scr_id)));
-   //temperature_data->print(temperature_data->getGhostBox());
 }
 
 void PFModel::preprocessRefine(
@@ -368,9 +353,7 @@ int PFModel::evaluateRHSFunction(
    SundialsAbstractVector* y,
    SundialsAbstractVector* y_dot)
 {
-   /*
-    * Convert Sundials vectors to SAMRAI vectors
-    */
+   // Convert Sundials vectors to SAMRAI vectors
    std::shared_ptr<SAMRAIVectorReal<double> > y_samvect(
       Sundials_SAMRAIVector::getSAMRAIVector(y));
    std::shared_ptr<SAMRAIVectorReal<double> > y_dot_samvect(
@@ -399,7 +382,7 @@ int PFModel::evaluateRHSFunction(
       d_grid_geometry->lookupRefineOperator(d_temperature_var,
                                             "CONSERVATIVE_LINEAR_REFINE"));
    bdry_fill_alg->registerRefine(d_temperature_scr_id, // dest
-      y_samvect->getComponentDescriptorIndex(0),       // src
+      y_samvect->getComponentDescriptorIndex(d_temperature_component), // src
       d_temperature_scr_id,                            // scratch
       refine_op);
 
@@ -407,7 +390,7 @@ int PFModel::evaluateRHSFunction(
       d_grid_geometry->lookupRefineOperator(d_phase_var,
                                             "CONSERVATIVE_LINEAR_REFINE"));
    bdry_fill_alg->registerRefine(d_phase_scr_id, // dest
-      y_samvect->getComponentDescriptorIndex(1), // src
+      y_samvect->getComponentDescriptorIndex(d_phase_component), // src
       d_phase_scr_id,                            // scratch
       phase_refine_op);
 
@@ -445,7 +428,8 @@ int PFModel::evaluateRHSFunction(
          std::shared_ptr<CellData<double> > rhs(
             SAMRAI_SHARED_PTR_CAST<CellData<double>, PatchData>(
                patch->getPatchData(
-                  y_dot_samvect->getComponentDescriptorIndex(1))));
+                  y_dot_samvect->getComponentDescriptorIndex(
+                     d_phase_component))));
          TBOX_ASSERT(y);
          TBOX_ASSERT(rhs);
 
@@ -485,11 +469,13 @@ int PFModel::evaluateRHSFunction(
          std::shared_ptr<CellData<double> > rhs(
             SAMRAI_SHARED_PTR_CAST<CellData<double>, PatchData>(
                patch->getPatchData(
-                  y_dot_samvect->getComponentDescriptorIndex(0))));
+                  y_dot_samvect->getComponentDescriptorIndex(
+                     d_temperature_component))));
          std::shared_ptr<CellData<double> > phi_dot(
             SAMRAI_SHARED_PTR_CAST<CellData<double>, PatchData>(
                patch->getPatchData(
-                  y_dot_samvect->getComponentDescriptorIndex(1))));
+                  y_dot_samvect->getComponentDescriptorIndex(
+                     d_phase_component))));
 
          TBOX_ASSERT(y);
          TBOX_ASSERT(diff);
@@ -569,7 +555,7 @@ int PFModel::CVSpgmrPrecondSet(
    std::shared_ptr<SAMRAIVectorReal<double> > y_samvect(
       Sundials_SAMRAIVector::getSAMRAIVector(y));
 
-   int y_indx = y_samvect->getComponentDescriptorIndex(0);
+   int y_indx = y_samvect->getComponentDescriptorIndex(d_temperature_component);
 
    /*
     * Construct refine algorithm to fill boundaries of solution vector
@@ -696,8 +682,10 @@ int PFModel::CVSpgmrPrecondSolve(
    std::shared_ptr<PatchHierarchy> hierarchy(
       r_samvect->getPatchHierarchy());
 
-   int r0_indx = r_samvect->getComponentDescriptorIndex(0);
-   int z0_indx = z_samvect->getComponentDescriptorIndex(0);
+   int r0_indx = r_samvect->getComponentDescriptorIndex(
+                    d_temperature_component);
+   int z0_indx = z_samvect->getComponentDescriptorIndex(
+                    d_temperature_component);
    /*
     * We need to supply to the FAC solver a "version" of the z vector
     * that contains ghost cells.  The operations below allocate
@@ -743,8 +731,8 @@ int PFModel::CVSpgmrPrecondSolve(
       }
    }
 
-   int r1_indx = r_samvect->getComponentDescriptorIndex(1);
-   int z1_indx = z_samvect->getComponentDescriptorIndex(1);
+   int r1_indx = r_samvect->getComponentDescriptorIndex(d_phase_component);
+   int z1_indx = z_samvect->getComponentDescriptorIndex(d_phase_component);
 
   for (int ln = hierarchy->getFinestLevelNumber(); ln >= 0; --ln) {
       std::shared_ptr<PatchLevel> level(hierarchy->getPatchLevel(ln));
@@ -942,11 +930,10 @@ PFModel::getSolutionVector()
  * Set initial conditions for CVODE solver
  *
  *************************************************************************/
-void PFModel::setInitialConditions(
-   SundialsAbstractVector* init)
+void PFModel::setInitialConditions()
 {
    std::shared_ptr<SAMRAIVectorReal<double> > init_samvect(
-      Sundials_SAMRAIVector::getSAMRAIVector(init));
+      Sundials_SAMRAIVector::getSAMRAIVector(d_solution_vector));
 
    std::shared_ptr<PatchHierarchy> hierarchy(
       init_samvect->getPatchHierarchy());
@@ -985,7 +972,7 @@ void PFModel::setInitialConditions(
           */
          std::shared_ptr<CellData<double> > phase_init(
             SAMRAI_SHARED_PTR_CAST<CellData<double>, PatchData>(
-               init_samvect->getComponentPatchData(1, *patch)));
+               init_samvect->getComponentPatchData(d_phase_component,*patch)));
          TBOX_ASSERT(phase_init);
 
          const hier::Box patch_box = patch->getBox();
@@ -1022,7 +1009,8 @@ void PFModel::setCforPhase(
 
          std::shared_ptr<CellData<double> > phi(
             SAMRAI_SHARED_PTR_CAST<CellData<double>, PatchData>(
-               patch->getPatchData(y_samvect->getComponentDescriptorIndex(1))));
+               patch->getPatchData(y_samvect->getComponentDescriptorIndex(
+                  d_phase_component))));
          std::shared_ptr<CellData<double> > cfield(
             SAMRAI_SHARED_PTR_CAST<CellData<double>, PatchData>(
                patch->getPatchData(d_cfield_phase_id)));
