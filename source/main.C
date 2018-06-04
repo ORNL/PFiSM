@@ -350,7 +350,7 @@ int main(
       }
 
       cvode_solver->setInitialValueOfIndependentVariable(init_time);
-      SundialsAbstractVector* solution_vector =
+      solv::SundialsAbstractVector* solution_vector =
          pf_model->getSolutionVector();
       cvode_solver->setInitialConditionVector(solution_vector);
       cvode_solver->initialize(solution_vector);

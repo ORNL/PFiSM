@@ -7,7 +7,7 @@
 #include "SAMRAI/SAMRAI_config.h"
 
 /*
- * Header file for SAMRAI classes referenced in this class.
+ * Header files for SAMRAI classes
  */
 #include "SAMRAI/hier/Box.h"
 #include "SAMRAI/pdat/CellVariable.h"
@@ -17,7 +17,6 @@
 #include "SAMRAI/hier/Patch.h"
 #include "SAMRAI/hier/PatchHierarchy.h"
 #include "SAMRAI/hier/PatchLevel.h"
-#include "SAMRAI/pdat/SideVariable.h"
 #include "SAMRAI/hier/VariableContext.h"
 #include "SAMRAI/xfer/RefineAlgorithm.h"
 #include "SAMRAI/xfer/RefineSchedule.h"
@@ -40,20 +39,12 @@
 #include <iostream>
 
 using namespace SAMRAI;
-using namespace tbox;
-using namespace hier;
-using namespace xfer;
-using namespace pdat;
-using namespace math;
-using namespace mesh;
-using namespace geom;
-using namespace solv;
 
 class PFModel:
-   public StandardTagAndInitStrategy,
-   public RefinePatchStrategy,
-   public CoarsenPatchStrategy,
-   public CVODEAbstractFunctions
+   public mesh::StandardTagAndInitStrategy,
+   public xfer::RefinePatchStrategy,
+   public xfer::CoarsenPatchStrategy,
+   public solv::CVODEAbstractFunctions
 {
 public:
    /**
@@ -61,11 +52,11 @@ public:
     */
    PFModel(
       const std::string& object_name,
-      const Dimension& dim,
-      std::shared_ptr<CellPoissonFACSolver> fac_solver_temperature,
-      std::shared_ptr<CellPoissonFACSolver> fac_solver_phase,
-      std::shared_ptr<Database> input_db,
-      std::shared_ptr<CartesianGridGeometry> grid_geom);
+      const tbox::Dimension& dim,
+      std::shared_ptr<solv::CellPoissonFACSolver> fac_solver_temperature,
+      std::shared_ptr<solv::CellPoissonFACSolver> fac_solver_phase,
+      std::shared_ptr<tbox::Database> input_db,
+      std::shared_ptr<geom::CartesianGridGeometry> grid_geom);
 
    virtual ~PFModel();
 
@@ -99,13 +90,13 @@ public:
     */
    virtual void
    initializeLevelData(
-      const std::shared_ptr<PatchHierarchy>& hierarchy,
+      const std::shared_ptr<hier::PatchHierarchy>& hierarchy,
       const int level_number,
       const double time,
       const bool can_be_refined,
       const bool initial_time,
-      const std::shared_ptr<PatchLevel>& old_level =
-         std::shared_ptr<PatchLevel>(),
+      const std::shared_ptr<hier::PatchLevel>& old_level =
+         std::shared_ptr<hier::PatchLevel>(),
       const bool allocate_data = true);
 
    /**
@@ -128,7 +119,7 @@ public:
     */
    virtual void
    resetHierarchyConfiguration(
-      const std::shared_ptr<PatchHierarchy>& hierarchy,
+      const std::shared_ptr<hier::PatchHierarchy>& hierarchy,
       const int coarsest_level,
       const int finest_level);
 
@@ -146,7 +137,7 @@ public:
     */
    virtual void
    applyGradientDetector(
-      const std::shared_ptr<PatchHierarchy>& hierarchy,
+      const std::shared_ptr<hier::PatchHierarchy>& hierarchy,
       const int level_number,
       const double time,
       const int tag_index,
@@ -173,9 +164,9 @@ public:
     */
    virtual void
    setPhysicalBoundaryConditions(
-      Patch& patch,
+      hier::Patch& patch,
       const double time,
-      const IntVector& ghost_width_to_fill);
+      const hier::IntVector& ghost_width_to_fill);
 
    /**
     * Perform user-defined refining operations.  This member function
@@ -188,10 +179,10 @@ public:
     */
    virtual void
    preprocessRefine(
-      Patch& fine,
-      const Patch& coarse,
-      const Box& fine_box,
-      const IntVector& ratio);
+      hier::Patch& fine,
+      const hier::Patch& coarse,
+      const hier::Box& fine_box,
+      const hier::IntVector& ratio);
 
    /**
     * Perform user-defined refining operations.  This member function
@@ -204,19 +195,19 @@ public:
     */
    virtual void
    postprocessRefine(
-      Patch& fine,
-      const Patch& coarse,
-      const Box& fine_box,
-      const IntVector& ratio);
+      hier::Patch& fine,
+      const hier::Patch& coarse,
+      const hier::Box& fine_box,
+      const hier::IntVector& ratio);
 
    /**
     * Return maximum stencil width needed for user-defined
     * data interpolation operations.  Default is to return
     * zero, assuming no user-defined operations provided.
     */
-   virtual IntVector getRefineOpStencilWidth(const Dimension& dim) const
+   virtual hier::IntVector getRefineOpStencilWidth(const tbox::Dimension& dim) const
    {
-      return IntVector(dim, 0);
+      return hier::IntVector(dim, 0);
    }
 
 /*************************************************************************
@@ -234,10 +225,10 @@ public:
     */
    virtual void
    preprocessCoarsen(
-      Patch& coarse,
-      const Patch& fine,
-      const Box& coarse_box,
-      const IntVector& ratio);
+      hier::Patch& coarse,
+      const hier::Patch& fine,
+      const hier::Box& coarse_box,
+      const hier::IntVector& ratio);
 
    /**
     * Perform user-defined coarsening operations.  This member function
@@ -248,25 +239,25 @@ public:
     */
    virtual void
    postprocessCoarsen(
-      Patch& coarse,
-      const Patch& fine,
-      const Box& coarse_box,
-      const IntVector& ratio);
+      hier::Patch& coarse,
+      const hier::Patch& fine,
+      const hier::Box& coarse_box,
+      const hier::IntVector& ratio);
 
    /**
     * Return maximum stencil width needed for user-defined
     * data interpolation operations.  Default is to return
     * zero, assuming no user-defined operations provided.
     */
-   virtual IntVector getCoarsenOpStencilWidth(const Dimension& dim) const
+   virtual hier::IntVector getCoarsenOpStencilWidth(const tbox::Dimension& dim) const
    {
-      return IntVector(dim, 0);
+      return hier::IntVector(dim, 0);
    }
 
    /*!
     * @brief Return the dimension of this object.
     */
-   const Dimension& getDim() const
+   const tbox::Dimension& getDim() const
    {
       return d_dim;
    }
@@ -291,32 +282,32 @@ public:
    virtual int
    evaluateRHSFunction(
       double time,
-      SundialsAbstractVector* y,
-      SundialsAbstractVector* y_dot);
+      solv::SundialsAbstractVector* y,
+      solv::SundialsAbstractVector* y_dot);
 
    virtual int
    CVSpgmrPrecondSet(
       double t,
-      SundialsAbstractVector* y,
-      SundialsAbstractVector* fy,
+      solv::SundialsAbstractVector* y,
+      solv::SundialsAbstractVector* fy,
       int jok,
       int* jcurPtr,
       double gamma,
-      SundialsAbstractVector* vtemp1,
-      SundialsAbstractVector* vtemp2,
-      SundialsAbstractVector* vtemp3);
+      solv::SundialsAbstractVector* vtemp1,
+      solv::SundialsAbstractVector* vtemp2,
+      solv::SundialsAbstractVector* vtemp3);
 
    virtual int
    CVSpgmrPrecondSolve(
       double t,
-      SundialsAbstractVector* y,
-      SundialsAbstractVector* fy,
-      SundialsAbstractVector* r,
-      SundialsAbstractVector* z,
+      solv::SundialsAbstractVector* y,
+      solv::SundialsAbstractVector* fy,
+      solv::SundialsAbstractVector* r,
+      solv::SundialsAbstractVector* z,
       double gamma,
       double delta,
       int lr,
-      SundialsAbstractVector* vtemp);
+      solv::SundialsAbstractVector* vtemp);
 
 /*************************************************************************
  *
@@ -329,12 +320,15 @@ public:
     */
    void
    setupSolutionVector(
-      std::shared_ptr<PatchHierarchy> hierarchy);
+      std::shared_ptr<hier::PatchHierarchy> hierarchy);
 
    /**
     * Get pointer to the solution vector.
     */
-   SundialsAbstractVector* getSolutionVector();
+   solv::SundialsAbstractVector* getSolutionVector()
+   {
+      return d_solution_vector;
+   }
 
    /**
     * Set initial conditions for problem.
@@ -354,7 +348,7 @@ public:
     */
    void
    putToRestart(
-      const std::shared_ptr<Database>& restart_db) const;
+      const std::shared_ptr<tbox::Database>& restart_db) const;
 
    /**
     * Register a VisIt data writer so this class will write
@@ -384,7 +378,7 @@ private:
     */
    virtual void
    getFromInput(
-      std::shared_ptr<Database> input_db,
+      std::shared_ptr<tbox::Database> input_db,
       bool is_from_restart);
 
    virtual void
@@ -396,28 +390,28 @@ private:
     */
    std::string d_object_name;
 
-   const Dimension d_dim;
+   const tbox::Dimension d_dim;
 
    /*
     * Pointer to solution vector
     */
-   SundialsAbstractVector* d_solution_vector;
+   solv::SundialsAbstractVector* d_solution_vector;
 
    /*
     * Variables
     */
-   std::shared_ptr<CellVariable<double> > d_temperature_var;
-   std::shared_ptr<CellVariable<double> > d_phase_var;
-   std::shared_ptr<CellVariable<double> > d_cfield_phase_var;
+   std::shared_ptr<pdat::CellVariable<double> > d_temperature_var;
+   std::shared_ptr<pdat::CellVariable<double> > d_phase_var;
+   std::shared_ptr<pdat::CellVariable<double> > d_cfield_phase_var;
 
    /*
     * Variable Contexts
     */
-   std::shared_ptr<VariableContext> d_cur_cxt;
-   std::shared_ptr<VariableContext> d_scr_cxt;
+   std::shared_ptr<hier::VariableContext> d_cur_cxt;
+   std::shared_ptr<hier::VariableContext> d_scr_cxt;
 
    /*
-    * Patch Data ids
+    * hier::Patch Data ids
     */
    int d_temperature_cur_id;
    int d_temperature_scr_id;
@@ -431,8 +425,8 @@ private:
    const int d_temperature_component;
    const int d_phase_component;
 
-   std::shared_ptr<CellPoissonFACSolver> d_FAC_solver_temperature;
-   std::shared_ptr<CellPoissonFACSolver> d_FAC_solver_phase;
+   std::shared_ptr<solv::CellPoissonFACSolver> d_FAC_solver_temperature;
+   std::shared_ptr<solv::CellPoissonFACSolver> d_FAC_solver_phase;
 
    bool d_level_solver_allocated;
 
@@ -446,7 +440,7 @@ private:
    /*
     * Grid geometry
     */
-   std::shared_ptr<CartesianGridGeometry> d_grid_geometry;
+   std::shared_ptr<geom::CartesianGridGeometry> d_grid_geometry;
 
    std::shared_ptr<appu::VisItDataWriter> d_visit_writer;
 
@@ -495,8 +489,8 @@ private:
    solv::LocationIndexRobinBcCoefs* d_phase_bc_corr_coeffs;
 
    void setCforPhase(
-      const std::shared_ptr<PatchHierarchy>& hierarchy,
-      std::shared_ptr<SAMRAIVectorReal<double> > y_samvect,
+      const std::shared_ptr<hier::PatchHierarchy>& hierarchy,
+      std::shared_ptr<solv::SAMRAIVectorReal<double> > y_samvect,
       const double gamma);
 
 };
