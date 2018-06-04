@@ -50,6 +50,7 @@ using namespace std;
 #include "SAMRAI/appu/VisItDataWriter.h"
 
 #include "PFModel.h"
+#include "PfmFACSolver.h"
 
 // CVODE includes
 #ifndef included_cvspgmr_h
@@ -159,89 +160,13 @@ int main(
        */
       std::string pf_model_name = "PFModel";
 
-      std::string fac_solver_temperature_name =
-         pf_model_name + ":FAC solver_temperature";
-      std::string fac_ops_temperature_name =
-         fac_solver_temperature_name + "::fac_ops";
-      std::string fac_precond_temperature_name =
-         fac_solver_temperature_name + "::fac_precond";
-      std::string hypre_poisson_temperature_name =
-         fac_ops_temperature_name + "::hypre_solver";
-
-      std::string fac_solver_phase_name =
-         pf_model_name + ":FAC solver_phase";
-      std::string fac_ops_phase_name =
-         fac_solver_phase_name + "::fac_ops";
-      std::string fac_precond_phase_name =
-         fac_solver_phase_name + "::fac_precond";
-      std::string hypre_poisson_phase_name =
-         fac_ops_phase_name + "::hypre_solver";
-
-      std::shared_ptr<solv::CellPoissonHypreSolver> hypre_poisson_temperature(
-         new solv::CellPoissonHypreSolver(
-            dim,
-            hypre_poisson_temperature_name,
-            input_db->isDatabase("hypre_solver_temperature") ?
-            input_db->getDatabase("hypre_solver_temperature") :
-            std::shared_ptr<tbox::Database>()));
-      std::shared_ptr<solv::CellPoissonHypreSolver> hypre_poisson_phase(
-         new solv::CellPoissonHypreSolver(
-            dim,
-            hypre_poisson_phase_name,
-            input_db->isDatabase("hypre_solver_phase") ?
-            input_db->getDatabase("hypre_solver_phase") :
-            std::shared_ptr<tbox::Database>()));
-
-      std::shared_ptr<solv::CellPoissonFACOps> fac_ops_temperature(
-         new solv::CellPoissonFACOps(
-            hypre_poisson_temperature,
-            dim,
-            fac_ops_temperature_name,
-            input_db->isDatabase("fac_ops_temperature") ?
-            input_db->getDatabase("fac_ops_temperature") :
-            std::shared_ptr<tbox::Database>()));
-      std::shared_ptr<solv::CellPoissonFACOps> fac_ops_phase(
-         new solv::CellPoissonFACOps(
-            hypre_poisson_phase,
-            dim,
-            fac_ops_phase_name,
-            input_db->isDatabase("fac_ops_phase") ?
-            input_db->getDatabase("fac_ops_phase") :
-            std::shared_ptr<tbox::Database>()));
-
-      std::shared_ptr<solv::FACPreconditioner> fac_precond_temperature(
-         new solv::FACPreconditioner(
-            fac_precond_temperature_name,
-            fac_ops_temperature,
-            input_db->isDatabase("fac_precond_temperature") ?
-            input_db->getDatabase("fac_precond_temperature") :
-            std::shared_ptr<tbox::Database>()));
-      std::shared_ptr<solv::FACPreconditioner> fac_precond_phase(
-         new solv::FACPreconditioner(
-            fac_precond_phase_name,
-            fac_ops_phase,
-            input_db->isDatabase("fac_precond_phase") ?
-            input_db->getDatabase("fac_precond_phase") :
-            std::shared_ptr<tbox::Database>()));
-
+      PfmFACSolver phase_fac_solver("PhaseFACsolver", dim, input_db);
       std::shared_ptr<solv::CellPoissonFACSolver> fac_solver_temperature(
-         new solv::CellPoissonFACSolver(
-            dim,
-            fac_solver_temperature_name,
-            fac_precond_temperature,
-            fac_ops_temperature,
-            input_db->isDatabase("fac_solver_temperature") ?
-            input_db->getDatabase("fac_solver_temperature") :
-            std::shared_ptr<tbox::Database>()));
+         phase_fac_solver.getCellPoissonFACSolver());
+
+      PfmFACSolver temperature_fac_solver("TemperatureFACsolver",dim,input_db);
       std::shared_ptr<solv::CellPoissonFACSolver> fac_solver_phase(
-         new solv::CellPoissonFACSolver(
-            dim,
-            fac_solver_phase_name,
-            fac_precond_phase,
-            fac_ops_phase,
-            input_db->isDatabase("fac_solver_phase") ?
-            input_db->getDatabase("fac_solver_phase") :
-            std::shared_ptr<tbox::Database>()));
+         temperature_fac_solver.getCellPoissonFACSolver());
 
       std::shared_ptr<PFModel> pf_model(
          new PFModel(

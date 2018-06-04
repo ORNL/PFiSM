@@ -56,7 +56,8 @@ ENDMACRO(m4tof)
 m4tof(rhs3d)
 m4tof(computeCforPhase)
 
-set(SOURCES ${CMAKE_SOURCE_DIR}/main.C ${CMAKE_SOURCE_DIR}/PFModel.C 
+set(SOURCES ${CMAKE_SOURCE_DIR}/main.C ${CMAKE_SOURCE_DIR}/PFModel.C
+            ${CMAKE_SOURCE_DIR}/PfmFACSolver.C 
             ${CMAKE_SOURCE_DIR}/fortran/rhs3d.f
             ${CMAKE_SOURCE_DIR}/fortran/computeCforPhase.f )
 
