@@ -393,7 +393,6 @@ int main(
 
          /*
           * Print statistics
-          * Format:  time  max norm   l1 norm   l2 norm
           */
          std::shared_ptr<solv::SAMRAIVectorReal<double> > y_result(
             solv::Sundials_SAMRAIVector::getSAMRAIVector(solution_vector));

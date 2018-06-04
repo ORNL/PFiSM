@@ -359,7 +359,8 @@ int PFModel::evaluateRHSFunction(
    std::shared_ptr<solv::SAMRAIVectorReal<double> > y_dot_samvect(
       solv::Sundials_SAMRAIVector::getSAMRAIVector(y_dot));
 
-   std::shared_ptr<hier::PatchHierarchy> hierarchy(y_samvect->getPatchHierarchy());
+   std::shared_ptr<hier::PatchHierarchy>
+      hierarchy(y_samvect->getPatchHierarchy());
 
    if (d_print_solver_info) {
       tbox::pout << "\t\tEval RHS: "
@@ -416,7 +417,8 @@ int PFModel::evaluateRHSFunction(
    for (int ln = hierarchy->getFinestLevelNumber(); ln >= 0; --ln) {
       std::shared_ptr<hier::PatchLevel> level(hierarchy->getPatchLevel(ln));
 
-      for (hier::PatchLevel::iterator ip(level->begin()); ip != level->end(); ++ip) {
+      for (hier::PatchLevel::iterator ip(level->begin());
+           ip != level->end(); ++ip) {
          const std::shared_ptr<hier::Patch>& patch = *ip;
 
          std::shared_ptr<pdat::CellData<double> > phase(
@@ -430,7 +432,8 @@ int PFModel::evaluateRHSFunction(
                patch->getPatchData(
                   y_dot_samvect->getComponentDescriptorIndex(
                      d_phase_component))));
-         TBOX_ASSERT(y);
+         TBOX_ASSERT(phase);
+         TBOX_ASSERT(temperature);
          TBOX_ASSERT(rhs);
 
          const hier::Index ifirst(patch->getBox().lower());
@@ -461,7 +464,8 @@ int PFModel::evaluateRHSFunction(
    for (int ln = hierarchy->getFinestLevelNumber(); ln >= 0; --ln) {
       std::shared_ptr<hier::PatchLevel> level(hierarchy->getPatchLevel(ln));
 
-      for (hier::PatchLevel::iterator ip(level->begin()); ip != level->end(); ++ip) {
+      for (hier::PatchLevel::iterator ip(level->begin());
+           ip != level->end(); ++ip) {
          const std::shared_ptr<hier::Patch>& patch = *ip;
 
          std::shared_ptr<pdat::CellData<double> > y(
@@ -479,7 +483,6 @@ int PFModel::evaluateRHSFunction(
                      d_phase_component))));
 
          TBOX_ASSERT(y);
-         TBOX_ASSERT(diff);
          TBOX_ASSERT(rhs);
          TBOX_ASSERT(phi_dot);
 
@@ -557,30 +560,18 @@ int PFModel::CVSpgmrPrecondSet(
    std::shared_ptr<solv::SAMRAIVectorReal<double> > y_samvect(
       solv::Sundials_SAMRAIVector::getSAMRAIVector(y));
 
-   int y_indx = y_samvect->getComponentDescriptorIndex(d_temperature_component);
-
-   /*
-    * Construct refine algorithm to fill boundaries of solution vector
-    */
-   //RefineAlgorithm fill_temperature_vector_bounds;
-   //std::shared_ptr<xfer::RefineOperator> refine_op(d_grid_geometry->
-   //                                            lookupRefineOperator(d_temperature_var,
-   //                                               "CONSERVATIVE_LINEAR_REFINE"));
-   //fill_temperature_vector_bounds.registerRefine(d_temperature_scr_id,
-   //   y_samvect->getComponentDescriptorIndex(0),
-   //   d_temperature_scr_id,
-   //   refine_op);
+   int y_indx = y_samvect->getComponentDescriptorIndex(d_phase_component);
 
    /*
     * Construct coarsen algorithm to fill interiors on coarser levels
     * with solution on finer level.
     */
-   xfer::CoarsenAlgorithm fill_temperature_interior_on_coarser(d_dim);
+   xfer::CoarsenAlgorithm fill_phase_interior_on_coarser(d_dim);
    std::shared_ptr<hier::CoarsenOperator> coarsen_op(
-      d_grid_geometry->lookupCoarsenOperator(d_temperature_var,
+      d_grid_geometry->lookupCoarsenOperator(d_phase_var,
                                              "CONSERVATIVE_COARSEN"));
 
-   fill_temperature_interior_on_coarser.registerCoarsen(y_indx,
+   fill_phase_interior_on_coarser.registerCoarsen(y_indx,
       y_indx,
       coarsen_op);
 
@@ -593,17 +584,6 @@ int PFModel::CVSpgmrPrecondSet(
       std::shared_ptr<hier::PatchLevel> level(
          hierarchy->getPatchLevel(amr_level));
 
-      //std::shared_ptr<xfer::RefineSchedule> fill_temperature_vector_bounds_sched =
-      //   fill_temperature_vector_bounds.createSchedule(level,
-      //      amr_level - 1,
-      //      hierarchy,
-      //      this);
-
-      //if (!level->checkAllocated(d_temperature_scr_id)) {
-      //   level->allocatePatchData(d_temperature_scr_id);
-      //}
-      //fill_temperature_vector_bounds_sched->fillData(t);
-
       /*
        * Construct a coarsen schedule for all levels larger than coarsest,
        * and fill interiors of solution vector on coarser levels using fine
@@ -614,14 +594,12 @@ int PFModel::CVSpgmrPrecondSet(
             hierarchy->getPatchLevel(amr_level - 1));
 
          std::shared_ptr<xfer::CoarsenSchedule>
-            fill_temperature_interior_on_coarser_sched(
-               fill_temperature_interior_on_coarser.createSchedule(
+            fill_phase_interior_on_coarser_sched(
+               fill_phase_interior_on_coarser.createSchedule(
                   coarser_level, level));
 
-         fill_temperature_interior_on_coarser_sched->coarsenData();
+         fill_phase_interior_on_coarser_sched->coarsenData();
       }
-
-      //level->deallocatePatchData(d_temperature_scr_id);
 
    } // level loop
 
@@ -692,7 +670,7 @@ int PFModel::CVSpgmrPrecondSolve(
     * We need to supply to the FAC solver a "version" of the z vector
     * that contains ghost cells.  The operations below allocate
     * on the patches a scratch context of the solution vector z and
-    * fill it with z vector data
+    * fill it with 0 (initial guess for computed correction)
     */
    for (int ln = hierarchy->getFinestLevelNumber(); ln >= 0; --ln) {
       std::shared_ptr<hier::PatchLevel> level(hierarchy->getPatchLevel(ln));
@@ -701,23 +679,11 @@ int PFModel::CVSpgmrPrecondSolve(
          level->allocatePatchData(d_temperature_scr_id);
       }
 
-      for (hier::PatchLevel::iterator p(level->begin()); p != level->end(); ++p) {
+      for (hier::PatchLevel::iterator p(level->begin()); p!=level->end(); ++p) {
 
          const std::shared_ptr<hier::Patch>& patch = *p;
 
-         std::shared_ptr<pdat::CellData<double> > z_data(
-            SAMRAI_SHARED_PTR_CAST<pdat::CellData<double>, hier::PatchData>(
-               patch->getPatchData(z0_indx)));
-         TBOX_ASSERT(z_data);
-
-         /*
-          * Set initial guess for z here.
-          */
-         z_data->fillAll(0.);
-
-         /*
-          * Scale RHS by 1/gamma
-          */
+         // Scale RHS by 1/gamma
          math::PatchCellDataOpsReal<double> math_ops;
          std::shared_ptr<pdat::CellData<double> > r_data(
             SAMRAI_SHARED_PTR_CAST<pdat::CellData<double>, hier::PatchData>(
@@ -725,6 +691,7 @@ int PFModel::CVSpgmrPrecondSolve(
          TBOX_ASSERT(r_data);
          math_ops.scale(r_data, 1.0 / gamma, r_data, r_data->getBox());
 
+         // Set initial guess to 0
          std::shared_ptr<pdat::CellData<double> > z_scr_data(
             SAMRAI_SHARED_PTR_CAST<pdat::CellData<double>, hier::PatchData>(
                patch->getPatchData(d_temperature_scr_id)));
@@ -743,23 +710,11 @@ int PFModel::CVSpgmrPrecondSolve(
          level->allocatePatchData(d_phase_scr_id);
       }
 
-      for (hier::PatchLevel::iterator p(level->begin()); p != level->end(); ++p) {
+      for (hier::PatchLevel::iterator p(level->begin()); p!=level->end(); ++p) {
 
          const std::shared_ptr<hier::Patch>& patch = *p;
 
-         std::shared_ptr<pdat::CellData<double> > z_data(
-            SAMRAI_SHARED_PTR_CAST<pdat::CellData<double>, hier::PatchData>(
-               patch->getPatchData(z1_indx)));
-         TBOX_ASSERT(z_data);
-
-         /*
-          * Set initial guess for z here.
-          */
-         z_data->fillAll(0.);
-
-         /*
-          * Scale RHS by 1/gamma
-          */
+         // Scale RHS by 1/gamma
          math::PatchCellDataOpsReal<double> math_ops;
          std::shared_ptr<pdat::CellData<double> > r_data(
             SAMRAI_SHARED_PTR_CAST<pdat::CellData<double>, hier::PatchData>(
@@ -767,6 +722,7 @@ int PFModel::CVSpgmrPrecondSolve(
          TBOX_ASSERT(r_data);
          math_ops.scale(r_data, 1.0 / gamma, r_data, r_data->getBox());
 
+         //  Set initial guess to 0
          std::shared_ptr<pdat::CellData<double> > z_scr_data(
             SAMRAI_SHARED_PTR_CAST<pdat::CellData<double>, hier::PatchData>(
                patch->getPatchData(d_phase_scr_id)));
@@ -837,46 +793,19 @@ int PFModel::CVSpgmrPrecondSolve(
    }
 
    /******************************************************************
-   *
    * The FAC solver has computed a solution to z but it is stored
    * in the scratch data space.  Copy it from scratch back
    * into the z vector, including ghost values
-   *
    ******************************************************************/
    math::HierarchyCellDataOpsReal<double> cell_ops( hierarchy );
    cell_ops.copyData( z0_indx, d_temperature_scr_id, false);
    cell_ops.copyData( z1_indx, d_phase_scr_id, false);
-
-   if (d_print_solver_info) {
-      tbox::pout << "\t\tAfter FAC Solve (Az=r): "
-           << "\n   \t\t\tz_l2norm = " << z_samvect->L2Norm()
-           << "\n   \t\t\tz_maxnorm = " << z_samvect->maxNorm()
-           << '\n';
-      double avg_convergence, final_convergence;
-      d_FAC_solver_temperature->getConvergenceFactors(
-         avg_convergence, final_convergence);
-      tbox::pout << "\t\tAfter Temperature FAC Solve (Az=r): "
-           << "\n   \t\t\tResidual Norm: " 
-           << d_FAC_solver_temperature->getResidualNorm()
-           << "\n   \t\t\tConvergence Error: " << final_convergence
-           << '\n';
-      d_FAC_solver_phase->getConvergenceFactors(
-         avg_convergence, final_convergence);
-      tbox::pout << "\t\tAfter Temperature FAC Solve (Az=r): "
-           << "\n   \t\t\tResidual Norm: "
-           << d_FAC_solver_phase->getResidualNorm()
-           << "\n   \t\t\tConvergence Error: " << final_convergence
-           << endl;
-   }
 
    int ret_val = 0;
    if (converge != true) {
       ret_val = 1;
    }
 
-   /*
-    * Increment counter for number of precond solves
-    */
    ++d_number_precond_solve;
 
    return ret_val;
@@ -903,14 +832,12 @@ void PFModel::setupSolutionVector(
    /* allocate memory for vectors. */
    samvect->allocateVectorData();
 
-   /* create SundialsAbstractVector */
    d_solution_vector =
       solv::Sundials_SAMRAIVector::createSundialsVector(samvect);
 
    /*
     * Allocate memory for preconditioner variables.
     */
-
    const int nlevels = hierarchy->getNumberOfLevels();
 
    for (int ln = 0; ln < nlevels; ++ln) {
@@ -941,7 +868,7 @@ void PFModel::setInitialConditions()
    for (int ln = 0; ln < hierarchy->getNumberOfLevels(); ++ln) {
       std::shared_ptr<hier::PatchLevel> level(hierarchy->getPatchLevel(ln));
 
-      for (hier::PatchLevel::iterator p(level->begin()); p != level->end(); ++p) {
+      for(hier::PatchLevel::iterator p(level->begin()); p!=level->end(); ++p) {
          const std::shared_ptr<hier::Patch>& patch = *p;
 
          std::shared_ptr<geom::CartesianPatchGeometry> pg(
@@ -952,9 +879,7 @@ void PFModel::setInitialConditions()
 
          const double* h = pg->getDx();
 
-         /*
-          * Set initial conditions for temperature
-          */
+         // Set initial conditions for temperature
          std::shared_ptr<pdat::CellData<double> > temperature_init(
             SAMRAI_SHARED_PTR_CAST<pdat::CellData<double>, hier::PatchData>(
                init_samvect->getComponentPatchData(0, *patch)));
@@ -962,10 +887,8 @@ void PFModel::setInitialConditions()
 
          temperature_init->fillAll(d_temperature_init);
 
-         /*
-          * Set initial conditions for phase variable:
-          * 1 for low z, 0 for high z
-          */
+         // Set initial conditions for phase variable:
+         // 1 for low z, 0 for high z
          std::shared_ptr<pdat::CellData<double> > phase_init(
             SAMRAI_SHARED_PTR_CAST<pdat::CellData<double>, hier::PatchData>(
                init_samvect->getComponentPatchData(d_phase_component,*patch)));
@@ -1155,13 +1078,7 @@ void PFModel::printClassData(
    fflush(stdout);
 
    os << "ptr PFModel = " << (PFModel *)this << endl;
-
    os << "d_object_name = " << d_object_name << endl;
-
-   os << "d_temperature_cur_id = " << d_temperature_cur_id << endl;
-   os << "d_temperature_scr_id = " << d_temperature_scr_id << endl;
-
-   os << "d_temperature_diffusion = " << d_temperature_diffusion << endl;
    os << endl;
 }
 
