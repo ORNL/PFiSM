@@ -6,7 +6,6 @@ set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 enable_language(Fortran C CXX)
 
 set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g -std=c++11")
-set(CMAKE_CXX_FLAGS "-O2 -g -std=c++11")
 
 link_directories( ${SAMRAI_DIR}/lib )
 link_directories( ${HYPRE_DIR}/lib )

@@ -1,9 +1,3 @@
-/*************************************************************************
- *
- * Adapted from SAMRAI/source/test/sundials
- *
- ************************************************************************/
-
 #include "SAMRAI/SAMRAI_config.h"
 
 #include <stdio.h>
@@ -17,6 +11,13 @@ using namespace std;
 #include <unistd.h>
 #endif
 
+#include "PFModel.h"
+#include "PfmFACSolver.h"
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#pragma GCC diagnostic ignored "-Weffc++"
+
 #include "SAMRAI/tbox/SAMRAIManager.h"
 #include "SAMRAI/tbox/SAMRAI_MPI.h"
 #include "SAMRAI/tbox/PIO.h"
@@ -24,33 +25,23 @@ using namespace std;
 #include "SAMRAI/tbox/BalancedDepthFirstTree.h"
 #include "SAMRAI/mesh/BergerRigoutsos.h"
 #include "SAMRAI/geom/CartesianGridGeometry.h"
-#include "SAMRAI/pdat/CellVariable.h"
 #include "SAMRAI/pdat/CellData.h"
-#include "SAMRAI/tbox/Database.h"
-#include "SAMRAI/mesh/StandardTagAndInitialize.h"
 #include "SAMRAI/mesh/GriddingAlgorithm.h"
-#include "SAMRAI/hier/IntVector.h"
 #include "SAMRAI/tbox/InputDatabase.h"
 #include "SAMRAI/tbox/InputManager.h"
-#include "SAMRAI/hier/Patch.h"
 #include "SAMRAI/hier/PatchData.h"
-#include "SAMRAI/hier/PatchLevel.h"
-#include "SAMRAI/hier/PatchHierarchy.h"
 #include "SAMRAI/solv/SAMRAIVectorReal.h"
 #include "SAMRAI/tbox/Utilities.h"
 #include "SAMRAI/tbox/TimerManager.h"
 #include "SAMRAI/tbox/Timer.h"
 #include "SAMRAI/mesh/TreeLoadBalancer.h"
-#include "SAMRAI/hier/VariableContext.h"
 #include "SAMRAI/hier/VariableDatabase.h"
+#include "SAMRAI/mesh/StandardTagAndInitialize.h"
 
 #include "SAMRAI/solv/SundialsAbstractVector.h"
 #include "SAMRAI/solv/CVODESolver.h"
-#include "SAMRAI/solv/Sundials_SAMRAIVector.h"
-#include "SAMRAI/appu/VisItDataWriter.h"
 
-#include "PFModel.h"
-#include "PfmFACSolver.h"
+#pragma GCC diagnostic pop
 
 // CVODE includes
 #ifndef included_cvspgmr_h
@@ -81,29 +72,18 @@ int main(
    int argc,
    char* argv[])
 {
-   /*
-    * Initialize tbox::MPI and SAMRAI.
-    */
+   // Initialize tbox::MPI and SAMRAI
    tbox::SAMRAI_MPI::init(&argc, &argv);
    tbox::SAMRAIManager::initialize();
    tbox::SAMRAIManager::startup();
 
-   /*
-    * Create block to force pointer deallocation.  If this is not done
-    * then there will be memory leaks reported.
-    */
    {
-      /*
-       * Process command line arguments.
-       */
-      string input_filename;
-
       if (argc != 2) {
          tbox::pout << "USAGE:  " << argv[0] << " <input filename> " << endl;
          exit(-1);
-      } else {
-         input_filename = argv[1];
       }
+
+      string input_filename = argv[1];
 
       std::string run_name =
          input_filename.substr( 0, input_filename.rfind( "." ) );
@@ -111,17 +91,13 @@ int main(
       std::string log_file_name = run_name + ".log";
       tbox::PIO::logOnlyNodeZero( log_file_name );
 
-      /*
-       * Create input database and parse all data in input file.
-       */
+      // Parse all data in input file
       std::shared_ptr<tbox::InputDatabase> input_db(
          new tbox::InputDatabase("input_db"));
       tbox::InputManager::getManager()->parseInputFile(
          input_filename, input_db);
 
-      /*
-       * Retreive "Main" section of input db.
-       */
+      // Retreive "Main" section of input db.
       std::shared_ptr<tbox::Database> main_db(input_db->getDatabase("Main"));
 
       const tbox::Dimension dim(static_cast<unsigned short>(3));
@@ -139,27 +115,21 @@ int main(
       bool solution_logging =
          main_db->getBoolWithDefault("solution_logging", false);
 
-      /*
-       * Create geometry and hierarchy objects.
-       */
+      // Cartesian mesh geometry management
       std::shared_ptr<geom::CartesianGridGeometry> geometry(
          new geom::CartesianGridGeometry(
             dim,
             "Geometry",
             input_db->getDatabase("Geometry")));
 
+      // maintains the patch levels that define the AMR hierarchy
       std::shared_ptr<hier::PatchHierarchy> hierarchy(
          new hier::PatchHierarchy(
             "Hierarchy",
             geometry,
             input_db->getDatabase("PatchHierarchy")));
 
-      /*
-       * Create gridding algorithm objects that will handle construction of
-       * of the patch levels in the hierarchy.
-       */
-      std::string pf_model_name = "PFModel";
-
+      // creat two FAC solvers for the two blocks of teh preconditioner
       PfmFACSolver phase_fac_solver("PhaseFACsolver", dim, input_db);
       std::shared_ptr<solv::CellPoissonFACSolver> fac_solver_temperature(
          phase_fac_solver.getCellPoissonFACSolver());
@@ -168,15 +138,18 @@ int main(
       std::shared_ptr<solv::CellPoissonFACSolver> fac_solver_phase(
          temperature_fac_solver.getCellPoissonFACSolver());
 
+      // construct main object
       std::shared_ptr<PFModel> pf_model(
          new PFModel(
-            pf_model_name,
+            "PFModel",
             dim,
             fac_solver_temperature,
             fac_solver_phase,
             input_db->getDatabase("PFModel"),
             geometry));
 
+      // defines an implementation for level initialization and cell
+      // tagging routines needed by the GriddingAlgorithm class
       std::shared_ptr<mesh::StandardTagAndInitialize> error_est(
          new mesh::StandardTagAndInitialize(
             "StandardTagAndInitialize",
@@ -194,6 +167,8 @@ int main(
             input_db->getDatabase("LoadBalancer")));
       load_balancer->setSAMRAI_MPI(tbox::SAMRAI_MPI::getSAMRAIWorld());
 
+      // Create gridding algorithm objects that will handle construction of
+      // of the patch levels in the hierarchy.
       std::shared_ptr<mesh::GriddingAlgorithm> gridding_algorithm(
          new mesh::GriddingAlgorithm(
             hierarchy,
@@ -205,16 +180,15 @@ int main(
 
       input_db->printClassData(tbox::plog);
 
-      /*
-       * Setup hierarchy.
-       */
+      // create coarse level
       gridding_algorithm->makeCoarsestLevel(init_time);
 
+      // creates finer levela
       std::vector<int> tag_buffer_array(hierarchy->getMaxNumberOfLevels());
       for (int il = 0; il < hierarchy->getMaxNumberOfLevels(); ++il) {
          tag_buffer_array[il] = 1;
       }
-
+      
       bool done = false;
       bool initial_cycle = true;
       for (int ln = 0; hierarchy->levelCanBeRefined(ln) && !done;
@@ -227,17 +201,13 @@ int main(
          done = !(hierarchy->finerLevelExists(ln));
       }
 
-      /*
-       * Setup timer manager for profiling code.
-       */
+      // Setup timer manager for profiling code.
       tbox::TimerManager::createManager(input_db->getDatabase("TimerManager"));
       std::shared_ptr<tbox::Timer> t_cvode_solve(
          tbox::TimerManager::getManager()->
-         getTimer("apps::main::cvode_solver"));
+         getTimer("apps::main::solver"));
 
-      /*
-       * Set up Visualization plot file writer(s).
-       */
+      // Set up Visualization plot file writer
       int visit_number_procs_per_file=1;
       const std::string visit_dump_dirname 
          = "v."+input_filename.substr( 0, input_filename.rfind( "." ) );
@@ -249,9 +219,7 @@ int main(
             visit_number_procs_per_file));
       pf_model->registerVisItDataWriter(visit_data_writer);
 
-      /*
-       * Setup solution vector, and initialize it.
-       */
+      // Setup solution vector, and initialize it.
       pf_model->setupSolutionVector(hierarchy);
 
       pf_model->setInitialConditions();
@@ -286,7 +254,6 @@ int main(
 
       std::vector<double> time(max_steps);
       std::vector<double> maxnorm(max_steps);
-      std::vector<double> l2norm(max_steps);
 
       double final_time = init_time;
       double print_time=0.;
@@ -294,9 +261,6 @@ int main(
 
          //tbox::plog << "interval = "<<interval<<endl;
 
-         /*
-          * Set time interval
-          */
          final_time += print_interval;
          cvode_solver->setFinalValueOfIndependentVariable(final_time, false);
 
@@ -326,7 +290,6 @@ int main(
 
          time[interval - 1] = actual_time;
          maxnorm[interval - 1] = y_result->maxNorm();
-         l2norm[interval - 1] = y_result->L2Norm();
 
          if (solution_logging) {
             tbox::plog << "CVODE stastistics:"<<endl;
@@ -346,39 +309,24 @@ int main(
       /*************************************************************************
        * Write summary information
        ************************************************************************/
-      /*
-       * Write PFModel stats
-       */
       if (solution_logging) {
          pf_model->printCounters(final_time);
       }
       if (solution_logging) {
-         /*
-          * Write out timestep sequence information
-          */
          tbox::pout << "\n\nTimestep Summary of solution vector y()\n"
                     << "  time                   \t"
-                    << "  Max Norm  \t"
-                    << "  L1 Norm  \t"
-                    << "  L2 Norm  " << endl;
+                    << "  Max Norm  \n";
 
          for (int interval = 0; interval < max_steps; ++interval) {
             tbox::pout.precision(18);
             tbox::pout << "  " << time[interval] << "  \t";
             tbox::pout.precision(6);
-            tbox::pout << "  " << maxnorm[interval] << "  \t"
-                       << "  " << l2norm[interval] << endl;
+            tbox::pout << "  " << maxnorm[interval] << endl;
          }
       }
 
-      /*
-       * Write out timings
-       */
       tbox::TimerManager::getManager()->print(tbox::pout);
 
-      /*
-       * Memory cleanup.
-       */
       delete cvode_solver;
 
       pf_model.reset();
@@ -391,9 +339,7 @@ int main(
       visit_data_writer.reset();
    }
 
-   /*
-    * Shutdown SAMRAI and tbox::MPI.
-    */
+   // Shutdown SAMRAI and tbox::MPI.
    tbox::SAMRAIManager::shutdown();
    tbox::SAMRAIManager::finalize();
    tbox::SAMRAI_MPI::finalize();

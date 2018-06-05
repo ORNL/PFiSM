@@ -1,10 +1,7 @@
-/*************************************************************************
- *
- * Adapted from SAMRAI/source/test/sundials
- *
- ************************************************************************/
-
 #include "PFModel.h"
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 
 #include "SAMRAI/geom/CartesianPatchGeometry.h"
 #include "SAMRAI/pdat/CellData.h"
@@ -15,7 +12,6 @@
 #include "SAMRAI/math/HierarchyCellDataOpsReal.h"
 #include "SAMRAI/hier/Index.h"
 #include "SAMRAI/math/PatchCellDataOpsReal.h"
-#include "SAMRAI/hier/Patch.h"
 #include "SAMRAI/hier/PatchData.h"
 #include "SAMRAI/hier/RefineOperator.h"
 #include "SAMRAI/tbox/RestartManager.h"
@@ -24,6 +20,8 @@
 #include "SAMRAI/tbox/MathUtilities.h"
 #include "SAMRAI/tbox/Utilities.h"
 #include "SAMRAI/hier/VariableDatabase.h"
+
+#pragma GCC diagnostic pop
 
 using namespace std;
 
@@ -77,7 +75,12 @@ PFModel::PFModel(
    d_phase_component(1),
    d_FAC_solver_temperature(fac_solver_temperature),
    d_FAC_solver_phase(fac_solver_phase),
-   d_grid_geometry(grid_geom)
+   d_grid_geometry(grid_geom),
+   d_number_rhs_eval(0),
+   d_number_precond_setup(0),
+   d_number_precond_solve(0),
+   d_temperature_bc_helper(new solv::CartesianRobinBcHelper(dim,"TempBC")),
+   d_phase_bc_helper(new solv::CartesianRobinBcHelper(dim,"PhaseBC"))
 {
    /*
     * set up variables and contexts
@@ -116,13 +119,6 @@ PFModel::PFModel(
    d_print_solver_info = false;
 
    /*
-    * Counters.
-    */
-   d_number_rhs_eval = 0;
-   d_number_precond_setup = 0;
-   d_number_precond_solve = 0;
-
-   /*
     * Initialize object with data read from given input/restart databases.
     */
    bool is_from_restart = tbox::RestartManager::getManager()->isFromRestart();
@@ -134,8 +130,6 @@ PFModel::PFModel(
    std::shared_ptr<tbox::Database> bc_db(
       input_db->getDatabase( "BoundaryConditions" ));
 
-   d_temperature_bc_helper =
-      new solv::CartesianRobinBcHelper(d_dim,"TemperatureBChelper");
    d_temperature_bc_coeffs =
       new solv::LocationIndexRobinBcCoefs(d_dim,"TemperatureBCcoeffs",
          bc_db->getDatabase( "Temperature" )); 
@@ -143,8 +137,6 @@ PFModel::PFModel(
    d_temperature_bc_helper->setTargetDataId( d_temperature_scr_id );
    d_temperature_bc_helper->setCoefImplementation( d_temperature_bc_coeffs );
 
-   d_phase_bc_helper =
-      new solv::CartesianRobinBcHelper(d_dim,"PhaseBChelper");
    d_phase_bc_coeffs =
       new solv::LocationIndexRobinBcCoefs(d_dim,"PhaseBCcoeffs",
          bc_db->getDatabase( "Phase" ));
@@ -510,18 +502,11 @@ int PFModel::evaluateRHSFunction(
       } // loop over patches
    } // loop over levels
 
-   /*
-    * Deallocate scratch space.
-    */
    for (int ln = hierarchy->getFinestLevelNumber(); ln >= 0; --ln) {
       hierarchy->getPatchLevel(ln)->deallocatePatchData(d_temperature_scr_id);
       hierarchy->getPatchLevel(ln)->deallocatePatchData(d_phase_scr_id);
    }
 
-   /*
-    * record current time and increment counter for number of RHS
-    * evaluations.
-    */
    d_current_time = time;
    ++d_number_rhs_eval;
 
@@ -548,6 +533,7 @@ int PFModel::CVSpgmrPrecondSet(
    solv::SundialsAbstractVector* vtemp2,
    solv::SundialsAbstractVector* vtemp3)
 {
+   NULL_USE(t);
    NULL_USE(fy);
    NULL_USE(jok);
    NULL_USE(jcurPtr);
@@ -611,16 +597,9 @@ int PFModel::CVSpgmrPrecondSet(
    d_FAC_solver_phase->setCPatchDataId(d_cfield_phase_id);
    d_FAC_solver_phase->setDConstant( - d_mobility * d_epsilon * d_epsilon );
 
-   /*
-    * increment counter for number of precond setup calls
-    */
    ++d_number_precond_setup;
 
-   /*
-    * We return 0 or 1 here - 0 if it passes, 1 if it fails.  For now,
-    * just be optimistic and return 0. Eventually we should add some
-    * assertion handling above to set what this value should be.
-    */
+   //assume success and return 0
    return 0;
 }
 
@@ -643,6 +622,7 @@ int PFModel::CVSpgmrPrecondSolve(
    int lr,
    solv::SundialsAbstractVector* vtemp)
 {
+   NULL_USE(t);
    NULL_USE(y);
    NULL_USE(fy);
    NULL_USE(vtemp);
@@ -651,9 +631,7 @@ int PFModel::CVSpgmrPrecondSolve(
 
    //plog<<"CVSpgmrPrecondSolve..."<<endl;
 
-   /*
-    * Convert passed-in CVODE vectors into SAMRAI vectors
-    */
+   // Convert passed-in CVODE vectors into SAMRAI vectors
    std::shared_ptr<solv::SAMRAIVectorReal<double> > r_samvect(
       solv::Sundials_SAMRAIVector::getSAMRAIVector(r));
    std::shared_ptr<solv::SAMRAIVectorReal<double> > z_samvect(
@@ -703,7 +681,7 @@ int PFModel::CVSpgmrPrecondSolve(
    int r1_indx = r_samvect->getComponentDescriptorIndex(d_phase_component);
    int z1_indx = z_samvect->getComponentDescriptorIndex(d_phase_component);
 
-  for (int ln = hierarchy->getFinestLevelNumber(); ln >= 0; --ln) {
+   for (int ln = hierarchy->getFinestLevelNumber(); ln >= 0; --ln) {
       std::shared_ptr<hier::PatchLevel> level(hierarchy->getPatchLevel(ln));
 
       if (!level->checkAllocated(d_phase_scr_id)) {
@@ -732,13 +710,10 @@ int PFModel::CVSpgmrPrecondSolve(
    }
 
    /******************************************************************
-   *
    * Apply the FAC solver.  It solves the system Az=r with the
    * format "solveSystem(z, r)". A was constructed in the precondSetup()
    * method.
-   *
    ******************************************************************/
-
    if (d_print_solver_info) {
       tbox::pout << "\t\tBefore FAC Solve (Az=r): "
            << "\n   \t\t\tz_l2norm = " << z_samvect->L2Norm()
@@ -747,12 +722,6 @@ int PFModel::CVSpgmrPrecondSolve(
            << "\n   \t\t\tr_maxnorm = " << r_samvect->maxNorm()
            << endl;
    }
-   /*
-    * Set paramemters in the FAC solver.  It solves the system Az=r.
-    * Here we supply the max norm of r in order to scale the
-    * residual (i.e. residual = Az - r) to properly scale the convergence
-    * error.
-    */
 
    const int coarsest_solve_ln = 0;
    const int finest_solve_ln = hierarchy->getFinestLevelNumber();
@@ -801,13 +770,9 @@ int PFModel::CVSpgmrPrecondSolve(
    cell_ops.copyData( z0_indx, d_temperature_scr_id, false);
    cell_ops.copyData( z1_indx, d_phase_scr_id, false);
 
-   int ret_val = 0;
-   if (converge != true) {
-      ret_val = 1;
-   }
-
    ++d_number_precond_solve;
 
+   int ret_val = (converge==true) ? 0 : 1;
    return ret_val;
 }
 
@@ -819,33 +784,29 @@ int PFModel::CVSpgmrPrecondSolve(
 void PFModel::setupSolutionVector(
    std::shared_ptr<hier::PatchHierarchy> hierarchy)
 {
-   /* create SAMRAIVector */
+   // create SAMRAIVector
    std::shared_ptr<solv::SAMRAIVectorReal<double> > samvect(
       new solv::SAMRAIVectorReal<double>(
          "solution",
          hierarchy,
-         0,
-         hierarchy->getFinestLevelNumber()));
+         0, hierarchy->getFinestLevelNumber()));
+
+   //add temperature and phase fields to it
    samvect->addComponent(d_temperature_var, d_temperature_cur_id);
    samvect->addComponent(d_phase_var, d_phase_cur_id);
 
-   /* allocate memory for vectors. */
    samvect->allocateVectorData();
 
    d_solution_vector =
       solv::Sundials_SAMRAIVector::createSundialsVector(samvect);
 
-   /*
-    * Allocate memory for preconditioner variables.
-    */
+   // Allocate memory for preconditioner variables.
    const int nlevels = hierarchy->getNumberOfLevels();
-
    for (int ln = 0; ln < nlevels; ++ln) {
       std::shared_ptr<hier::PatchLevel> level(hierarchy->getPatchLevel(ln));
       TBOX_ASSERT(level);
       level->allocatePatchData(d_cfield_phase_id);
    }
-
 }
 
 /*************************************************************************
@@ -899,7 +860,6 @@ void PFModel::setInitialConditions()
          pdat::CellIterator icend(pdat::CellGeometry::end(patch_box));
 
          for ( ; ic != icend; ++ic) {
-
             hier::IntVector icell = *ic;
             const double zval=(h[2]*(0.5+icell[2])-zmin);
 
@@ -952,15 +912,6 @@ void PFModel::setCforPhase(
    } // loop over levels
 }
 
-/*************************************************************************
- *
- * Print program counters.  Currently, the array holds the
- * following entries:
- *    1) number of RHS evaluations
- *    2) number of precond setup calls
- *    3) number of precond solve calls
- *
- *************************************************************************/
 void PFModel::printCounters(const double final_time)
 {
    std::vector<int> counters(3);
@@ -976,12 +927,9 @@ void PFModel::printCounters(const double final_time)
 }
 
 /*************************************************************************
- *
  * Read data from input database.
- *
  *************************************************************************/
-void
-PFModel::getFromInput(
+void PFModel::getFromInput(
    std::shared_ptr<tbox::Database> input_db,
    bool is_from_restart)
 {
@@ -1018,20 +966,18 @@ PFModel::getFromInput(
 }
 
 /*************************************************************************
- *
  * Write data to  restart database.
- *
  *************************************************************************/
 void PFModel::putToRestart(
    const std::shared_ptr<tbox::Database>& restart_db) const
 {
+   NULL_USE(restart_db);
+
    TBOX_ASSERT(restart_db);
 }
 
 /*************************************************************************
- *
  * Read data from restart database.
- *
  *************************************************************************/
 void PFModel::getFromRestart()
 {
@@ -1046,10 +992,8 @@ void PFModel::getFromRestart()
 }
 
 /*************************************************************************
- *
  * Register VisIt data writer to write data to plot files that may
- * be postprocessed by the VisIt tool.
- *
+ * be postprocessed by VisIt
  *************************************************************************/
 void PFModel::registerVisItDataWriter(
    std::shared_ptr<appu::VisItDataWriter> viz_writer)
@@ -1067,23 +1011,12 @@ void PFModel::registerVisItDataWriter(
    }
 }
 
-/*************************************************************************
- *
- * Prints class data - writes out info in class if assertion is thrown
- *
- *************************************************************************/
 void PFModel::printClassData(
    ostream& os) const
 {
    fflush(stdout);
-
    os << "ptr PFModel = " << (PFModel *)this << endl;
    os << "d_object_name = " << d_object_name << endl;
    os << endl;
 }
 
-void PFModel::setPrintSolverInfo(
-   const bool info)
-{
-   d_print_solver_info = info;
-}

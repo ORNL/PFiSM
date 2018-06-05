@@ -4,6 +4,10 @@
  *
  ************************************************************************/
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#pragma GCC diagnostic ignored "-Weffc++"
+
 #include "SAMRAI/SAMRAI_config.h"
 
 /*
@@ -18,7 +22,6 @@
 #include "SAMRAI/hier/PatchHierarchy.h"
 #include "SAMRAI/hier/PatchLevel.h"
 #include "SAMRAI/hier/VariableContext.h"
-#include "SAMRAI/xfer/RefineAlgorithm.h"
 #include "SAMRAI/xfer/RefineSchedule.h"
 #include "SAMRAI/xfer/RefinePatchStrategy.h"
 #include "SAMRAI/xfer/CoarsenPatchStrategy.h"
@@ -35,6 +38,8 @@
 #include "SAMRAI/solv/Sundials_SAMRAIVector.h"
 #include "SAMRAI/solv/CVODEAbstractFunctions.h"
 
+#pragma GCC diagnostic pop
+
 #include <vector>
 #include <iostream>
 
@@ -47,9 +52,7 @@ class PFModel:
    public solv::CVODEAbstractFunctions
 {
 public:
-   /**
-    * Default constructor for PFModel.
-    */
+
    PFModel(
       const std::string& object_name,
       const tbox::Dimension& dim,
@@ -58,7 +61,7 @@ public:
       std::shared_ptr<tbox::Database> input_db,
       std::shared_ptr<geom::CartesianGridGeometry> grid_geom);
 
-   virtual ~PFModel();
+   ~PFModel();
 
 /*************************************************************************
  *
@@ -88,8 +91,7 @@ public:
     * circumstances.  The can_be_refined boolean argument indicates whether
     * the level is the finest allowable level in the hierarchy.
     */
-   virtual void
-   initializeLevelData(
+   void initializeLevelData(
       const std::shared_ptr<hier::PatchHierarchy>& hierarchy,
       const int level_number,
       const double time,
@@ -117,8 +119,7 @@ public:
     * in the current hierarchy configuration that have changed.  It should
     * be assumed that all intermediate levels have changed as well.
     */
-   virtual void
-   resetHierarchyConfiguration(
+   void resetHierarchyConfiguration(
       const std::shared_ptr<hier::PatchHierarchy>& hierarchy,
       const int coarsest_level,
       const int finest_level);
@@ -135,8 +136,7 @@ public:
     * is provided since the application of the error estimator may be
     * different in each of those circumstances.
     */
-   virtual void
-   applyGradientDetector(
+   void applyGradientDetector(
       const std::shared_ptr<hier::PatchHierarchy>& hierarchy,
       const int level_number,
       const double time,
@@ -144,13 +144,9 @@ public:
       const bool initial_time,
       const bool uses_richardson_extrapolation_too);
 
-   /**
-    * Option to output solver info.  Set to true to turn on, false to
-    * turn off.
-    */
-   void
-   setPrintSolverInfo(
-      const bool info);
+   void setPrintSolverInfo(const bool info){
+      d_print_solver_info = info; 
+  }
 
 /*************************************************************************
  *
@@ -162,8 +158,7 @@ public:
     * Set the data at patch boundaries corresponding to the physical domain
     * boundary.  The specific boundary conditions are determined by the user.
     */
-   virtual void
-   setPhysicalBoundaryConditions(
+   void setPhysicalBoundaryConditions(
       hier::Patch& patch,
       const double time,
       const hier::IntVector& ghost_width_to_fill);
@@ -177,8 +172,7 @@ public:
     * operates on a a single box at a time.  The user must define this
     * routine in the subclass.
     */
-   virtual void
-   preprocessRefine(
+   void preprocessRefine(
       hier::Patch& fine,
       const hier::Patch& coarse,
       const hier::Box& fine_box,
@@ -193,8 +187,7 @@ public:
     * operates on a a single box at a time.  The user must define this
     * routine in the subclass.
     */
-   virtual void
-   postprocessRefine(
+   void postprocessRefine(
       hier::Patch& fine,
       const hier::Patch& coarse,
       const hier::Box& fine_box,
@@ -205,7 +198,8 @@ public:
     * data interpolation operations.  Default is to return
     * zero, assuming no user-defined operations provided.
     */
-   virtual hier::IntVector getRefineOpStencilWidth(const tbox::Dimension& dim) const
+   hier::IntVector getRefineOpStencilWidth(
+      const tbox::Dimension& dim) const
    {
       return hier::IntVector(dim, 0);
    }
@@ -223,8 +217,7 @@ public:
     * patch into the source components of the destination patch on the
     * specified coarse box region.
     */
-   virtual void
-   preprocessCoarsen(
+   void preprocessCoarsen(
       hier::Patch& coarse,
       const hier::Patch& fine,
       const hier::Box& coarse_box,
@@ -237,26 +230,18 @@ public:
     * patch into the source components of the destination patch on the
     * specified coarse box region.
     */
-   virtual void
-   postprocessCoarsen(
+   void postprocessCoarsen(
       hier::Patch& coarse,
       const hier::Patch& fine,
       const hier::Box& coarse_box,
       const hier::IntVector& ratio);
 
-   /**
-    * Return maximum stencil width needed for user-defined
-    * data interpolation operations.  Default is to return
-    * zero, assuming no user-defined operations provided.
-    */
-   virtual hier::IntVector getCoarsenOpStencilWidth(const tbox::Dimension& dim) const
+   hier::IntVector getCoarsenOpStencilWidth(
+      const tbox::Dimension& dim) const
    {
       return hier::IntVector(dim, 0);
    }
 
-   /*!
-    * @brief Return the dimension of this object.
-    */
    const tbox::Dimension& getDim() const
    {
       return d_dim;
@@ -277,16 +262,14 @@ public:
     * - \b y        (INPUT) {current value of dependent variable vector}
     * - \b y_dot   (OUTPUT){current value of the derivative of y}
     *
-    * IMPORTANT: This function must not modify the vector y. (KTC??)
+    * IMPORTANT: This function must not modify the vector y.
     */
-   virtual int
-   evaluateRHSFunction(
+   int evaluateRHSFunction(
       double time,
       solv::SundialsAbstractVector* y,
       solv::SundialsAbstractVector* y_dot);
 
-   virtual int
-   CVSpgmrPrecondSet(
+   int CVSpgmrPrecondSet(
       double t,
       solv::SundialsAbstractVector* y,
       solv::SundialsAbstractVector* fy,
@@ -297,8 +280,7 @@ public:
       solv::SundialsAbstractVector* vtemp2,
       solv::SundialsAbstractVector* vtemp3);
 
-   virtual int
-   CVSpgmrPrecondSolve(
+   int CVSpgmrPrecondSolve(
       double t,
       solv::SundialsAbstractVector* y,
       solv::SundialsAbstractVector* fy,
@@ -310,21 +292,11 @@ public:
       solv::SundialsAbstractVector* vtemp);
 
 /*************************************************************************
- *
- * Methods particular to PFModel class.
- *
+ * Methods specific to PFModel class.
  ************************************************************************/
 
-   /**
-    * Set up solution vector.
-    */
-   void
-   setupSolutionVector(
-      std::shared_ptr<hier::PatchHierarchy> hierarchy);
+   void setupSolutionVector(std::shared_ptr<hier::PatchHierarchy> hierarchy);
 
-   /**
-    * Get pointer to the solution vector.
-    */
    solv::SundialsAbstractVector* getSolutionVector()
    {
       return d_solution_vector;
@@ -342,47 +314,38 @@ public:
 
    /**
     * Writes state of PFModel object to the specified restart database.
-    *
     * This routine is a concrete implementation of the function
     * declared in the tbox::Serializable abstract base class.
     */
-   void
-   putToRestart(
+   void putToRestart(
       const std::shared_ptr<tbox::Database>& restart_db) const;
 
    /**
     * Register a VisIt data writer so this class will write
-    * plot files that may be postprocessed with the VisIt
-    * visualization tool.
+    * plot files that may be postprocessed with VisIt
     */
-   void
-   registerVisItDataWriter(
+   void registerVisItDataWriter(
       std::shared_ptr<appu::VisItDataWriter> viz_writer);
 
-   /**
-    * Prints all class data members, if assertion is thrown.
-    */
-   void
-   printClassData(
-      std::ostream& os) const;
+   // Prints all class data members, if assertion is thrown.
+   void printClassData(std::ostream& os) const;
 
 private:
+   PFModel(const PFModel&);
+   PFModel& operator=(const PFModel&);
+
    /*
     * These private member functions read data from input and restart.
     * When beginning a run from a restart file, all data members are read
     * from the restart file.  If the boolean flag is true when reading
     * from input, some restart values may be overridden by those in the
     * input file.
-    *
-    * An assertion results if the database pointer is null.
     */
-   virtual void
-   getFromInput(
+   void getFromInput(
       std::shared_ptr<tbox::Database> input_db,
       bool is_from_restart);
 
-   virtual void
-   getFromRestart();
+   void getFromRestart();
 
    /*
     * Object name used for error/warning reporting and as a label
@@ -392,39 +355,29 @@ private:
 
    const tbox::Dimension d_dim;
 
-   /*
-    * Pointer to solution vector
-    */
    solv::SundialsAbstractVector* d_solution_vector;
 
-   /*
-    * Variables
-    */
+   // Variables
    std::shared_ptr<pdat::CellVariable<double> > d_temperature_var;
    std::shared_ptr<pdat::CellVariable<double> > d_phase_var;
    std::shared_ptr<pdat::CellVariable<double> > d_cfield_phase_var;
 
-   /*
-    * Variable Contexts
-    */
+   // Variable Contexts
    std::shared_ptr<hier::VariableContext> d_cur_cxt;
    std::shared_ptr<hier::VariableContext> d_scr_cxt;
 
-   /*
-    * hier::Patch Data ids
-    */
+   // hier::Patch Data ids
    int d_temperature_cur_id;
    int d_temperature_scr_id;
    int d_phase_cur_id;
    int d_phase_scr_id;
    int d_cfield_phase_id;
 
-   /*
-    * component indexes for SAMRAI vectors
-    */
+   // component indexes for SAMRAI vectors
    const int d_temperature_component;
    const int d_phase_component;
 
+   // FAC solvers
    std::shared_ptr<solv::CellPoissonFACSolver> d_FAC_solver_temperature;
    std::shared_ptr<solv::CellPoissonFACSolver> d_FAC_solver_phase;
 
@@ -432,38 +385,28 @@ private:
 
    double d_current_time;
 
-   /*
-    * Print CVODE solver information
-    */
+   // Print CVODE solver information
    bool d_print_solver_info;
 
-   /*
-    * Grid geometry
-    */
+   // Grid geometry
    std::shared_ptr<geom::CartesianGridGeometry> d_grid_geometry;
 
    std::shared_ptr<appu::VisItDataWriter> d_visit_writer;
 
-   /*
-    * Diffusion value
-    */
+   // Temperature equation parameters
    double d_temperature_diffusion;
-
-   double d_init_solid_fraction;
    double d_temperature_init;
-
-   /*
-    * phase-field parameters
-    */
-   double d_epsilon;
-   double d_mobility;
-   double d_well_height;
    double d_Tmelting;
    double d_latent_heat;
    double d_cp;
 
-   /*
-    * Program counters
+   // phase-field parameters
+   double d_epsilon;
+   double d_mobility;
+   double d_well_height;
+   double d_init_solid_fraction;
+
+   /* Program counters
     *   1 - number of RHS evaluations
     *   2 - number of precond setups
     *   3 - number of precond solves
@@ -472,19 +415,14 @@ private:
    int d_number_precond_setup;
    int d_number_precond_solve;
 
-   /*
-    * Utilities to setup physical boundary conditions
-    */
+   // Utilities to setup physical boundary conditions
    solv::CartesianRobinBcHelper* d_temperature_bc_helper;
    solv::LocationIndexRobinBcCoefs* d_temperature_bc_coeffs;
 
    solv::CartesianRobinBcHelper* d_phase_bc_helper;
    solv::LocationIndexRobinBcCoefs* d_phase_bc_coeffs;
 
-   /*
-    * Utilities to setup physical boundary conditions
-    * in FAC solver
-    */
+   // Utilities to setup physical boundary conditions in FAC solver
    solv::LocationIndexRobinBcCoefs* d_temperature_bc_corr_coeffs;
    solv::LocationIndexRobinBcCoefs* d_phase_bc_corr_coeffs;
 
