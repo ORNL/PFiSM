@@ -51,22 +51,6 @@ using namespace std;
 
 using namespace SAMRAI;
 
-/*
- * The main stages of this program are:
- *
- * (1)  Retrieving integration parameters from the input database.
- * (2)  Creating hierarchy, geometry, gridding, and PFModel
- *      objects.
- * (3)  Setting up the hierarchy configuration (grid configuration).
- * (4)  Setting the initial condition vector.
- * (5)  Creating a CVODESolver object.
- * (6)  Setting the integration parameters for CVODESolver.
- * (7)  Solving the ODE system.
- * (8)  Printing out to the log file the solution vector produced
- *      by CVODE and computing some norms.
- * (9) Printing out the CVODE statistics.
- * (10) Cleaning up the memory allocated for the program.
- */
 
 int main(
    int argc,

@@ -1,18 +1,10 @@
-/*************************************************************************
- *
- * Adapted from SAMRAI/source/test/sundials
- *
- ************************************************************************/
-
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 #pragma GCC diagnostic ignored "-Weffc++"
 
 #include "SAMRAI/SAMRAI_config.h"
 
-/*
- * Header files for SAMRAI classes
- */
+// Header files for SAMRAI classes
 #include "SAMRAI/hier/Box.h"
 #include "SAMRAI/pdat/CellVariable.h"
 #include "SAMRAI/geom/CartesianGridGeometry.h"
@@ -31,9 +23,7 @@
 #include "SAMRAI/solv/LocationIndexRobinBcCoefs.h"
 #include "SAMRAI/solv/CartesianRobinBcHelper.h"
 
-/*
- * Header files for CVODE wrapper classes
- */
+// Header files for CVODE wrapper classes
 #include "SAMRAI/solv/SundialsAbstractVector.h"
 #include "SAMRAI/solv/Sundials_SAMRAIVector.h"
 #include "SAMRAI/solv/CVODEAbstractFunctions.h"
@@ -64,33 +54,8 @@ public:
    ~PFModel();
 
 /*************************************************************************
- *
  * Methods inherited from StandardTagAndInitStrategy.
- *
  ************************************************************************/
-
-   /**
-    * Initialize data on a new level after it is inserted into an AMR patch
-    * hierarchy by the gridding algorithm.  The level number indicates
-    * that of the new level.
-    *
-    * Generally, when data is set, it is interpolated from coarser levels
-    * in the hierarchy.  If the old level pointer in the argument list is
-    * non-null, then data is copied from the old level to the new level
-    * on regions of intersection between those levels before interpolation
-    * occurs.   In this case, the level number must match that of the old
-    * level.  The specific operations that occur when initializing level
-    * data are determined by the particular solution methods in use; i.e.,
-    * in the subclass of this abstract base class.
-    *
-    * The boolean argument initial_time indicates whether the level is
-    * being introduced for the first time (i.e., at initialization time),
-    * or after some regrid process during the calculation beyond the initial
-    * hierarchy construction.  This information is provided since the
-    * initialization of the data may be different in each of those
-    * circumstances.  The can_be_refined boolean argument indicates whether
-    * the level is the finest allowable level in the hierarchy.
-    */
    void initializeLevelData(
       const std::shared_ptr<hier::PatchHierarchy>& hierarchy,
       const int level_number,
@@ -101,41 +66,11 @@ public:
          std::shared_ptr<hier::PatchLevel>(),
       const bool allocate_data = true);
 
-   /**
-    * After hierarchy levels have changed and data has been initialized on
-    * the new levels, this routine can be used to reset any information
-    * needed by the solution method that is particular to the hierarchy
-    * configuration.  For example, the solution procedure may cache
-    * communication schedules to amortize the cost of data movement on the
-    * AMR patch hierarchy.  This function will be called by the gridding
-    * algorithm after the initialization occurs so that the algorithm-specific
-    * subclass can reset such things.  Also, if the solution method must
-    * make the solution consistent across multiple levels after the hierarchy
-    * is changed, this process may be invoked by this routine.  Of course the
-    * details of these processes are determined by the particular solution
-    * methods in use.
-    *
-    * The level number arguments indicate the coarsest and finest levels
-    * in the current hierarchy configuration that have changed.  It should
-    * be assumed that all intermediate levels have changed as well.
-    */
    void resetHierarchyConfiguration(
       const std::shared_ptr<hier::PatchHierarchy>& hierarchy,
       const int coarsest_level,
       const int finest_level);
 
-   /**
-    * Set tags to the specified tag value where refinement of the given
-    * level should occur using the user-supplied gradient detector.  The
-    * value "tag_index" is the index of the cell-centered integer tag
-    * array on each patch in the hierarchy.  The boolean argument indicates
-    * whether cells are being tagged on the level for the first time;
-    * i.e., when the hierarchy is initially constructed.  If it is false,
-    * it should be assumed that cells are being tagged at some later time
-    * after the patch hierarchy was initially constructed.  This information
-    * is provided since the application of the error estimator may be
-    * different in each of those circumstances.
-    */
    void applyGradientDetector(
       const std::shared_ptr<hier::PatchHierarchy>& hierarchy,
       const int level_number,
@@ -144,60 +79,26 @@ public:
       const bool initial_time,
       const bool uses_richardson_extrapolation_too);
 
-   void setPrintSolverInfo(const bool info){
-      d_print_solver_info = info; 
-  }
-
 /*************************************************************************
- *
  * Methods inherited from RefinePatchStrategy.
- *
  ************************************************************************/
-
-   /**
-    * Set the data at patch boundaries corresponding to the physical domain
-    * boundary.  The specific boundary conditions are determined by the user.
-    */
    void setPhysicalBoundaryConditions(
       hier::Patch& patch,
       const double time,
       const hier::IntVector& ghost_width_to_fill);
 
-   /**
-    * Perform user-defined refining operations.  This member function
-    * is called before the other refining operators.  The preprocess
-    * function should refine data from the scratch components of the
-    * coarse patch into the scratch components of the fine patch on the
-    * specified fine box region.  This version of the preprocess function
-    * operates on a a single box at a time.  The user must define this
-    * routine in the subclass.
-    */
    void preprocessRefine(
       hier::Patch& fine,
       const hier::Patch& coarse,
       const hier::Box& fine_box,
       const hier::IntVector& ratio);
 
-   /**
-    * Perform user-defined refining operations.  This member function
-    * is called after the other refining operators.  The postprocess
-    * function should refine data from the scratch components of the
-    * coarse patch into the scratch components of the fine patch on the
-    * specified fine box region.  This version of the postprocess function
-    * operates on a a single box at a time.  The user must define this
-    * routine in the subclass.
-    */
    void postprocessRefine(
       hier::Patch& fine,
       const hier::Patch& coarse,
       const hier::Box& fine_box,
       const hier::IntVector& ratio);
 
-   /**
-    * Return maximum stencil width needed for user-defined
-    * data interpolation operations.  Default is to return
-    * zero, assuming no user-defined operations provided.
-    */
    hier::IntVector getRefineOpStencilWidth(
       const tbox::Dimension& dim) const
    {
@@ -205,31 +106,14 @@ public:
    }
 
 /*************************************************************************
- *
  * Methods inherited from CoarsenPatchStrategy.
- *
  ************************************************************************/
-
-   /**
-    * Perform user-defined coarsening operations.  This member function
-    * is called before the other coarsening operators.  The preprocess
-    * function should copy data from the source components of the fine
-    * patch into the source components of the destination patch on the
-    * specified coarse box region.
-    */
    void preprocessCoarsen(
       hier::Patch& coarse,
       const hier::Patch& fine,
       const hier::Box& coarse_box,
       const hier::IntVector& ratio);
 
-   /**
-    * Perform user-defined coarsening operations.  This member function
-    * is called after the other coarsening operators.  The postprocess
-    * function should copy data from the source components of the fine
-    * patch into the source components of the destination patch on the
-    * specified coarse box region.
-    */
    void postprocessCoarsen(
       hier::Patch& coarse,
       const hier::Patch& fine,
@@ -242,28 +126,9 @@ public:
       return hier::IntVector(dim, 0);
    }
 
-   const tbox::Dimension& getDim() const
-   {
-      return d_dim;
-   }
-
 /*************************************************************************
- *
  * Methods inherited from CVODEAbstractFunctions
- *
  ************************************************************************/
-
-   /**
-    * User-supplied right-hand side function evaluation.
-    *
-    * The function arguments are:
-    *
-    * - \b t        (INPUT) {current value of the independent variable}
-    * - \b y        (INPUT) {current value of dependent variable vector}
-    * - \b y_dot   (OUTPUT){current value of the derivative of y}
-    *
-    * IMPORTANT: This function must not modify the vector y.
-    */
    int evaluateRHSFunction(
       double time,
       solv::SundialsAbstractVector* y,
@@ -294,6 +159,9 @@ public:
 /*************************************************************************
  * Methods specific to PFModel class.
  ************************************************************************/
+   void setPrintSolverInfo(const bool info){
+      d_print_solver_info = info;
+  }
 
    void setupSolutionVector(std::shared_ptr<hier::PatchHierarchy> hierarchy);
 
@@ -303,7 +171,7 @@ public:
    }
 
    /**
-    * Set initial conditions for problem.
+    * Set initial conditions
     */
    void setInitialConditions();
 
@@ -334,23 +202,14 @@ private:
    PFModel(const PFModel&);
    PFModel& operator=(const PFModel&);
 
-   /*
-    * These private member functions read data from input and restart.
-    * When beginning a run from a restart file, all data members are read
-    * from the restart file.  If the boolean flag is true when reading
-    * from input, some restart values may be overridden by those in the
-    * input file.
-    */
    void getFromInput(
       std::shared_ptr<tbox::Database> input_db,
       bool is_from_restart);
 
    void getFromRestart();
 
-   /*
-    * Object name used for error/warning reporting and as a label
-    * for restart database entries.
-    */
+   // Object name used for error/warning reporting and as a label
+   // for restart database entries.
    std::string d_object_name;
 
    const tbox::Dimension d_dim;
@@ -406,11 +265,7 @@ private:
    double d_well_height;
    double d_init_solid_fraction;
 
-   /* Program counters
-    *   1 - number of RHS evaluations
-    *   2 - number of precond setups
-    *   3 - number of precond solves
-    */
+   // Program counters
    int d_number_rhs_eval;
    int d_number_precond_setup;
    int d_number_precond_solve;

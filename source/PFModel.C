@@ -82,10 +82,8 @@ PFModel::PFModel(
    d_temperature_bc_helper(new solv::CartesianRobinBcHelper(dim,"TempBC")),
    d_phase_bc_helper(new solv::CartesianRobinBcHelper(dim,"PhaseBC"))
 {
-   /*
-    * set up variables and contexts
-    * 'scratch' variables have 1 layer of ghost cells
-    */
+    // set up variables and contexts
+    // 'scratch' variables have 1 layer of ghost cells
    hier::VariableDatabase* variable_db = hier::VariableDatabase::getDatabase();
 
    d_cur_cxt = variable_db->getContext("CURRENT");
@@ -118,9 +116,7 @@ PFModel::PFModel(
 
    d_print_solver_info = false;
 
-   /*
-    * Initialize object with data read from given input/restart databases.
-    */
+   // Initialize object with data read from given input/restart databases.
    bool is_from_restart = tbox::RestartManager::getManager()->isFromRestart();
    if (is_from_restart) {
       getFromRestart();
@@ -144,10 +140,8 @@ PFModel::PFModel(
    d_phase_bc_helper->setTargetDataId( d_phase_scr_id );
    d_phase_bc_helper->setCoefImplementation( d_phase_bc_coeffs );
 
-   /*
-    * Boundary conditions for FAC solvers should be homogeneous
-    * since solver computes corrections to current guess
-    */
+   // Boundary conditions for FAC solvers should be homogeneous
+   // since solver computes corrections to current guess
    d_temperature_bc_corr_coeffs =
       new solv::LocationIndexRobinBcCoefs(d_dim,"BCcorrcoeffs",
          bc_db->getDatabase( "Temperature" ));
@@ -184,9 +178,7 @@ PFModel::~PFModel()
 }
 
 /*************************************************************************
- *
- * Methods inherited from mesh::StandardTagAndInitStrategy.
- *
+ * Methods inherited from SAMRAI::mesh::StandardTagAndInitStrategy.
  ************************************************************************/
 void PFModel::initializeLevelData(
    const std::shared_ptr<hier::PatchHierarchy>& hierarchy,
@@ -206,10 +198,9 @@ void PFModel::initializeLevelData(
    NULL_USE(old_level);
    NULL_USE(allocate_data);
 
-   // This method is empty because initialization is taken care of
-   // by the setInitialConditions() method below.  If there is any
-   // data that is not managed inside the SAMRAI CVODESolver class
-   // but that must be set on the level, do it here.
+   // Empty because initialization is done by setInitialConditions().
+   // Data that is not managed inside the SAMRAI CVODESolver class
+   // and that must be set on the level should be initialized here
 }
 
 void PFModel::resetHierarchyConfiguration(
@@ -221,18 +212,9 @@ void PFModel::resetHierarchyConfiguration(
    NULL_USE(coarsest_level);
    NULL_USE(finest_level);
 
-   // This method is empty because this example does not exercise the
-   // situation when the grid changes, so it effectively is never called.
-   // This is a subject for future work...
+   // Empty for now since grid doesn't change
 }
 
-/*************************************************************************
- *
- * Cell tagging and patch level data initialization routines declared
- * in the GradientDetectorStrategy interface.  They are used to
- * construct the hierarchy initially.
- *
- *************************************************************************/
 void PFModel::applyGradientDetector(
    const std::shared_ptr<hier::PatchHierarchy>& hierarchy,
    const int level_number,
@@ -256,15 +238,14 @@ void PFModel::applyGradientDetector(
             patch->getPatchData(tag_index)));
       TBOX_ASSERT(tag_data);
 
-      // dumb implementation that tags all cells.
+      // dumb implementation:
+      // that tags all cells to refine everywhere
       tag_data->fillAll(1);
    }
 }
 
 /*************************************************************************
- *
  * Methods inherited from RefinePatchStrategy.
- *
  ***********************************************************************/
 void PFModel::setPhysicalBoundaryConditions(
    hier::Patch& patch,
@@ -307,9 +288,7 @@ void PFModel::postprocessRefine(
 }
 
 /*************************************************************************
- *
  * Methods inherited from CoarsenPatchStrategy.
- *
  ************************************************************************/
 void PFModel::preprocessCoarsen(
    hier::Patch& coarse,
@@ -336,9 +315,7 @@ void PFModel::postprocessCoarsen(
 }
 
 /*************************************************************************
- *
  * Methods inherited from CVODEAbstractFunction
- *
  ************************************************************************/
 int PFModel::evaluateRHSFunction(
    double time,
@@ -354,21 +331,7 @@ int PFModel::evaluateRHSFunction(
    std::shared_ptr<hier::PatchHierarchy>
       hierarchy(y_samvect->getPatchHierarchy());
 
-   if (d_print_solver_info) {
-      tbox::pout << "\t\tEval RHS: "
-           << "\n   \t\t\ttime = " << time
-           << "\n   \t\t\ty_maxnorm = " << y_samvect->maxNorm()
-           << endl;
-   }
-
-   /*
-    * Allocate scratch space and fill ghost cells in the solution vector
-    * 1) Create a refine algorithm
-    * 2) Register with the algorithm the current & scratch space, along
-    *    with a refine operator.
-    * 3) Use the refine algorithm to construct a refine schedule
-    * 4) Use the refine schedule to fill data on fine level.
-    */
+   // fill ghost values for temperature and phase variables
    std::shared_ptr<xfer::RefineAlgorithm> bdry_fill_alg(
       new xfer::RefineAlgorithm());
    std::shared_ptr<hier::RefineOperator> refine_op(
@@ -394,7 +357,7 @@ int PFModel::evaluateRHSFunction(
          level->allocatePatchData(d_phase_scr_id);
       }
 
-      // Note:  a pointer to "this" tells the refine schedule to invoke
+      // a pointer to "this" tells the refine schedule to invoke
       // the setPhysicalBCs defined in this class.
       std::shared_ptr<xfer::RefineSchedule> bdry_fill_alg_schedule(
          bdry_fill_alg->createSchedule(level,
@@ -405,7 +368,7 @@ int PFModel::evaluateRHSFunction(
       bdry_fill_alg_schedule->fillData(time);
    }
 
-   //Compute rhs for phase first, sinve it is used in rhs for temperature
+   //Compute rhs for phase first, since it is used in rhs for temperature
    for (int ln = hierarchy->getFinestLevelNumber(); ln >= 0; --ln) {
       std::shared_ptr<hier::PatchLevel> level(hierarchy->getPatchLevel(ln));
 
@@ -514,12 +477,7 @@ int PFModel::evaluateRHSFunction(
 }
 
 /*****************************************************************
- *
- * Set up FAC preconditioner for Jacobian system.  Here we
- * use the FAC hierarchy solver in SAMRAI which automatically sets
- * up the composite grid system and uses hypre as a solver on each
- * level.
- *
+ * Set up FAC preconditioner for Jacobian system.
  *****************************************************************/
 int PFModel::CVSpgmrPrecondSet(
    double t,
@@ -548,10 +506,8 @@ int PFModel::CVSpgmrPrecondSet(
 
    int y_indx = y_samvect->getComponentDescriptorIndex(d_phase_component);
 
-   /*
-    * Construct coarsen algorithm to fill interiors on coarser levels
-    * with solution on finer level.
-    */
+   // Construct coarsen algorithm to fill interiors on coarser levels
+   // with solution on finer level.
    xfer::CoarsenAlgorithm fill_phase_interior_on_coarser(d_dim);
    std::shared_ptr<hier::CoarsenOperator> coarsen_op(
       d_grid_geometry->lookupCoarsenOperator(d_phase_var,
@@ -570,11 +526,9 @@ int PFModel::CVSpgmrPrecondSet(
       std::shared_ptr<hier::PatchLevel> level(
          hierarchy->getPatchLevel(amr_level));
 
-      /*
-       * Construct a coarsen schedule for all levels larger than coarsest,
-       * and fill interiors of solution vector on coarser levels using fine
-       * data.
-       */
+      // Construct a coarsen schedule for all levels larger than coarsest,
+      // and fill interiors of solution vector on coarser levels using fine
+      // data.
       if (amr_level > 0) {
          std::shared_ptr<hier::PatchLevel> coarser_level(
             hierarchy->getPatchLevel(amr_level - 1));
@@ -589,9 +543,11 @@ int PFModel::CVSpgmrPrecondSet(
 
    } // level loop
 
+   // setup temperature FAC solver
    d_FAC_solver_temperature->setCConstant(1.0 / gamma);
    d_FAC_solver_temperature->setDConstant(d_temperature_diffusion);
 
+   // setup phase FAC solver
    setCforPhase(hierarchy,y_samvect,gamma);
 
    d_FAC_solver_phase->setCPatchDataId(d_cfield_phase_id);
@@ -604,12 +560,11 @@ int PFModel::CVSpgmrPrecondSet(
 }
 
 /*************************************************************************
- *
- * Apply preconditioner where right-hand-side is "r" and "z" is the
- * solution.   This routine assumes that the preconditioner setup call
- * has already been invoked.  Return 0 if preconditioner fails;
- * return 1 otherwise.
- *
+ * Apply preconditioner.
+ * r:  right-hand-side
+ * z: solution
+ * Assumes preconditioner has been setup already.
+ * Return 0 if preconditioner fails; 1 otherwise.
  *************************************************************************/
 int PFModel::CVSpgmrPrecondSolve(
    double t,
@@ -644,12 +599,10 @@ int PFModel::CVSpgmrPrecondSolve(
                     d_temperature_component);
    int z0_indx = z_samvect->getComponentDescriptorIndex(
                     d_temperature_component);
-   /*
-    * We need to supply to the FAC solver a "version" of the z vector
-    * that contains ghost cells.  The operations below allocate
-    * on the patches a scratch context of the solution vector z and
-    * fill it with 0 (initial guess for computed correction)
-    */
+   // We need to supply to the FAC solver a "version" of the z vector
+   // that contains ghost cells.  The operations below allocate
+   // on the patches a scratch context of the solution vector z and
+   // fill it with 0 (initial guess for computed correction)
    for (int ln = hierarchy->getFinestLevelNumber(); ln >= 0; --ln) {
       std::shared_ptr<hier::PatchLevel> level(hierarchy->getPatchLevel(ln));
 
@@ -709,11 +662,9 @@ int PFModel::CVSpgmrPrecondSolve(
       }
    }
 
-   /******************************************************************
-   * Apply the FAC solver.  It solves the system Az=r with the
-   * format "solveSystem(z, r)". A was constructed in the precondSetup()
-   * method.
-   ******************************************************************/
+   // Apply the FAC solver.  It solves the system Az=r with the
+   // format "solveSystem(z, r)". 
+   // The matrix was constructed in the precondSetup() method.
    if (d_print_solver_info) {
       tbox::pout << "\t\tBefore FAC Solve (Az=r): "
            << "\n   \t\t\tz_l2norm = " << z_samvect->L2Norm()
@@ -761,11 +712,8 @@ int PFModel::CVSpgmrPrecondSolve(
            << avg_convergence << endl;
    }
 
-   /******************************************************************
-   * The FAC solver has computed a solution to z but it is stored
-   * in the scratch data space.  Copy it from scratch back
-   * into the z vector, including ghost values
-   ******************************************************************/
+   // computed solutions are stored in scratch data space
+   // copy them into zvector
    math::HierarchyCellDataOpsReal<double> cell_ops( hierarchy );
    cell_ops.copyData( z0_indx, d_temperature_scr_id, false);
    cell_ops.copyData( z1_indx, d_phase_scr_id, false);
@@ -777,21 +725,18 @@ int PFModel::CVSpgmrPrecondSolve(
 }
 
 /*************************************************************************
- *
  * Methods specific to PFModel class.
- *
  ************************************************************************/
 void PFModel::setupSolutionVector(
    std::shared_ptr<hier::PatchHierarchy> hierarchy)
 {
-   // create SAMRAIVector
+   // create SAMRAIVector with temperature and phase field
    std::shared_ptr<solv::SAMRAIVectorReal<double> > samvect(
       new solv::SAMRAIVectorReal<double>(
          "solution",
          hierarchy,
          0, hierarchy->getFinestLevelNumber()));
 
-   //add temperature and phase fields to it
    samvect->addComponent(d_temperature_var, d_temperature_cur_id);
    samvect->addComponent(d_phase_var, d_phase_cur_id);
 
@@ -810,9 +755,7 @@ void PFModel::setupSolutionVector(
 }
 
 /*************************************************************************
- *
- * Set initial conditions for CVODE solver
- *
+ * Set initial conditions for temperature and phase fields in CVODE solver
  *************************************************************************/
 void PFModel::setInitialConditions()
 {
@@ -872,9 +815,9 @@ void PFModel::setInitialConditions()
    }
 }
 
-/*
+/*************************************************************************
  * Set C in operator -div*D*grad*phi+C*phi
- */
+ *************************************************************************/
 void PFModel::setCforPhase(
    const std::shared_ptr<hier::PatchHierarchy>& hierarchy,
    std::shared_ptr<solv::SAMRAIVectorReal<double> > y_samvect,
@@ -914,15 +857,13 @@ void PFModel::setCforPhase(
 
 void PFModel::printCounters(const double final_time)
 {
-   std::vector<int> counters(3);
-   counters[0] = d_number_rhs_eval;
-   counters[1] = d_number_precond_setup;
-   counters[2] = d_number_precond_solve;
-
    tbox::plog << "\n\nEnd Timesteps - final time = " << final_time
-              << "\n\tTotal number of RHS evaluations = " << counters[0]
-              << "\n\tTotal number of precond setups = " << counters[1]
-              << "\n\tTotal number of precond solves = " << counters[2]
+              << "\n\tTotal number of RHS evaluations = "
+              << d_number_rhs_eval
+              << "\n\tTotal number of precond setups = "
+              << d_number_precond_setup
+              << "\n\tTotal number of precond solves = "
+              << d_number_precond_solve
               << endl;
 }
 
@@ -992,8 +933,7 @@ void PFModel::getFromRestart()
 }
 
 /*************************************************************************
- * Register VisIt data writer to write data to plot files that may
- * be postprocessed by VisIt
+ * Register data to be plotted with VisIt
  *************************************************************************/
 void PFModel::registerVisItDataWriter(
    std::shared_ptr<appu::VisItDataWriter> viz_writer)
