@@ -275,7 +275,9 @@ private:
    std::shared_ptr<tbox::Timer> t_precondset_timer;
    std::shared_ptr<tbox::Timer> t_precondsolve_timer;
    std::shared_ptr<tbox::Timer> t_factemperature_timer;
+   std::shared_ptr<tbox::Timer> t_factempinit_timer;
    std::shared_ptr<tbox::Timer> t_facphase_timer;
+   std::shared_ptr<tbox::Timer> t_facphaseinit_timer;
 
    // Utilities to setup physical boundary conditions
    solv::CartesianRobinBcHelper* d_temperature_bc_helper;
@@ -293,4 +295,6 @@ private:
       std::shared_ptr<solv::SAMRAIVectorReal<double> > y_samvect,
       const double gamma);
 
+   void initializeSolvers(
+      const std::shared_ptr<hier::PatchHierarchy>& hierarchy);
 };

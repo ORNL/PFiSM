@@ -172,6 +172,8 @@ PFModel::PFModel(
    t_precondsolve_timer   = tman->getTimer("PFModel::precondsolve");
    t_factemperature_timer = tman->getTimer("PFModel::factemperature");
    t_facphase_timer       = tman->getTimer("PFModel::facphase");
+   t_factempinit_timer    = tman->getTimer("PFModel::factempinit");
+   t_facphaseinit_timer   = tman->getTimer("PFModel::facphaseinit");
 }
 
 PFModel::~PFModel()
@@ -487,6 +489,40 @@ int PFModel::evaluateRHSFunction(
    return 0;
 }
 
+// Initialize FAC solvers.
+// Should be called after regridding
+// For now, we call it when setting preconditioner
+void PFModel::initializeSolvers(
+   const std::shared_ptr<hier::PatchHierarchy>& hierarchy)
+{
+   const int coarsest_solve_ln = 0;
+   const int finest_solve_ln = hierarchy->getFinestLevelNumber();
+
+   t_factempinit_timer->start();
+
+   d_FAC_solver_temperature->deallocateSolverState();
+
+   d_FAC_solver_temperature->initializeSolverState(d_temperature_scr_id,
+         d_temperature_cur_id,
+         hierarchy,
+         coarsest_solve_ln,
+         finest_solve_ln);
+
+   t_factempinit_timer->stop();
+
+   t_facphaseinit_timer->start();
+
+   d_FAC_solver_phase->deallocateSolverState();
+
+   d_FAC_solver_phase->initializeSolverState(d_phase_scr_id,
+         d_phase_cur_id,
+         hierarchy,
+         coarsest_solve_ln,
+         finest_solve_ln);
+
+   t_facphaseinit_timer->stop();
+}
+
 /*****************************************************************
  * Set up FAC preconditioner for Jacobian system.
  *****************************************************************/
@@ -565,6 +601,8 @@ int PFModel::CVSpgmrPrecondSet(
 
    d_FAC_solver_phase->setCPatchDataId(d_cfield_phase_id);
    d_FAC_solver_phase->setDConstant( - d_mobility * d_epsilon * d_epsilon );
+
+   initializeSolvers(hierarchy);
 
    ++d_number_precond_setup;
 
@@ -697,20 +735,14 @@ int PFModel::CVSpgmrPrecondSolve(
    t_factemperature_timer->start();
 
    bool converge0 = d_FAC_solver_temperature->solveSystem(d_temperature_scr_id,
-         r0_indx,
-         hierarchy,
-         coarsest_solve_ln,
-         finest_solve_ln);
+         r0_indx);
 
    t_factemperature_timer->stop();
 
    t_facphase_timer->start();
 
    bool converge1 = d_FAC_solver_phase->solveSystem(d_phase_scr_id,
-         r1_indx,
-         hierarchy,
-         coarsest_solve_ln,
-         finest_solve_ln);
+         r1_indx);
 
    t_facphase_timer->stop();
 
