@@ -1,4 +1,4 @@
-#load modeules
+#load modules
 module load hdf5
 module load cmake
 module load gcc
@@ -37,4 +37,73 @@ make
 #run code
 bsub -nnodes 1 -PCSC249ADSE10 -W02:00 -Is $SHELL
 jsrun -n1 -a1 -g1 ./main cvode_neu.3d.input
+
+#####################################################################
+# XL
+#
+module load hdf5
+module load cmake
+module load xl
+
+sh ../SAMRAI/configure CFLAGS="-O2 " CXXFLAGS="-O2 " \
+            --build=ppc64le \
+            --disable-debug --enable-opt \
+            --with-CXX=mpicxx \
+            --with-CC=mpicc \
+            --with-F77=f77 \
+            --without-petsc \
+            --without-x \
+            --disable-shared \
+            --disable-rpath \
+            --with-mpi-lib-dirs=$MPI_ROOT \
+            --with-hdf5=$OLCF_HDF5_ROOT \
+            --with-hypre=$HOME/hypre/summitdev/install \
+            --with-sundials=$HOME/sundials/build_summitdev_xl \
+            --prefix=$HOME/GIT/jeanlucf22/SAMRAI/build_summitdev_xl
+
+Run code:
+---------
+module load cuda
+
+module load hdf5
+module load cmake
+module load xl
+sh ../SAMRAI/configure \
+   CFLAGS="-O0" \
+   CXXFLAGS="-O0" \
+            --build=ppc64le \
+            --enable-debug  \
+            --with-CXX=mpicxx \
+            --with-CC=mpicc \
+            --with-F77=f77 \
+            --without-petsc \
+            --without-x \
+            --disable-shared \
+            --disable-rpath \
+            --with-mpi-lib-dirs=$MPI_ROOT \
+            --with-hdf5=$OLCF_HDF5_ROOT \
+            --with-hypre=$HOME/hypre/summitdev_xl_gpu \
+            --with-sundials=$HOME/sundials/build_summitdev_xl \
+            --prefix=$HOME/GIT/jeanlucf22/SAMRAI/build_summitdev_xl
+
+GNU:
+---
+module load gcc
+sh ../SAMRAI/configure \
+   CFLAGS="-O0" \
+   CXXFLAGS="-O0" \
+            --build=ppc64le \
+            --enable-debug  \
+            --with-CXX=mpicxx \
+            --with-CC=mpicc \
+            --with-F77=mpif77 \
+            --without-petsc \
+            --without-x \
+            --disable-shared \
+            --disable-rpath \
+            --with-mpi-lib-dirs=$MPI_ROOT \
+            --with-hdf5=$OLCF_HDF5_ROOT \
+            --with-hypre=$HOME/hypre/summitdev_gnu_cpu \
+            --with-sundials=$HOME/sundials/build_summitdev_gnu \
+            --prefix=$HOME/GIT/SAMRAI/build_summitdev_gnu
 

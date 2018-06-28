@@ -4,7 +4,8 @@ VPATH = $(HOME)/GIT/PFiSM/source
 HYPRE_DIR = $(HOME)/hypre/summitdev_xl_gpu
 #HYPRE_DIR = $(HOME)/hypre/summitdev_xl_cpu
 SUNDIALS_DIR = $(HOME)/sundials/build_summitdev_xl
-SAMRAI_DIR = $(HOME)/GIT/SAMRAI/build_summitdev_xl
+#SAMRAI_DIR = $(HOME)/GIT/SAMRAI/build_summitdev_xl
+SAMRAI_DIR = $(HOME)/GIT/jeanlucf22/SAMRAI/build_summitdev_xl
 
 include $(SAMRAI_DIR)/config/Makefile.config
 
@@ -33,9 +34,9 @@ TARGET = main
 
 all: $(TARGET)
 
-OBJS = CVODEModel.o main.o 
+OBJS = PfmFACSolver.o PFModel.o main.o
 
-F77_OBJS = FACjacobian3d.o
+F77_OBJS = computeCforPhase.o rhs3d.o
 
 NVCCFLAGS = -ccbin=mpicxx -gencode arch=compute_60,"code=sm_60" \
 	-Xcompiler -fopenmp  -lcudart -lcuda  -lstdc++ -lm  \
