@@ -220,8 +220,6 @@ void PFModel::resetHierarchyConfiguration(
    NULL_USE(hierarchy);
    NULL_USE(coarsest_level);
    NULL_USE(finest_level);
-
-   // Empty for now since grid doesn't change
 }
 
 void PFModel::applyGradientDetector(
@@ -490,8 +488,7 @@ int PFModel::evaluateRHSFunction(
 }
 
 // Initialize FAC solvers.
-// Should be called after regridding
-// For now, we call it when setting preconditioner
+// Should be called after regridding or when matrix coefficients are changed
 void PFModel::initializeSolvers(
    const std::shared_ptr<hier::PatchHierarchy>& hierarchy)
 {
@@ -847,7 +844,8 @@ void PFModel::setInitialConditions()
          // Set initial conditions for temperature
          std::shared_ptr<pdat::CellData<double> > temperature_init(
             SAMRAI_SHARED_PTR_CAST<pdat::CellData<double>, hier::PatchData>(
-               init_samvect->getComponentPatchData(0, *patch)));
+               init_samvect->getComponentPatchData(
+                  d_temperature_component, *patch)));
          TBOX_ASSERT(temperature_init);
 
          temperature_init->fillAll(d_temperature_init);
