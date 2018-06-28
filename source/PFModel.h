@@ -270,6 +270,13 @@ private:
    int d_number_precond_setup;
    int d_number_precond_solve;
 
+   // Timers
+   std::shared_ptr<tbox::Timer> t_rhs_timer;
+   std::shared_ptr<tbox::Timer> t_precondset_timer;
+   std::shared_ptr<tbox::Timer> t_precondsolve_timer;
+   std::shared_ptr<tbox::Timer> t_factemperature_timer;
+   std::shared_ptr<tbox::Timer> t_facphase_timer;
+
    // Utilities to setup physical boundary conditions
    solv::CartesianRobinBcHelper* d_temperature_bc_helper;
    solv::LocationIndexRobinBcCoefs* d_temperature_bc_coeffs;

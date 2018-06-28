@@ -165,6 +165,13 @@ PFModel::PFModel(
    }
 
    d_FAC_solver_phase->setBcObject(d_phase_bc_corr_coeffs);
+
+   tbox::TimerManager* tman = tbox::TimerManager::getManager();
+   t_rhs_timer            = tman->getTimer("PFModel::rhs");
+   t_precondset_timer     = tman->getTimer("PFModel::precondset");
+   t_precondsolve_timer   = tman->getTimer("PFModel::precondsolve");
+   t_factemperature_timer = tman->getTimer("PFModel::factemperature");
+   t_facphase_timer       = tman->getTimer("PFModel::facphase");
 }
 
 PFModel::~PFModel()
@@ -322,6 +329,8 @@ int PFModel::evaluateRHSFunction(
    solv::SundialsAbstractVector* y,
    solv::SundialsAbstractVector* y_dot)
 {
+   t_rhs_timer->start();
+
    // Convert Sundials vectors to SAMRAI vectors
    std::shared_ptr<solv::SAMRAIVectorReal<double> > y_samvect(
       solv::Sundials_SAMRAIVector::getSAMRAIVector(y));
@@ -473,6 +482,8 @@ int PFModel::evaluateRHSFunction(
    d_current_time = time;
    ++d_number_rhs_eval;
 
+   t_rhs_timer->stop();
+
    return 0;
 }
 
@@ -498,6 +509,8 @@ int PFModel::CVSpgmrPrecondSet(
    NULL_USE(vtemp1);
    NULL_USE(vtemp2);
    NULL_USE(vtemp3);
+
+   t_precondset_timer->start();
 
    tbox::plog<<"CVSpgmrPrecondSet..."<<endl;
 
@@ -555,6 +568,8 @@ int PFModel::CVSpgmrPrecondSet(
 
    ++d_number_precond_setup;
 
+   t_precondset_timer->stop();
+
    //assume success and return 0
    return 0;
 }
@@ -583,6 +598,8 @@ int PFModel::CVSpgmrPrecondSolve(
    NULL_USE(vtemp);
    NULL_USE(delta);
    NULL_USE(lr);
+
+   t_precondsolve_timer->start();
 
    //plog<<"CVSpgmrPrecondSolve..."<<endl;
 
@@ -676,17 +693,26 @@ int PFModel::CVSpgmrPrecondSolve(
 
    const int coarsest_solve_ln = 0;
    const int finest_solve_ln = hierarchy->getFinestLevelNumber();
+
+   t_factemperature_timer->start();
+
    bool converge0 = d_FAC_solver_temperature->solveSystem(d_temperature_scr_id,
          r0_indx,
          hierarchy,
          coarsest_solve_ln,
          finest_solve_ln);
 
+   t_factemperature_timer->stop();
+
+   t_facphase_timer->start();
+
    bool converge1 = d_FAC_solver_phase->solveSystem(d_phase_scr_id,
          r1_indx,
          hierarchy,
          coarsest_solve_ln,
          finest_solve_ln);
+
+   t_facphase_timer->stop();
 
    bool converge = (converge0 && converge1);
 
@@ -721,6 +747,9 @@ int PFModel::CVSpgmrPrecondSolve(
    ++d_number_precond_solve;
 
    int ret_val = (converge==true) ? 0 : 1;
+
+   t_precondsolve_timer->stop();
+
    return ret_val;
 }
 
