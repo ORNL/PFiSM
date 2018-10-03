@@ -1,5 +1,4 @@
-#/bin/csh
-module purge
+#!/bin/csh
 module load PE-gnu
 module load hdf5
 module load cmake
@@ -11,4 +10,6 @@ cmake -DCMAKE_CXX_COMPILER=mpiCC -DCMAKE_C_COMPILER=mpicc \
 	-DSAMRAI_DIR=$HOME/GIT/SAMRAI/build \
 	-DHYPRE_DIR=$HOME/hypre/hypre-2.11.1/src/hypre \
 	-DSUNDIALS_DIR=$HOME/sundials/build \
-	-DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF ../source
+	-DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF \
+	-DMPI_EXEC="mpirun" \
+	..
