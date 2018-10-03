@@ -22,7 +22,9 @@ include_directories( ${SAMRAI_DIR}/include )
 include_directories( ${HYPRE_DIR}/include )
 include_directories( ${SUNDIALS_DIR}/include )
 
-find_package(HDF5)
+set(HDF5_USE_STATIC_LIBRARIES ON)
+find_package(HDF5 REQUIRED)
+message(STATUS ${HDF5_VERSION} )
 include_directories(${HDF5_INCLUDE_DIR})
 set(_hdf5_libs hdf5 hdf5_cpp)
 
@@ -38,7 +40,7 @@ MACRO(m4tof filename)
     ADD_CUSTOM_COMMAND(
       OUTPUT ${CMAKE_SOURCE_DIR}/source/fortran/${filename}.f
       COMMAND m4 
-      ARGS -DPDAT_FORTDIR=${SAMRAI_DIR}/../SAMRAI/source/SAMRAI/pdat/fortran 
+      ARGS -DPDAT_FORTDIR=${SAMRAI_DIR}/include/SAMRAI/pdat/fortran 
           ${CMAKE_SOURCE_DIR}/fortran/${filename}.m4 > ${CMAKE_SOURCE_DIR}/fortran/${filename}.f
       VERBATIM
       )
