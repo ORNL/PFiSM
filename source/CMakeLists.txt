@@ -1,11 +1,4 @@
-cmake_minimum_required(VERSION 3.0.2)
-project (PFiSM)
-
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
-
-enable_language(Fortran C CXX)
-
-set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g -std=c++11")
 
 link_directories( ${SAMRAI_DIR}/lib )
 link_directories( ${HYPRE_DIR}/lib )
@@ -41,9 +34,9 @@ endif( NOT M4_EXECUTABLE )
 
 # script used to convert m4 files
 MACRO(m4tof filename)
-  IF(NOT EXISTS ${CMAKE_SOURCE_DIR}/fortran/${filename}.f)
+  IF(NOT EXISTS ${CMAKE_SOURCE_DIR}/source/fortran/${filename}.f)
     ADD_CUSTOM_COMMAND(
-      OUTPUT ${CMAKE_SOURCE_DIR}/fortran/${filename}.f
+      OUTPUT ${CMAKE_SOURCE_DIR}/source/fortran/${filename}.f
       COMMAND m4 
       ARGS -DPDAT_FORTDIR=${SAMRAI_DIR}/../SAMRAI/source/SAMRAI/pdat/fortran 
           ${CMAKE_SOURCE_DIR}/fortran/${filename}.m4 > ${CMAKE_SOURCE_DIR}/fortran/${filename}.f
@@ -55,10 +48,11 @@ ENDMACRO(m4tof)
 m4tof(rhs3d)
 m4tof(computeCforPhase)
 
-set(SOURCES ${CMAKE_SOURCE_DIR}/main.C ${CMAKE_SOURCE_DIR}/PFModel.C
-            ${CMAKE_SOURCE_DIR}/PfmFACSolver.C 
-            ${CMAKE_SOURCE_DIR}/fortran/rhs3d.f
-            ${CMAKE_SOURCE_DIR}/fortran/computeCforPhase.f )
+set(SOURCES ${CMAKE_SOURCE_DIR}/source/main.C
+            ${CMAKE_SOURCE_DIR}/source/PFModel.C
+            ${CMAKE_SOURCE_DIR}/source/PfmFACSolver.C
+            ${CMAKE_SOURCE_DIR}/source/fortran/rhs3d.f
+            ${CMAKE_SOURCE_DIR}/source/fortran/computeCforPhase.f )
 
 add_executable(main ${SOURCES} )
 
@@ -75,3 +69,4 @@ target_link_libraries(main ${PROJECT_LINK_LIBS9}
                            ${PROJECT_LINK_LIBS11}
                            ${_hdf5_libs}
                       )
+
