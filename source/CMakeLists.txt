@@ -31,9 +31,12 @@ set(SOURCES ${CMAKE_SOURCE_DIR}/source/main.C
 
 add_executable(main ${SOURCES} )
 
+add_library(PFiSM_Hypre SHARED ${CMAKE_SOURCE_DIR}/source/PFiSM_Hypre.C)
+
 target_link_libraries(main ${PROJECT_LINK_LIBS_SAMRAI}
                            ${PROJECT_LINK_LIBS10}
                            ${PROJECT_LINK_LIBS11}
                            ${PROJECT_LINK_LIBS_HDF5}
+                           ${PFiSM_Hypre}
                       )
 
