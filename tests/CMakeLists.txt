@@ -1,8 +1,4 @@
-include_directories( ${SAMRAI_DIR}/include )
-
-link_directories( ${SAMRAI_DIR}/lib )
-
-set( PROJECT_LINK_LIBS1 libSAMRAI_tbox.a )
+set( TEST_DIR ${CMAKE_SOURCE_DIR}/tests )
 
 add_executable(testMPI ${CMAKE_SOURCE_DIR}/tests/testMPI.C)
 
