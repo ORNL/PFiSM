@@ -14,7 +14,8 @@ MACRO(m4tof filename)
       OUTPUT ${CMAKE_SOURCE_DIR}/source/fortran/${filename}.f
       COMMAND m4 
       ARGS -DPDAT_FORTDIR=${SAMRAI_DIR}/include/SAMRAI/pdat/fortran 
-          ${CMAKE_SOURCE_DIR}/fortran/${filename}.m4 > ${CMAKE_SOURCE_DIR}/fortran/${filename}.f
+          ${CMAKE_SOURCE_DIR}/source/fortran/${filename}.m4 >
+              ${CMAKE_SOURCE_DIR}/source/fortran/${filename}.f
       VERBATIM
       )
   ENDIF()
