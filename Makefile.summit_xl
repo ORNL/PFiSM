@@ -1,0 +1,60 @@
+
+VPATH = $(HOME)/GIT/PFiSM/source
+
+HYPRE_LIB_DIR = $(HOME)/hypre/summitdev_xl_gpu/lib
+HYPRE_INC_DIR = $(HOME)/hypre/summitdev_xl_cpu/include
+
+SUNDIALS_DIR = $(HOME)/sundials/build_summitdev_xl
+SAMRAI_DIR = $(HOME)/GIT/jeanlucf22/SAMRAI/build_summitdev_xl
+
+include $(SAMRAI_DIR)/config/Makefile.config
+
+NVCC = nvcc
+CXX = mpicxx
+
+CXXFLAGS += -I$(SAMRAI_DIR)/include -I$(HYPRE_INC_DIR) -I$(SUNDIALS_DIR)/include
+LDLIBS= \
+	-L$(HYPRE_LIB_DIR) -lHYPRE \
+	-L$(SUNDIALS_DIR)/lib -lsundials_cvode \
+	-lhdf5 -lm
+
+# how to produce objects from source files
+
+%.o:%.C		$(VPATH)/*.C
+	$(CXX) $(CXXFLAGS) -o $@ -c $<
+FORTRAN         = $(VPATH)/fortran
+%.o:            $(FORTRAN)/%.f
+	cp $(FORTRAN)/$*.f $*.f
+	$(F77) $(FFLAGS) -c $*.f -o $@
+%.o:            $(FORTCOMM)/%.m4
+	$(M4) $(M4DIRS) $(FORTCOMM)/$*.m4 > $*.f
+	$(F77) $(FFLAGS) -c $*.f -o $@
+
+TARGET = main
+HYPRELINK = libPFiSM_Hypre.so
+
+all: $(TARGET) $(HYPRELINK)
+
+OBJS = PfmFACSolver.o PFModel.o main.o 
+
+F77_OBJS = computeCforPhase.o rhs3d.o
+
+NVCCFLAGS = -ccbin=mpicxx -gencode arch=compute_60,"code=sm_60" \
+	-Xcompiler -fopenmp  -lcudart -lcuda  -lstdc++ -lm  \
+	-L/lib64 -lcusparse -lcudart -lcublas -lnvToolsExt
+
+# rules
+$(TARGET):	$(OBJS) $(F77_OBJS)
+	$(NVCC) $(NVCCFLAGS) -o $(TARGET) $(OBJS) $(F77_OBJS) \
+	$(LIBSAMRAI) $(LDLIBS)
+
+HYPRELINK_OBJS = PFiSM_Hypre.o
+
+$(HYPRELINK):	$(HYPRELINK_OBJS)
+	$(NVCC) $(NVCCFLAGS) $(HYPRELINK_OBJS) -o $@ -shared
+
+clean:
+	rm -f *.o
+	rm -f *.f
+	rm -f main
+	
