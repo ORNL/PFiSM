@@ -26,15 +26,13 @@ LDLIBS= \
 	-lhdf5 -lm
 
 # how to produce objects from source files
+M4DIRS = ${SAMRAI_DIR}/include/SAMRAI/pdat/fortran
 
 %.o:%.C		$(VPATH)/*.C
 	$(NVCC) $(NVCCFLAGS) -c $<
-FORTRAN         = $(VPATH)/fortran
-%.o:            $(FORTRAN)/%.f
-	cp $(FORTRAN)/$*.f $*.f
-	$(F77) $(FFLAGS) -c $*.f -o $@
+FORTCOMM         = $(VPATH)/fortran
 %.o:            $(FORTCOMM)/%.m4
-	$(M4) $(M4DIRS) $(FORTCOMM)/$*.m4 > $*.f
+	$(M4) -DPDAT_FORTDIR=$(M4DIRS) $(FORTCOMM)/$*.m4 > $*.f
 	$(F77) $(FFLAGS) -c $*.f -o $@
 
 TARGET = main
