@@ -1,27 +1,34 @@
 
 VPATH = $(HOME)/GIT/PFiSM/source
 
-HYPRE_LIB_DIR = $(HOME)/hypre/summitdev_xl_gpu/lib
-HYPRE_INC_DIR = $(HOME)/hypre/summitdev_xl_cpu/include
-
+HYPRE_DIR    = $(HOME)/hypre/summitdev_xl_gpu
 SUNDIALS_DIR = $(HOME)/sundials/build_summitdev_xl
-SAMRAI_DIR = $(HOME)/GIT/jeanlucf22/SAMRAI/build_summitdev_xl
+SAMRAI_DIR   = $(HOME)/GIT/SAMRAI/build_summitdev_xl
 
 include $(SAMRAI_DIR)/config/Makefile.config
 
 NVCC = nvcc
 CXX = mpicxx
 
-CXXFLAGS += -I$(SAMRAI_DIR)/include -I$(HYPRE_INC_DIR) -I$(SUNDIALS_DIR)/include
+INCLUDE_FLAGS = -I$(SAMRAI_DIR)/include -I$(HYPRE_DIR)/include \
+            -I$(SUNDIALS_DIR)/include
+
+CXXFLAGS += $(INCLUDE_FLAGS)
+NVCCFLAGS = -O0 -g -ccbin=mpixlC -gencode arch=compute_60,"code=sm_60" \
+            -dc --std=c++11 -Xcompiler -fopenmp -Xcompiler \
+            -Wno-deprecated-register --x cu \
+            -DHYPRE_USE_CUDA \
+            $(INCLUDE_FLAGS)
+
 LDLIBS= \
-	-L$(HYPRE_LIB_DIR) -lHYPRE \
+	-L$(HYPRE_DIR)/lib -lHYPRE \
 	-L$(SUNDIALS_DIR)/lib -lsundials_cvode \
 	-lhdf5 -lm
 
 # how to produce objects from source files
 
 %.o:%.C		$(VPATH)/*.C
-	$(CXX) $(CXXFLAGS) -o $@ -c $<
+	$(NVCC) $(NVCCFLAGS) -c $<
 FORTRAN         = $(VPATH)/fortran
 %.o:            $(FORTRAN)/%.f
 	cp $(FORTRAN)/$*.f $*.f
@@ -34,24 +41,28 @@ TARGET = main
 HYPRELINK = libPFiSM_Hypre.so
 
 all: $(TARGET) $(HYPRELINK)
+lib: $(HYPRELINK)
 
 OBJS = PfmFACSolver.o PFModel.o main.o 
+SAMRAI_OBJS = CellPoissonFACOps.o \
+              CellPoissonHypreSolver.o \
+              CellPoissonFACSolver.o
 
 F77_OBJS = computeCforPhase.o rhs3d.o
 
-NVCCFLAGS = -ccbin=mpicxx -gencode arch=compute_60,"code=sm_60" \
+NVCCLINKFLAGS = -ccbin=mpicxx -gencode arch=compute_60,"code=sm_60" \
 	-Xcompiler -fopenmp  -lcudart -lcuda  -lstdc++ -lm  \
 	-L/lib64 -lcusparse -lcudart -lcublas -lnvToolsExt
 
 # rules
-$(TARGET):	$(OBJS) $(F77_OBJS)
-	$(NVCC) $(NVCCFLAGS) -o $(TARGET) $(OBJS) $(F77_OBJS) \
+$(TARGET):	$(OBJS) $(F77_OBJS) $(SAMRAI_OBJS)
+	$(NVCC) $(NVCCLINKFLAGS) -o $(TARGET) $(OBJS) $(F77_OBJS) $(SAMRAI_OBJS) \
 	$(LIBSAMRAI) $(LDLIBS)
 
 HYPRELINK_OBJS = PFiSM_Hypre.o
 
 $(HYPRELINK):	$(HYPRELINK_OBJS)
-	$(NVCC) $(NVCCFLAGS) $(HYPRELINK_OBJS) -o $@ -shared
+	$(NVCC) $(NVCCLINKFLAGS) -DHYPRE_USE_CUDA $(HYPRELINK_OBJS) -o $@ -shared
 
 clean:
 	rm -f *.o

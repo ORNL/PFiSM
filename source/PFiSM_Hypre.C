@@ -103,7 +103,7 @@ HYPRE_StructVectorGetBoxValues( HYPRE_StructVector  vector,
    }
    my_HYPRE_StructVectorGetBoxValues( vector, ilower, iupper, values);
 
-   PFiSM_HYPRE_StructVectorGetBoxValues( vector, ilower, iupper, values);
+   return PFiSM_HYPRE_StructVectorGetBoxValues( vector, ilower, iupper, values);
 }
 
 /*--------------------------------------------------------------------------
@@ -197,7 +197,7 @@ HYPRE_StructVectorSetBoxValues( HYPRE_StructVector  vector,
    }
    my_HYPRE_StructVectorSetBoxValues( vector, ilower, iupper, values);
 
-   PFiSM_HYPRE_StructVectorSetBoxValues( vector, ilower, iupper, values);
+   return PFiSM_HYPRE_StructVectorSetBoxValues( vector, ilower, iupper, values);
 }
 
 /*--------------------------------------------------------------------------
@@ -297,7 +297,7 @@ HYPRE_StructMatrixSetBoxValues( HYPRE_StructMatrix  matrix,
    my_HYPRE_StructMatrixSetBoxValues( matrix, ilower, iupper,
        num_stencil_indices, stencil_indices, values);
 
-   PFiSM_HYPRE_StructMatrixSetBoxValues( matrix, ilower, iupper,
+   return PFiSM_HYPRE_StructMatrixSetBoxValues( matrix, ilower, iupper,
        num_stencil_indices, stencil_indices, values);
 }
 
