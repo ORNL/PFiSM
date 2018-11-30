@@ -11,7 +11,7 @@ NVCC = nvcc
 CXX = mpicxx
 
 INCLUDE_FLAGS = -I$(SAMRAI_DIR)/include -I$(HYPRE_DIR)/include \
-            -I$(SUNDIALS_DIR)/include
+            -I$(SUNDIALS_DIR)/include -I$(OLCF_CUDA_ROOT)/include
 
 CXXFLAGS += $(INCLUDE_FLAGS)
 NVCCFLAGS = -O0 -g -ccbin=mpixlC -gencode arch=compute_$(CUDA_SM) \
@@ -19,7 +19,6 @@ NVCCFLAGS = -O0 -g -ccbin=mpixlC -gencode arch=compute_$(CUDA_SM) \
             -Wno-deprecated-register --x cu -Xcompiler "-O2 " \
             -Xcompiler "-fPIC" -DHAVE_CONFIG_H \
             -DHYPRE_TIMING -DHYPRE_FORTRAN \
-            -DHYPRE_USE_CUDA \
             $(INCLUDE_FLAGS)
 
 LDLIBS= \
@@ -40,10 +39,10 @@ FORTCOMM         = $(VPATH)/fortran
 TARGET = main
 HYPRELINK = libPFiSM_Hypre.so
 
-all: $(TARGET) $(HYPRELINK)
-lib: $(HYPRELINK)
+all: $(TARGET) #$(HYPRELINK)
+#lib: $(HYPRELINK)
 
-OBJS = PfmFACSolver.o PFModel.o main.o 
+OBJS = PFiSM_Hypre.o PfmFACSolver.o PFModel.o main.o 
 SAMRAI_OBJS = CellPoissonFACOps.o \
               CellPoissonHypreSolver.o \
               CellPoissonFACSolver.o
@@ -64,7 +63,7 @@ $(TARGET):	$(OBJS) $(F77_OBJS) $(SAMRAI_OBJS)
 HYPRELINK_OBJS = PFiSM_Hypre.o
 
 $(HYPRELINK):	$(HYPRELINK_OBJS)
-	$(NVCC) $(NVCCLINKFLAGS) -DHYPRE_USE_CUDA $(HYPRELINK_OBJS) -o $@ -shared
+	$(NVCC) $(NVCCLINKFLAGS) $(HYPRELINK_OBJS) -o $@ -shared
 
 clean:
 	rm -f *.o

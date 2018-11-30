@@ -32,6 +32,8 @@
 #include "SAMRAI/tbox/TimerManager.h"
 #include "SAMRAI/tbox/StartupShutdownManager.h"
 
+#include "PFiSM_Hypre.h"
+
 #include <cstdlib>
 
 extern "C" {
@@ -681,12 +683,12 @@ CellPoissonHypreSolver::copyToHypre(
    hier::Index upper(box.upper());
 
    if (src.getGhostBox().isSpatiallyEqual(box)) {
-      HYPRE_StructVectorSetBoxValues(
+      PFiSM_HYPRE_StructVectorSetBoxValues(
          vector, &lower[0], &upper[0], src.getPointer(depth)); 
    } else {
       pdat::CellData<double> tmp(box, 1, hier::IntVector::getZero(d_dim));
       tmp.copyDepth(0, src, depth);
-      HYPRE_StructVectorSetBoxValues(
+      PFiSM_HYPRE_StructVectorSetBoxValues(
          vector, &lower[0], &upper[0], tmp.getPointer());
    } 
 }
@@ -711,11 +713,11 @@ CellPoissonHypreSolver::copyFromHypre(
    hier::Index lower(box.lower());
    hier::Index upper(box.upper());
    if (dst.getGhostBox().isSpatiallyEqual(box)) {
-      HYPRE_StructVectorGetBoxValues(
+      PFiSM_HYPRE_StructVectorGetBoxValues(
          vector, &lower[0], &upper[0], dst.getPointer(depth));
    } else {
       pdat::CellData<double> tmp(box, 1, hier::IntVector::getZero(d_dim));
-      HYPRE_StructVectorGetBoxValues(
+      PFiSM_HYPRE_StructVectorGetBoxValues(
          vector, &lower[0], &upper[0], tmp.getPointer());
       dst.copyDepth(depth,tmp,0);
    }
@@ -1037,7 +1039,7 @@ CellPoissonHypreSolver::setMatrixCoefficients(
          if (d_dim > tbox::Dimension(2))
             offsety+=patch_box.numberCells(0);
       }
-      HYPRE_StructMatrixSetBoxValues(d_matrix, &ilower[0], &iupper[0],
+      PFiSM_HYPRE_StructMatrixSetBoxValues(d_matrix, &ilower[0], &iupper[0],
                                      stencil_size, stencil_indices,
                                      mat_entries);
       delete[] mat_entries;
