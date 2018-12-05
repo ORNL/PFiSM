@@ -1662,11 +1662,7 @@ CellPoissonFACOps::solveCoarsestLevel(
          d_coarse_solver_max_iterations);
       d_residual_tolerance_during_smoothing = -1.0;
    } else if (d_coarse_solver_choice == "hypre") {
-      TBOX_ERROR(d_object_name << ": Coarse level solver choice '"
-                               << d_coarse_solver_choice
-                               << "' unavailable in "
-                               << "scapCellPoissonOps::solveCoarsestLevel."
-                               << std::endl);
+      return_value = solveCoarsestLevel_HYPRE(data, residual, coarsest_ln);
    } else {
       TBOX_ERROR(
          d_object_name << ": Bad coarse level solver choice '"
