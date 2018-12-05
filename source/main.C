@@ -1,3 +1,5 @@
+#include "_hypre_utilities.h"
+
 #include "SAMRAI/SAMRAI_config.h"
 
 #include "PFModel.h"
@@ -62,6 +64,8 @@ int main(
    tbox::SAMRAI_MPI::init(&argc, &argv);
    tbox::SAMRAIManager::initialize();
    tbox::SAMRAIManager::startup();
+
+   HYPRE_Init(argc, argv);
 
    {
       if (argc != 2) {
@@ -316,8 +320,10 @@ int main(
 
       tbox::TimerManager::getManager()->print(tbox::pout);
 
+      tbox::pout<<"Delete solver..."<<std::endl;
       delete cvode_solver;
 
+      tbox::pout<<"Clean up..."<<std::endl;
       pf_model.reset();
       gridding_algorithm.reset();
       error_est.reset();
@@ -326,9 +332,15 @@ int main(
       hierarchy.reset();
       geometry.reset();
       visit_data_writer.reset();
+
+      tbox::pout<<"Close scope..."<<std::endl;
    }
 
+   tbox::pout<<"Finalize hypre..."<<std::endl;
+   HYPRE_Finalize();
+
    // Shutdown SAMRAI and tbox::MPI.
+   tbox::pout<<"Finalize SAMRAI..."<<std::endl;
    tbox::SAMRAIManager::shutdown();
    tbox::SAMRAIManager::finalize();
    tbox::SAMRAI_MPI::finalize();
