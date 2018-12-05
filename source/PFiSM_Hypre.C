@@ -8,6 +8,7 @@
 
 #include <stdio.h>
 #include <dlfcn.h>
+#include <iostream>
 
 HYPRE_Int hypre__global_error = 0;
 
@@ -21,7 +22,7 @@ PFiSM_HYPRE_StructVectorGetBoxValues( HYPRE_StructVector  vector,
                                 HYPRE_Int          *iupper,
                                 HYPRE_Complex      *values )
 {
-   printf("PFiSM version of HYPRE_StructVectorGetBoxValues()...\n");
+   //std::cout<<"PFiSM version of HYPRE_StructVectorGetBoxValues()...\n";
    hypre_Index   new_ilower;
    hypre_Index   new_iupper;
    hypre_Box    *new_value_box;
@@ -29,7 +30,7 @@ PFiSM_HYPRE_StructVectorGetBoxValues( HYPRE_StructVector  vector,
    HYPRE_Int     d;
    HYPRE_Real* device_values;
    HYPRE_Int     volume;
-#if defined(HYPRE_USING_CUDA)
+#ifdef HYPRE_USING_CUDA
    cudaPointerAttributes attr;
    cudaError_t ret;
    ret = cudaPointerGetAttributes(&attr,values);
@@ -69,7 +70,7 @@ PFiSM_HYPRE_StructVectorGetBoxValues( HYPRE_StructVector  vector,
                                   device_values, -1, -1, 0);
 
    hypre_BoxDestroy(new_value_box);
-#if defined(HYPRE_USING_CUDA)
+#ifdef HYPRE_USING_CUDA
    if ( ret == cudaErrorInvalidValue )
    {
       hypre_Memcpy(values,device_values,volume*sizeof(double),
@@ -116,6 +117,7 @@ PFiSM_HYPRE_StructVectorSetBoxValues( HYPRE_StructVector  vector,
                                 HYPRE_Int          *iupper,
                                 HYPRE_Complex      *values )
 {
+   //std::cout<<"PFiSM_HYPRE_StructVectorSetBoxValues\n";
    hypre_Index   new_ilower;
    hypre_Index   new_iupper;
    hypre_Box    *new_value_box;
@@ -123,7 +125,7 @@ PFiSM_HYPRE_StructVectorSetBoxValues( HYPRE_StructVector  vector,
    HYPRE_Int     d;
    HYPRE_Int     volume;
    HYPRE_Real   *device_values;
-#if defined(HYPRE_USING_CUDA)
+#ifdef HYPRE_USING_CUDA
    cudaPointerAttributes attr;
    cudaError_t ret;
    ret = cudaPointerGetAttributes(&attr,values);
@@ -164,7 +166,7 @@ PFiSM_HYPRE_StructVectorSetBoxValues( HYPRE_StructVector  vector,
 
    hypre_BoxDestroy(new_value_box);
 
-#if defined(HYPRE_USING_CUDA)
+#ifdef HYPRE_USING_CUDA
    if ( ret == cudaErrorInvalidValue )
    {
        hypre_TFree(device_values,HYPRE_MEMORY_DEVICE);
@@ -218,7 +220,7 @@ PFiSM_HYPRE_StructMatrixSetBoxValues( HYPRE_StructMatrix  matrix,
    HYPRE_Int           d;
    HYPRE_Int     volume;
    HYPRE_Real   *device_values;
-#if defined(HYPRE_USING_CUDA)
+#ifdef HYPRE_USING_CUDA
    cudaPointerAttributes attr;
    cudaError_t ret;
    ret = cudaPointerGetAttributes(&attr,values);
@@ -259,7 +261,7 @@ PFiSM_HYPRE_StructMatrixSetBoxValues( HYPRE_StructMatrix  matrix,
                                   device_values, 0, -1, 0);
 
    hypre_BoxDestroy(new_value_box);
-#if defined(HYPRE_USING_CUDA)
+#ifdef HYPRE_USING_CUDA
    if ( ret == cudaErrorInvalidValue )
    {
        hypre_TFree(device_values,HYPRE_MEMORY_DEVICE);

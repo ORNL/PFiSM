@@ -19,6 +19,7 @@ NVCCFLAGS = -O0 -g -ccbin=mpixlC -gencode arch=compute_$(CUDA_SM) \
             -Wno-deprecated-register --x cu -Xcompiler "-O2 " \
             -Xcompiler "-fPIC" -DHAVE_CONFIG_H \
             -DHYPRE_TIMING -DHYPRE_FORTRAN \
+            -DHYPRE_USING_CUDA \
             $(INCLUDE_FLAGS)
 
 LDLIBS= \
