@@ -304,6 +304,8 @@ CellPoissonHypreSolver::CellPoissonHypreSolver(
       getTimer("solv::CellPoissonHypreSolver::solveSystem()");
    t_set_matrix_coefficients = tbox::TimerManager::getManager()->
       getTimer("solv::CellPoissonHypreSolver::setMatrixCoefficients()");
+   t_setup_hypre = tbox::TimerManager::getManager()->
+      getTimer("solv::CellPoissonHypreSolver::setupHypreSolver()");
 
    hier::VariableDatabase* vdb = hier::VariableDatabase::getDatabase();
    if (!s_Ak0_var[d_dim.getValue() - 1]) {
@@ -1180,6 +1182,8 @@ CellPoissonHypreSolver::add_gAk0_toRhs(
 void
 CellPoissonHypreSolver::setupHypreSolver()
 {
+   t_setup_hypre->start();
+
    TBOX_ASSERT(d_mg_data == 0);
 
    tbox::SAMRAI_MPI::Comm communicator =
@@ -1213,6 +1217,8 @@ CellPoissonHypreSolver::setupHypreSolver()
          d_linear_rhs,
          d_linear_sol);
    }
+
+   t_setup_hypre->stop();
 }
 
 void

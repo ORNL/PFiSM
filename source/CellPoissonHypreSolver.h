@@ -722,6 +722,7 @@ private:
     */
    std::shared_ptr<tbox::Timer> t_solve_system;
    std::shared_ptr<tbox::Timer> t_set_matrix_coefficients;
+   std::shared_ptr<tbox::Timer> t_setup_hypre;
 
    static tbox::StartupShutdownManager::Handler s_finalize_handler;
 };
