@@ -247,8 +247,10 @@ CellPoissonFACSolver::deallocateSolverState()
        */
       int ln;
       for (ln = d_ln_min; ln <= d_ln_max; ++ln) {
+         int weight_id = s_weight_id[d_dim.getValue() - 1];
+         if( weight_id >= 0 )
          d_hierarchy->getPatchLevel(ln)->deallocatePatchData(
-            s_weight_id[d_dim.getValue() - 1]);
+            weight_id);
       }
 
       d_hierarchy.reset();
