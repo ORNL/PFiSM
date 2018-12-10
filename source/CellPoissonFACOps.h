@@ -16,7 +16,6 @@
 #include "SAMRAI/solv/FACPreconditioner.h"
 #include "SAMRAI/solv/FACOperatorStrategy.h"
 #include "SAMRAI/solv/RobinBcCoefStrategy.h"
-#include "CellPoissonHypreSolver.h"
 #include "SAMRAI/solv/SAMRAIVectorReal.h"
 #include "SAMRAI/solv/PoissonSpecifications.h"
 #include "SAMRAI/math/HierarchyCellDataOpsReal.h"
@@ -47,6 +46,7 @@
 
 #include <string>
 #include <memory>
+class CellPoissonHypreSolver;
 
 using namespace SAMRAI;
 
@@ -266,12 +266,7 @@ public:
     */
    void
    setPhysicalBcCoefObject(
-      const solv::RobinBcCoefStrategy* physical_bc_coef)
-   {
-      d_physical_bc_coef = physical_bc_coef;
-      d_bc_helper.setCoefImplementation(physical_bc_coef);
-      d_hypre_solver->setPhysicalBcCoefObject(d_physical_bc_coef);
-   }
+      const solv::RobinBcCoefStrategy* physical_bc_coef);
 
    //@{
 

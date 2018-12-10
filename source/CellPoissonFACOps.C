@@ -2035,6 +2035,15 @@ CellPoissonFACOps::computeVectorWeights(
    }  // loop over levels
 }
 
+void
+CellPoissonFACOps::setPhysicalBcCoefObject(
+   const solv::RobinBcCoefStrategy* physical_bc_coef)
+{
+   d_physical_bc_coef = physical_bc_coef;
+   d_bc_helper.setCoefImplementation(physical_bc_coef);
+   d_hypre_solver->setPhysicalBcCoefObject(d_physical_bc_coef);
+}
+
 /*
  ********************************************************************
  * Check the validity and correctness of input data for this class.

@@ -1,4 +1,3 @@
-#include "CellPoissonHypreSolver.h"
 #include "CellPoissonFACOps.h"
 #include "SAMRAI/solv/FACPreconditioner.h"
 #include "CellPoissonFACSolver.h"
@@ -8,6 +7,8 @@
 #include <string>
 
 using namespace SAMRAI;
+
+class CellPoissonHypreSolver;
 
 class PfmFACSolver
 {

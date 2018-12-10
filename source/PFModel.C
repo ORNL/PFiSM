@@ -27,6 +27,8 @@
 #pragma GCC diagnostic pop
 #endif
 
+#include "CellPoissonFACSolver.h"
+
 using namespace std;
 
 extern "C" {

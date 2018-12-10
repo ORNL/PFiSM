@@ -23,7 +23,6 @@
 #include "SAMRAI/xfer/RefinePatchStrategy.h"
 #include "SAMRAI/xfer/CoarsenPatchStrategy.h"
 #include "SAMRAI/mesh/StandardTagAndInitStrategy.h"
-#include "CellPoissonFACSolver.h"
 #include "SAMRAI/appu/VisItDataWriter.h"
 #include "SAMRAI/solv/LocationIndexRobinBcCoefs.h"
 #include "SAMRAI/solv/CartesianRobinBcHelper.h"
@@ -39,6 +38,8 @@
 
 #include <vector>
 #include <iostream>
+
+class CellPoissonFACSolver;
 
 using namespace SAMRAI;
 
