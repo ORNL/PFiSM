@@ -32,12 +32,17 @@ set(SOURCES ${CMAKE_SOURCE_DIR}/source/main.C
 
 add_executable(main ${SOURCES} )
 
-add_library(PFiSM_Hypre SHARED ${CMAKE_SOURCE_DIR}/source/PFiSM_Hypre.C)
+add_library(PFiSM_Hypre SHARED ${CMAKE_SOURCE_DIR}/source/PFiSM_Hypre.C
+                               ${CMAKE_SOURCE_DIR}/source/CellPoissonFACOps.C
+                               ${CMAKE_SOURCE_DIR}/source/CellPoissonHypreSolver.C
+                               ${CMAKE_SOURCE_DIR}/source/CellPoissonFACSolver.C )
 
-target_link_libraries(main ${PROJECT_LINK_LIBS_SAMRAI}
+target_include_directories( PFiSM_Hypre PRIVATE ${HYPRE_DIR}/include )
+
+target_link_libraries(main PFiSM_Hypre
+                           ${PROJECT_LINK_LIBS_SAMRAI}
                            ${PROJECT_LINK_LIBS10}
                            ${PROJECT_LINK_LIBS11}
                            ${PROJECT_LINK_LIBS_HDF5}
-                           ${PFiSM_Hypre}
                       )
 
