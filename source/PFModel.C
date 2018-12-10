@@ -173,13 +173,13 @@ PFModel::PFModel(
    d_FAC_solver_phase->setBcObject(d_phase_bc_corr_coeffs);
 
    tbox::TimerManager* tman = tbox::TimerManager::getManager();
-   t_rhs_timer            = tman->getTimer("PFModel::rhs");
-   t_precondset_timer     = tman->getTimer("PFModel::precondset");
-   t_precondsolve_timer   = tman->getTimer("PFModel::precondsolve");
-   t_factemperature_timer = tman->getTimer("PFModel::factemperature");
-   t_facphase_timer       = tman->getTimer("PFModel::facphase");
-   t_factempinit_timer    = tman->getTimer("PFModel::factempinit");
-   t_facphaseinit_timer   = tman->getTimer("PFModel::facphaseinit");
+   t_rhs_timer            = tman->getTimer("PFiSM::rhs");
+   t_precondset_timer     = tman->getTimer("PFiSM::precondset");
+   t_precondsolve_timer   = tman->getTimer("PFiSM::precondsolve");
+   t_factemperature_timer = tman->getTimer("PFiSM::factemperature");
+   t_facphase_timer       = tman->getTimer("PFiSM::facphase");
+   t_factempinit_timer    = tman->getTimer("PFiSM::factempinit");
+   t_facphaseinit_timer   = tman->getTimer("PFiSM::facphaseinit");
 }
 
 PFModel::~PFModel()

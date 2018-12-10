@@ -198,7 +198,7 @@ int main(
       tbox::TimerManager::createManager(input_db->getDatabase("TimerManager"));
       std::shared_ptr<tbox::Timer> t_cvode_solve(
          tbox::TimerManager::getManager()->
-         getTimer("apps::main::solver"));
+         getTimer("PFiSM::time_integrator"));
 
       // Set up Visualization plot file writer
       int visit_number_procs_per_file=1;

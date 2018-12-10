@@ -588,19 +588,19 @@ CellPoissonFACOps::buildObject(
    }
 
    t_restrict_solution = tbox::TimerManager::getManager()->
-      getTimer("solv::CellPoissonFACOps::restrictSolution()");
+      getTimer("PFiSM::CellPoissonFACOps::restrictSolution()");
    t_restrict_residual = tbox::TimerManager::getManager()->
-      getTimer("solv::CellPoissonFACOps::restrictResidual()");
+      getTimer("PFiSM::CellPoissonFACOps::restrictResidual()");
    t_prolong = tbox::TimerManager::getManager()->
-      getTimer("solv::CellPoissonFACOps::prolongErrorAndCorrect()");
+      getTimer("PFiSM::CellPoissonFACOps::prolongErrorAndCorrect()");
    t_smooth_error = tbox::TimerManager::getManager()->
-      getTimer("solv::CellPoissonFACOps::smoothError()");
+      getTimer("PFiSM::CellPoissonFACOps::smoothError()");
    t_solve_coarsest = tbox::TimerManager::getManager()->
-      getTimer("solv::CellPoissonFACOps::solveCoarsestLevel()");
+      getTimer("PFiSM::CellPoissonFACOps::solveCoarsestLevel()");
    t_compute_composite_residual = tbox::TimerManager::getManager()->
-      getTimer("solv::CellPoissonFACOps::computeCompositeResidualOnLevel()");
+      getTimer("PFiSM::CellPoissonFACOps::computeCompositeResidualOnLevel()");
    t_compute_residual_norm = tbox::TimerManager::getManager()->
-      getTimer("solv::CellPoissonFACOps::computeResidualNorm()");
+      getTimer("PFiSM::CellPoissonFACOps::computeResidualNorm()");
 
    if (!s_cell_scratch_var[d_dim.getValue() - 1]) {
       TBOX_ASSERT(!s_cell_scratch_var[d_dim.getValue() - 1]);

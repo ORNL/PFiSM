@@ -301,11 +301,11 @@ CellPoissonHypreSolver::CellPoissonHypreSolver(
    }
 
    t_solve_system = tbox::TimerManager::getManager()->
-      getTimer("solv::CellPoissonHypreSolver::solveSystem()");
+      getTimer("PFiSM::CellPoissonHypreSolver::solveSystem()");
    t_set_matrix_coefficients = tbox::TimerManager::getManager()->
-      getTimer("solv::CellPoissonHypreSolver::setMatrixCoefficients()");
+      getTimer("PFiSM::CellPoissonHypreSolver::setMatrixCoefficients()");
    t_setup_hypre = tbox::TimerManager::getManager()->
-      getTimer("solv::CellPoissonHypreSolver::setupHypreSolver()");
+      getTimer("PFiSM::CellPoissonHypreSolver::setupHypreSolver()");
 
    hier::VariableDatabase* vdb = hier::VariableDatabase::getDatabase();
    if (!s_Ak0_var[d_dim.getValue() - 1]) {
