@@ -1,9 +1,9 @@
 
 VPATH = $(HOME)/GIT/PFiSM/source
 
-HYPRE_DIR    = $(HOME)/hypre/summitdev_xl_gpu
-SUNDIALS_DIR = $(HOME)/sundials/build_summitdev_xl
-SAMRAI_DIR   = $(HOME)/GIT/SAMRAI/build_summitdev_xl
+HYPRE_DIR    = $(HOME)/hypre/summit_xl_gpu
+SUNDIALS_DIR = $(HOME)/sundials/build_summit_xl
+SAMRAI_DIR   = $(HOME)/GIT/jeanlucf22/SAMRAI/build_summit_xl
 
 include $(SAMRAI_DIR)/config/Makefile.config
 
@@ -14,9 +14,12 @@ INCLUDE_FLAGS = -I$(SAMRAI_DIR)/include -I$(HYPRE_DIR)/include \
             -I$(SUNDIALS_DIR)/include
 
 CXXFLAGS += $(INCLUDE_FLAGS)
-NVCCFLAGS = -O0 -g -ccbin=mpixlC -gencode arch=compute_60,"code=sm_60" \
-            -dc --std=c++11 -Xcompiler -fopenmp -Xcompiler \
-            -Wno-deprecated-register --x cu \
+NVCCFLAGS = -O2 -g -ccbin=mpixlC -gencode arch=compute_70,"code=sm_70" \
+            -expt-extended-lambda \
+            -dc --std=c++11 \
+            -Xcompiler -Wno-deprecated-register --x cu \
+            -Xcompiler "-O2 " \
+            -Xcompiler "-fPIC" \
             -DHYPRE_USE_CUDA \
             $(INCLUDE_FLAGS)
 
@@ -41,14 +44,14 @@ HYPRELINK = libPFiSM_Hypre.so
 all: $(TARGET) $(HYPRELINK)
 lib: $(HYPRELINK)
 
-OBJS = PfmFACSolver.o PFModel.o main.o 
+OBJS = PFiSM_Hypre.o PfmFACSolver.o PFModel.o main.o 
 SAMRAI_OBJS = CellPoissonFACOps.o \
               CellPoissonHypreSolver.o \
               CellPoissonFACSolver.o
 
 F77_OBJS = computeCforPhase.o rhs3d.o
 
-NVCCLINKFLAGS = -ccbin=mpicxx -gencode arch=compute_60,"code=sm_60" \
+NVCCLINKFLAGS = -ccbin=mpicxx -gencode arch=compute_70,"code=sm_70" \
 	-Xcompiler -fopenmp  -lcudart -lcuda  -lstdc++ -lm  \
 	-L/lib64 -lcusparse -lcudart -lcublas -lnvToolsExt
 
