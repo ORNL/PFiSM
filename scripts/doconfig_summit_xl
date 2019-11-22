@@ -1,0 +1,14 @@
+#!/bin/csh
+module load hdf5
+module load xl
+module load cuda
+module load cmake
+
+cmake \
+	-DCMAKE_CXX_COMPILER=mpiCC \
+	-DCMAKE_Fortran_COMPILER=f77 \
+        -DCMAKE_BUILD_TYPE=Debug \
+	-DSAMRAI_DIR=$HOME/GIT/jeanlucf22/SAMRAI/build_summit_xl \
+        -DHYPRE_DIR=$HOME/hypre/summit_xl_gpu \
+        -DSUNDIALS_DIR=$HOME/sundials/build_summit_xl \
+	..
