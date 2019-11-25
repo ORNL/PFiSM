@@ -1,8 +1,6 @@
-// Run-time interposition of Hypre functions
-// based on the dynamic linker's (ld-linux.so) LD_PRELOAD mechanism
-// Requires:
-// setenv LD_PRELOAD "/lib64/libdl.so libPFiSM_Hypre.so"
-// before running code
+// Wrapper around Hypre functions to copy data to GPU when using
+// Hypre with GPU support. If Hypre was built with GPU support,
+// HYPRE_USING_CUDA is defined.
 //
 #include "_hypre_struct_mv.h"
 

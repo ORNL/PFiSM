@@ -7,6 +7,8 @@
  * Description:   Main program for Hypre Poisson example
  *
  ************************************************************************/
+#include "TestHyprePoisson.h"
+
 #include "SAMRAI/SAMRAI_config.h"
 
 #include <string>
@@ -58,22 +60,22 @@ using namespace SAMRAI;
  *************************************************************************
  */
 
-int main(
-   int argc,
-   char* argv[])
+TestHyprePoisson::TestHyprePoisson(MPI_Comm comm)
 {
-   /*
-    * Initialize MPI, SAMRAI, and enable logging.
-    */
-
-   tbox::SAMRAI_MPI::init(&argc, &argv);
+   tbox::SAMRAI_MPI::init(comm);
    tbox::SAMRAIManager::initialize();
    tbox::SAMRAIManager::startup();
+}
 
-   /*
-    * Create block to force pointer deallocation.  If this is not done
-    * then there will be memory leaks reported.
-    */
+TestHyprePoisson::~TestHyprePoisson()
+{
+   tbox::SAMRAIManager::shutdown();
+   tbox::SAMRAIManager::finalize();
+   tbox::SAMRAI_MPI::finalize();
+}
+
+int TestHyprePoisson::run(const std::string input_filename)
+{
    {
       bool converged = true;
 
@@ -83,23 +85,6 @@ int main(
                  << "\nwith this package."
                  << endl;
 #else
-
-      /*
-       * Process command line arguments.  For each run, the input
-       * filename must be specified.  Usage is:
-       *
-       *    executable <input file name>
-       *
-       */
-      string input_filename;
-
-      if (argc != 2) {
-         TBOX_ERROR("USAGE:  " << argv[0] << " <input file> \n"
-                               << "  options:\n"
-                               << "  none at this time" << endl);
-      } else {
-         input_filename = argv[1];
-      }
 
       /*
        * Create input database and parse all data in input file.
@@ -284,13 +269,10 @@ int main(
          tbox::pout << "\nPASSED:  hypre" << endl;
       } else {
          TBOX_WARNING("Hypre test did not converge.");
+         return 1;
       }
 #endif
    }
-
-   tbox::SAMRAIManager::shutdown();
-   tbox::SAMRAIManager::finalize();
-   tbox::SAMRAI_MPI::finalize();
 
    return 0;
 }
