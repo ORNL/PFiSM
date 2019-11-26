@@ -98,6 +98,7 @@ int main(
       double init_time = main_db->getDouble("init_time");
       int init_cycle = main_db->getInteger("init_cycle");
       double print_interval = main_db->getDouble("print_interval");
+      bool visit_flag = main_db->getBoolWithDefault("visit_output", false);
 
       double relative_tolerance = main_db->getDouble("relative_tolerance");
       double absolute_tolerance = main_db->getDouble("absolute_tolerance");
@@ -289,7 +290,7 @@ int main(
             cvode_solver->printStatistics(tbox::pout);
          }
 
-         if( actual_time > print_time ){
+         if( actual_time > print_time && visit_flag ){
             visit_data_writer->writePlotData(
                result_hierarchy,
                interval,
