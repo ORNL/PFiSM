@@ -77,32 +77,6 @@ PFiSM_HYPRE_StructVectorGetBoxValues( HYPRE_StructVector  vector,
    return hypre_error_flag;
 }
 
-HYPRE_Int
-HYPRE_StructVectorGetBoxValues( HYPRE_StructVector  vector,
-                                HYPRE_Int          *ilower,
-                                HYPRE_Int          *iupper,
-                                HYPRE_Complex      *values )
-{
-   printf("Call HYPRE_StructVectorGetBoxValues...\n");
-   static HYPRE_Int (*my_HYPRE_StructVectorGetBoxValues)
-                        ( HYPRE_StructVector  vector,
-                          HYPRE_Int          *ilower,
-                          HYPRE_Int          *iupper,
-                          HYPRE_Complex*      values );
-   char* error;
-   if(!my_HYPRE_StructVectorGetBoxValues)
-   {
-      *(void**)(&my_HYPRE_StructVectorGetBoxValues) =
-         dlsym(RTLD_NEXT, "HYPRE_StructVectorGetBoxValues");
-         if((error = dlerror()) != NULL ) {
-            fputs(error, stderr);
-         }
-   }
-   my_HYPRE_StructVectorGetBoxValues( vector, ilower, iupper, values);
-
-   return PFiSM_HYPRE_StructVectorGetBoxValues( vector, ilower, iupper, values);
-}
-
 /*--------------------------------------------------------------------------
  * HYPRE_StructVectorSetBoxValues
  *--------------------------------------------------------------------------*/
@@ -170,32 +144,6 @@ PFiSM_HYPRE_StructVectorSetBoxValues( HYPRE_StructVector  vector,
 #endif
 
    return hypre_error_flag;
-}
-
-HYPRE_Int
-HYPRE_StructVectorSetBoxValues( HYPRE_StructVector  vector,
-                                HYPRE_Int          *ilower,
-                                HYPRE_Int          *iupper,
-                                HYPRE_Complex      *values )
-{
-   printf("Call HYPRE_StructVectorSetBoxValues...\n");
-   static HYPRE_Int (*my_HYPRE_StructVectorSetBoxValues)
-                        ( HYPRE_StructVector  vector,
-                          HYPRE_Int          *ilower,
-                          HYPRE_Int          *iupper,
-                          HYPRE_Complex*      values );
-   char* error;
-   if(!my_HYPRE_StructVectorSetBoxValues)
-   {
-      *(void**)(&my_HYPRE_StructVectorSetBoxValues) =
-         dlsym(RTLD_NEXT, "HYPRE_StructVectorSetBoxValues");
-         if((error = dlerror()) != NULL ) {
-            fputs(error, stderr);
-         }
-   }
-   my_HYPRE_StructVectorSetBoxValues( vector, ilower, iupper, values);
-
-   return PFiSM_HYPRE_StructVectorSetBoxValues( vector, ilower, iupper, values);
 }
 
 /*--------------------------------------------------------------------------
