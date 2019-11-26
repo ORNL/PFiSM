@@ -8,8 +8,6 @@
 #include <dlfcn.h>
 #include <iostream>
 
-HYPRE_Int hypre__global_error = 0;
-
 /*--------------------------------------------------------------------------
  * HYPRE_StructVectorGetBoxValues
  *--------------------------------------------------------------------------*/
@@ -268,36 +266,3 @@ PFiSM_HYPRE_StructMatrixSetBoxValues( HYPRE_StructMatrix  matrix,
 
    return hypre_error_flag;
 }
-
-HYPRE_Int
-HYPRE_StructMatrixSetBoxValues( HYPRE_StructMatrix  matrix,
-                                HYPRE_Int          *ilower,
-                                HYPRE_Int          *iupper,
-                                HYPRE_Int           num_stencil_indices,
-                                HYPRE_Int          *stencil_indices,
-                                HYPRE_Complex      *values )
-{
-   printf("Call HYPRE_StructMatrixSetBoxValues...\n");
-   static HYPRE_Int (*my_HYPRE_StructMatrixSetBoxValues)
-                        ( HYPRE_StructMatrix  matrix,
-                                HYPRE_Int          *ilower,
-                                HYPRE_Int          *iupper,
-                                HYPRE_Int           num_stencil_indices,
-                                HYPRE_Int          *stencil_indices,
-                                HYPRE_Complex      *values );
-   char* error;
-   if(!my_HYPRE_StructMatrixSetBoxValues)
-   {
-      *(void**)(&my_HYPRE_StructMatrixSetBoxValues) =
-         dlsym(RTLD_NEXT, "HYPRE_StructMatrixSetBoxValues");
-         if((error = dlerror()) != NULL ) {
-            fputs(error, stderr);
-         }
-   }
-   my_HYPRE_StructMatrixSetBoxValues( matrix, ilower, iupper,
-       num_stencil_indices, stencil_indices, values);
-
-   return PFiSM_HYPRE_StructMatrixSetBoxValues( matrix, ilower, iupper,
-       num_stencil_indices, stencil_indices, values);
-}
-
