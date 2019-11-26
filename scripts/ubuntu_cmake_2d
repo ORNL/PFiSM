@@ -1,0 +1,15 @@
+#! /bin/bash
+rm -rf CMakeCache.txt
+rm -rf CMakeFiles/
+rm cmake_install.cmake
+
+cmake \
+        -DCMAKE_CXX_COMPILER=mpicxx \
+        -DCMAKE_C_COMPILER=mpicc \
+        -DCMAKE_Fortran_COMPILER=mpif77 \
+        -DHYPRE_DIR=${HOME}/Hypre \
+        -DSAMRAI_DIR=${HOME}/SAMRAI \
+        -DSUNDIALS_DIR=${HOME}/Sundials \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DBUILD_SHARED_LIBS=OFF \
+        ..

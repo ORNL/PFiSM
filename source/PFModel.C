@@ -1,7 +1,9 @@
 #include "PFModel.h"
 
+#ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
 
 #include "SAMRAI/geom/CartesianPatchGeometry.h"
 #include "SAMRAI/pdat/CellData.h"
@@ -21,7 +23,11 @@
 #include "SAMRAI/tbox/Utilities.h"
 #include "SAMRAI/hier/VariableDatabase.h"
 
+#ifdef __GNUC__
 #pragma GCC diagnostic pop
+#endif
+
+#include "CellPoissonFACSolver.h"
 
 using namespace std;
 
@@ -59,8 +65,8 @@ void SAMRAI_F77_FUNC(compcforphase, COMPCFORPHASE) (
 PFModel::PFModel(
    const string& object_name,
    const tbox::Dimension& dim,
-   std::shared_ptr<solv::CellPoissonFACSolver> fac_solver_temperature,
-   std::shared_ptr<solv::CellPoissonFACSolver> fac_solver_phase,
+   std::shared_ptr<CellPoissonFACSolver> fac_solver_temperature,
+   std::shared_ptr<CellPoissonFACSolver> fac_solver_phase,
    std::shared_ptr<tbox::Database> input_db,
    std::shared_ptr<geom::CartesianGridGeometry> grid_geom):
    xfer::RefinePatchStrategy(),
@@ -167,13 +173,13 @@ PFModel::PFModel(
    d_FAC_solver_phase->setBcObject(d_phase_bc_corr_coeffs);
 
    tbox::TimerManager* tman = tbox::TimerManager::getManager();
-   t_rhs_timer            = tman->getTimer("PFModel::rhs");
-   t_precondset_timer     = tman->getTimer("PFModel::precondset");
-   t_precondsolve_timer   = tman->getTimer("PFModel::precondsolve");
-   t_factemperature_timer = tman->getTimer("PFModel::factemperature");
-   t_facphase_timer       = tman->getTimer("PFModel::facphase");
-   t_factempinit_timer    = tman->getTimer("PFModel::factempinit");
-   t_facphaseinit_timer   = tman->getTimer("PFModel::facphaseinit");
+   t_rhs_timer            = tman->getTimer("PFiSM::rhs");
+   t_precondset_timer     = tman->getTimer("PFiSM::precondset");
+   t_precondsolve_timer   = tman->getTimer("PFiSM::precondsolve");
+   t_factemperature_timer = tman->getTimer("PFiSM::factemperature");
+   t_facphase_timer       = tman->getTimer("PFiSM::facphase");
+   t_factempinit_timer    = tman->getTimer("PFiSM::factempinit");
+   t_facphaseinit_timer   = tman->getTimer("PFiSM::facphaseinit");
 }
 
 PFModel::~PFModel()

@@ -1,8 +1,12 @@
-cmake_minimum_required(VERSION 3.1)
-project (PFiSM)
+cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
+project (PFiSM LANGUAGES C CXX Fortran)
+
+if(${PFISM_USE_GPU})
+  enable_language(CUDA)
+endif(${PFISM_USE_GPU})
 
 #set(MPI_CXX_COMPILER CMAKE_CXX_COMPILER)
-find_package(MPI)
+find_package(MPI REQUIRED)
 if(MPI_FOUND)
   message(STATUS
     "MPI was found:\n"
@@ -13,8 +17,6 @@ if(MPI_FOUND)
  )
 endif()
 
-message(STATUS "MPI_EXEC: ${MPI_EXEC}\n")
-
 set(HDF5_USE_STATIC_LIBRARIES ON)
 find_package(HDF5 REQUIRED)
 message(STATUS ${HDF5_VERSION} )
@@ -24,6 +26,10 @@ set(PROJECT_LINK_LIBS_HDF5 ${HDF5_LIBRARIES})
 link_directories( ${SAMRAI_DIR}/lib )
 link_directories( ${HYPRE_DIR}/lib )
 link_directories( ${SUNDIALS_DIR}/lib )
+
+include_directories( ${SAMRAI_DIR}/include )
+include_directories( ${HYPRE_DIR}/include )
+include_directories( ${SUNDIALS_DIR}/include )
 
 set( PROJECT_LINK_LIBS1 libSAMRAI_tbox.a )
 set( PROJECT_LINK_LIBS2 libSAMRAI_math.a )
@@ -45,24 +51,15 @@ set( PROJECT_LINK_LIBS_SAMRAI ${PROJECT_LINK_LIBS9}
                               ${PROJECT_LINK_LIBS1} )
 
 set( PROJECT_LINK_LIBS10 libHYPRE.so )
-
 set( PROJECT_LINK_LIBS11 libsundials_cvode.a )
-
-include_directories( ${SAMRAI_DIR}/include )
-include_directories( ${HYPRE_DIR}/include )
-include_directories( ${SUNDIALS_DIR}/include )
 
 enable_testing()
 
 set (CMAKE_CXX_STANDARD 11)
-
-enable_language(Fortran C CXX)
 
 set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g -std=c++11")
 
 add_subdirectory(source)
 
 add_subdirectory(tests)
-
-
 

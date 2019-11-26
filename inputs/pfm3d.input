@@ -111,7 +111,8 @@ StandardTagAndInitialize{
 }
 
 TimerManager {
-   timer_list = "apps::main::*","solv::*::*"
+   timer_list = "PFModel::*", "apps::main::*","solv::*::*"
+   print_exclusive = TRUE
 }
 
 Geometry {

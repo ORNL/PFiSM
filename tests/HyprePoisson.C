@@ -44,7 +44,7 @@ using namespace SAMRAI;
 HyprePoisson::HyprePoisson(
    const string& object_name,
    const tbox::Dimension& dim,
-   std::shared_ptr<solv::CellPoissonHypreSolver>& hypre_solver,
+   std::shared_ptr<CellPoissonHypreSolver>& hypre_solver,
    std::shared_ptr<solv::LocationIndexRobinBcCoefs>& bc_coefs):
    d_object_name(object_name),
    d_dim(dim),

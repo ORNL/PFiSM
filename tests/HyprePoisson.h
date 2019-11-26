@@ -12,21 +12,6 @@
 
 #include "SAMRAI/SAMRAI_config.h"
 
-#if !defined(HAVE_HYPRE)
-
-/*
- *************************************************************************
- * If the library is not compiled with hypre, print an error.
- * If we're running autotests, skip the error and compile an empty
- * class.
- *************************************************************************
- */
-#if (TESTING != 1)
-#error "This example requires SAMRAI be compiled with hypre."
-#endif
-
-#else
-
 #include "SAMRAI/pdat/CellVariable.h"
 #include "SAMRAI/tbox/Database.h"
 #include "SAMRAI/hier/Box.h"
@@ -35,7 +20,7 @@
 #include "SAMRAI/hier/PatchHierarchy.h"
 #include "SAMRAI/hier/PatchLevel.h"
 #include "SAMRAI/hier/IntVector.h"
-#include "SAMRAI/solv/CellPoissonHypreSolver.h"
+#include "CellPoissonHypreSolver.h"
 #include "SAMRAI/pdat/SideVariable.h"
 #include "SAMRAI/mesh/StandardTagAndInitStrategy.h"
 #include "SAMRAI/hier/VariableContext.h"
@@ -92,7 +77,7 @@ public:
    HyprePoisson(
       const string& object_name,
       const tbox::Dimension& dim,
-      std::shared_ptr<solv::CellPoissonHypreSolver>& hypre_solver,
+      std::shared_ptr<CellPoissonHypreSolver>& hypre_solver,
       std::shared_ptr<solv::LocationIndexRobinBcCoefs>& bc_coefs);
 
    virtual ~HyprePoisson();
@@ -194,7 +179,7 @@ private:
    /*!
     * @brief HYPRE poisson solver.
     */
-   std::shared_ptr<solv::CellPoissonHypreSolver> d_poisson_hypre;
+   std::shared_ptr<CellPoissonHypreSolver> d_poisson_hypre;
 
    /*!
     * @brief Boundary condition coefficient implementation.
@@ -227,5 +212,4 @@ private:
 
 }
 
-#endif
 #endif  // included_HyprePoisson

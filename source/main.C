@@ -1,22 +1,15 @@
+#include "_hypre_utilities.h"
+
 #include "SAMRAI/SAMRAI_config.h"
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string>
-#include <fstream>
-
-using namespace std;
-
-#ifndef _MSC_VER
-#include <unistd.h>
-#endif
 
 #include "PFModel.h"
 #include "PfmFACSolver.h"
 
+#ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 #pragma GCC diagnostic ignored "-Weffc++"
+#endif
 
 #include "SAMRAI/tbox/SAMRAIManager.h"
 #include "SAMRAI/tbox/SAMRAI_MPI.h"
@@ -41,7 +34,9 @@ using namespace std;
 #include "SAMRAI/solv/SundialsAbstractVector.h"
 #include "SAMRAI/solv/CVODESolver.h"
 
+#ifdef __GNUC__
 #pragma GCC diagnostic pop
+#endif
 
 // CVODE includes
 #ifndef included_cvspgmr_h
@@ -49,8 +44,17 @@ using namespace std;
 #include "cvode/cvode_spgmr.h"
 #endif
 
-using namespace SAMRAI;
+#ifndef _MSC_VER
+#include <unistd.h>
+#endif
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string>
+#include <fstream>
+
+using namespace SAMRAI;
+using namespace std;
 
 int main(
    int argc,
@@ -60,6 +64,8 @@ int main(
    tbox::SAMRAI_MPI::init(&argc, &argv);
    tbox::SAMRAIManager::initialize();
    tbox::SAMRAIManager::startup();
+
+   HYPRE_Init(argc, argv);
 
    {
       if (argc != 2) {
@@ -76,6 +82,7 @@ int main(
       tbox::PIO::logOnlyNodeZero( log_file_name );
 
       // Parse all data in input file
+      tbox::pout<<"Parse input data..."<<endl;
       std::shared_ptr<tbox::InputDatabase> input_db(
          new tbox::InputDatabase("input_db"));
       tbox::InputManager::getManager()->parseInputFile(
@@ -99,6 +106,8 @@ int main(
       bool solution_logging =
          main_db->getBoolWithDefault("solution_logging", false);
 
+      tbox::pout<<"Build Geometry, Hierarchy,..."<<endl;
+
       // Cartesian mesh geometry management
       std::shared_ptr<geom::CartesianGridGeometry> geometry(
          new geom::CartesianGridGeometry(
@@ -113,13 +122,13 @@ int main(
             geometry,
             input_db->getDatabase("PatchHierarchy")));
 
-      // creat two FAC solvers for the two blocks of teh preconditioner
+      // create two FAC solvers for the two blocks of the preconditioner
       PfmFACSolver phase_fac_solver("PhaseFACsolver", dim, input_db);
-      std::shared_ptr<solv::CellPoissonFACSolver> fac_solver_temperature(
+      std::shared_ptr<CellPoissonFACSolver> fac_solver_temperature(
          phase_fac_solver.getCellPoissonFACSolver());
 
       PfmFACSolver temperature_fac_solver("TemperatureFACsolver",dim,input_db);
-      std::shared_ptr<solv::CellPoissonFACSolver> fac_solver_phase(
+      std::shared_ptr<CellPoissonFACSolver> fac_solver_phase(
          temperature_fac_solver.getCellPoissonFACSolver());
 
       // construct main object
@@ -189,7 +198,7 @@ int main(
       tbox::TimerManager::createManager(input_db->getDatabase("TimerManager"));
       std::shared_ptr<tbox::Timer> t_cvode_solve(
          tbox::TimerManager::getManager()->
-         getTimer("apps::main::solver"));
+         getTimer("PFiSM::time_integrator"));
 
       // Set up Visualization plot file writer
       int visit_number_procs_per_file=1;
@@ -311,8 +320,10 @@ int main(
 
       tbox::TimerManager::getManager()->print(tbox::pout);
 
+      tbox::pout<<"Delete solver..."<<std::endl;
       delete cvode_solver;
 
+      tbox::pout<<"Clean up..."<<std::endl;
       pf_model.reset();
       gridding_algorithm.reset();
       error_est.reset();
@@ -321,9 +332,15 @@ int main(
       hierarchy.reset();
       geometry.reset();
       visit_data_writer.reset();
+
+      tbox::pout<<"Close scope..."<<std::endl;
    }
 
+   tbox::pout<<"Finalize hypre..."<<std::endl;
+   HYPRE_Finalize();
+
    // Shutdown SAMRAI and tbox::MPI.
+   tbox::pout<<"Finalize SAMRAI..."<<std::endl;
    tbox::SAMRAIManager::shutdown();
    tbox::SAMRAIManager::finalize();
    tbox::SAMRAI_MPI::finalize();

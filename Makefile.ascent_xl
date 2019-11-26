@@ -1,9 +1,9 @@
-
+CUDA_SM = 70,"code=sm_70"
 VPATH = $(HOME)/GIT/PFiSM/source
 
-HYPRE_DIR    = $(HOME)/hypre/summit_xl_gpu
-SUNDIALS_DIR = $(HOME)/sundials/build_summit_xl
-SAMRAI_DIR   = $(HOME)/GIT/jeanlucf22/SAMRAI/build_summit_xl
+HYPRE_DIR    = $(HOME)/hypre/xl_gpu
+SUNDIALS_DIR = $(HOME)/sundials/build_xl
+SAMRAI_DIR   = $(HOME)/GIT/SAMRAI/build_xl_nohypre
 
 include $(SAMRAI_DIR)/config/Makefile.config
 
@@ -11,16 +11,15 @@ NVCC = nvcc
 CXX = mpicxx
 
 INCLUDE_FLAGS = -I$(SAMRAI_DIR)/include -I$(HYPRE_DIR)/include \
-            -I$(SUNDIALS_DIR)/include
+            -I$(SUNDIALS_DIR)/include -I$(OLCF_CUDA_ROOT)/include
 
 CXXFLAGS += $(INCLUDE_FLAGS)
-NVCCFLAGS = -O2 -g -ccbin=mpixlC -gencode arch=compute_70,"code=sm_70" \
-            -expt-extended-lambda \
-            -dc --std=c++11 \
-            -Xcompiler -Wno-deprecated-register --x cu \
-            -Xcompiler "-O2 " \
-            -Xcompiler "-fPIC" \
-            -DHYPRE_USE_CUDA \
+NVCCFLAGS = -O0 -g -ccbin=mpixlC -gencode arch=compute_$(CUDA_SM) \
+            -expt-extended-lambda -dc --std=c++11 -Xcompiler \
+            -Wno-deprecated-register --x cu -Xcompiler "-O2 " \
+            -Xcompiler "-fPIC" -DHAVE_CONFIG_H \
+            -DHYPRE_TIMING -DHYPRE_FORTRAN \
+            -DHYPRE_USING_CUDA \
             $(INCLUDE_FLAGS)
 
 LDLIBS= \
@@ -41,8 +40,8 @@ FORTCOMM         = $(VPATH)/fortran
 TARGET = main
 HYPRELINK = libPFiSM_Hypre.so
 
-all: $(TARGET) $(HYPRELINK)
-lib: $(HYPRELINK)
+all: $(TARGET) #$(HYPRELINK)
+#lib: $(HYPRELINK)
 
 OBJS = PFiSM_Hypre.o PfmFACSolver.o PFModel.o main.o 
 SAMRAI_OBJS = CellPoissonFACOps.o \
@@ -51,9 +50,11 @@ SAMRAI_OBJS = CellPoissonFACOps.o \
 
 F77_OBJS = computeCforPhase.o rhs3d.o
 
-NVCCLINKFLAGS = -ccbin=mpicxx -gencode arch=compute_70,"code=sm_70" \
-	-Xcompiler -fopenmp  -lcudart -lcuda  -lstdc++ -lm  \
-	-L/lib64 -lcusparse -lcudart -lcublas -lnvToolsExt
+NVCCLINKFLAGS = -ccbin=mpicxx -gencode arch=compute_$(CUDA_SM) \
+	-Xcompiler "" \
+        -lstdc++ -lm  \
+        -L$(OLCF_CUDA_ROOT)/lib64 \
+	-lcusparse -lcudart -lcublas -lnvToolsExt
 
 # rules
 $(TARGET):	$(OBJS) $(F77_OBJS) $(SAMRAI_OBJS)
@@ -63,7 +64,7 @@ $(TARGET):	$(OBJS) $(F77_OBJS) $(SAMRAI_OBJS)
 HYPRELINK_OBJS = PFiSM_Hypre.o
 
 $(HYPRELINK):	$(HYPRELINK_OBJS)
-	$(NVCC) $(NVCCLINKFLAGS) -DHYPRE_USE_CUDA $(HYPRELINK_OBJS) -o $@ -shared
+	$(NVCC) $(NVCCLINKFLAGS) $(HYPRELINK_OBJS) -o $@ -shared
 
 clean:
 	rm -f *.o

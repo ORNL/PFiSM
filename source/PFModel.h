@@ -1,6 +1,11 @@
+#ifndef PFiSM_PFModel_H
+#define PFiSM_PFModel_H
+
+#ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 #pragma GCC diagnostic ignored "-Weffc++"
+#endif
 
 #include "SAMRAI/SAMRAI_config.h"
 
@@ -18,7 +23,6 @@
 #include "SAMRAI/xfer/RefinePatchStrategy.h"
 #include "SAMRAI/xfer/CoarsenPatchStrategy.h"
 #include "SAMRAI/mesh/StandardTagAndInitStrategy.h"
-#include "SAMRAI/solv/CellPoissonFACSolver.h"
 #include "SAMRAI/appu/VisItDataWriter.h"
 #include "SAMRAI/solv/LocationIndexRobinBcCoefs.h"
 #include "SAMRAI/solv/CartesianRobinBcHelper.h"
@@ -28,10 +32,14 @@
 #include "SAMRAI/solv/Sundials_SAMRAIVector.h"
 #include "SAMRAI/solv/CVODEAbstractFunctions.h"
 
+#ifdef __GNUC__
 #pragma GCC diagnostic pop
+#endif
 
 #include <vector>
 #include <iostream>
+
+class CellPoissonFACSolver;
 
 using namespace SAMRAI;
 
@@ -46,8 +54,8 @@ public:
    PFModel(
       const std::string& object_name,
       const tbox::Dimension& dim,
-      std::shared_ptr<solv::CellPoissonFACSolver> fac_solver_temperature,
-      std::shared_ptr<solv::CellPoissonFACSolver> fac_solver_phase,
+      std::shared_ptr<CellPoissonFACSolver> fac_solver_temperature,
+      std::shared_ptr<CellPoissonFACSolver> fac_solver_phase,
       std::shared_ptr<tbox::Database> input_db,
       std::shared_ptr<geom::CartesianGridGeometry> grid_geom);
 
@@ -237,8 +245,8 @@ private:
    const int d_phase_component;
 
    // FAC solvers
-   std::shared_ptr<solv::CellPoissonFACSolver> d_FAC_solver_temperature;
-   std::shared_ptr<solv::CellPoissonFACSolver> d_FAC_solver_phase;
+   std::shared_ptr<CellPoissonFACSolver> d_FAC_solver_temperature;
+   std::shared_ptr<CellPoissonFACSolver> d_FAC_solver_phase;
 
    bool d_level_solver_allocated;
 
@@ -298,3 +306,5 @@ private:
    void initializeSolvers(
       const std::shared_ptr<hier::PatchHierarchy>& hierarchy);
 };
+
+#endif

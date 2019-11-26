@@ -1,15 +1,12 @@
-// Run-time interposition of Hypre functions
-// based on the dynamic linker's (ld-linux.so) LD_PRELOAD mechanism
-// Requires:
-// setenv LD_PRELOAD "/lib64/libdl.so libPFiSM_Hypre.so"
-// before running code
+// Wrapper around Hypre functions to copy data to GPU when using
+// Hypre with GPU support. If Hypre was built with GPU support,
+// HYPRE_USING_CUDA is defined.
 //
 #include "_hypre_struct_mv.h"
 
 #include <stdio.h>
 #include <dlfcn.h>
-
-HYPRE_Int hypre__global_error = 0;
+#include <iostream>
 
 /*--------------------------------------------------------------------------
  * HYPRE_StructVectorGetBoxValues
@@ -21,7 +18,7 @@ PFiSM_HYPRE_StructVectorGetBoxValues( HYPRE_StructVector  vector,
                                 HYPRE_Int          *iupper,
                                 HYPRE_Complex      *values )
 {
-   printf("PFiSM version of HYPRE_StructVectorGetBoxValues()...\n");
+   //std::cout<<"PFiSM version of HYPRE_StructVectorGetBoxValues()...\n";
    hypre_Index   new_ilower;
    hypre_Index   new_iupper;
    hypre_Box    *new_value_box;
@@ -29,7 +26,7 @@ PFiSM_HYPRE_StructVectorGetBoxValues( HYPRE_StructVector  vector,
    HYPRE_Int     d;
    HYPRE_Real* device_values;
    HYPRE_Int     volume;
-#if defined(HYPRE_USE_CUDA)
+#ifdef HYPRE_USING_CUDA
    cudaPointerAttributes attr;
    cudaError_t ret;
    ret = cudaPointerGetAttributes(&attr,values);
@@ -69,7 +66,7 @@ PFiSM_HYPRE_StructVectorGetBoxValues( HYPRE_StructVector  vector,
                                   device_values, -1, -1, 0);
 
    hypre_BoxDestroy(new_value_box);
-#if defined(HYPRE_USE_CUDA)
+#ifdef HYPRE_USING_CUDA
    if ( ret == cudaErrorInvalidValue )
    {
       hypre_Memcpy(values,device_values,volume*sizeof(double),
@@ -78,32 +75,6 @@ PFiSM_HYPRE_StructVectorGetBoxValues( HYPRE_StructVector  vector,
    }
 #endif
    return hypre_error_flag;
-}
-
-HYPRE_Int
-HYPRE_StructVectorGetBoxValues( HYPRE_StructVector  vector,
-                                HYPRE_Int          *ilower,
-                                HYPRE_Int          *iupper,
-                                HYPRE_Complex      *values )
-{
-   printf("Call HYPRE_StructVectorGetBoxValues...\n");
-   static HYPRE_Int (*my_HYPRE_StructVectorGetBoxValues)
-                        ( HYPRE_StructVector  vector,
-                          HYPRE_Int          *ilower,
-                          HYPRE_Int          *iupper,
-                          HYPRE_Complex*      values );
-   char* error;
-   if(!my_HYPRE_StructVectorGetBoxValues)
-   {
-      *(void**)(&my_HYPRE_StructVectorGetBoxValues) =
-         dlsym(RTLD_NEXT, "HYPRE_StructVectorGetBoxValues");
-         if((error = dlerror()) != NULL ) {
-            fputs(error, stderr);
-         }
-   }
-   my_HYPRE_StructVectorGetBoxValues( vector, ilower, iupper, values);
-
-   PFiSM_HYPRE_StructVectorGetBoxValues( vector, ilower, iupper, values);
 }
 
 /*--------------------------------------------------------------------------
@@ -116,6 +87,7 @@ PFiSM_HYPRE_StructVectorSetBoxValues( HYPRE_StructVector  vector,
                                 HYPRE_Int          *iupper,
                                 HYPRE_Complex      *values )
 {
+   //std::cout<<"PFiSM_HYPRE_StructVectorSetBoxValues\n";
    hypre_Index   new_ilower;
    hypre_Index   new_iupper;
    hypre_Box    *new_value_box;
@@ -123,7 +95,7 @@ PFiSM_HYPRE_StructVectorSetBoxValues( HYPRE_StructVector  vector,
    HYPRE_Int     d;
    HYPRE_Int     volume;
    HYPRE_Real   *device_values;
-#if defined(HYPRE_USE_CUDA)
+#ifdef HYPRE_USING_CUDA
    cudaPointerAttributes attr;
    cudaError_t ret;
    ret = cudaPointerGetAttributes(&attr,values);
@@ -164,7 +136,7 @@ PFiSM_HYPRE_StructVectorSetBoxValues( HYPRE_StructVector  vector,
 
    hypre_BoxDestroy(new_value_box);
 
-#if defined(HYPRE_USE_CUDA)
+#ifdef HYPRE_USING_CUDA
    if ( ret == cudaErrorInvalidValue )
    {
        hypre_TFree(device_values,HYPRE_MEMORY_DEVICE);
@@ -172,32 +144,6 @@ PFiSM_HYPRE_StructVectorSetBoxValues( HYPRE_StructVector  vector,
 #endif
 
    return hypre_error_flag;
-}
-
-HYPRE_Int
-HYPRE_StructVectorSetBoxValues( HYPRE_StructVector  vector,
-                                HYPRE_Int          *ilower,
-                                HYPRE_Int          *iupper,
-                                HYPRE_Complex      *values )
-{
-   printf("Call HYPRE_StructVectorSetBoxValues...\n");
-   static HYPRE_Int (*my_HYPRE_StructVectorSetBoxValues)
-                        ( HYPRE_StructVector  vector,
-                          HYPRE_Int          *ilower,
-                          HYPRE_Int          *iupper,
-                          HYPRE_Complex*      values );
-   char* error;
-   if(!my_HYPRE_StructVectorSetBoxValues)
-   {
-      *(void**)(&my_HYPRE_StructVectorSetBoxValues) =
-         dlsym(RTLD_NEXT, "HYPRE_StructVectorSetBoxValues");
-         if((error = dlerror()) != NULL ) {
-            fputs(error, stderr);
-         }
-   }
-   my_HYPRE_StructVectorSetBoxValues( vector, ilower, iupper, values);
-
-   PFiSM_HYPRE_StructVectorSetBoxValues( vector, ilower, iupper, values);
 }
 
 /*--------------------------------------------------------------------------
@@ -218,7 +164,7 @@ PFiSM_HYPRE_StructMatrixSetBoxValues( HYPRE_StructMatrix  matrix,
    HYPRE_Int           d;
    HYPRE_Int     volume;
    HYPRE_Real   *device_values;
-#if defined(HYPRE_USE_CUDA)
+#ifdef HYPRE_USING_CUDA
    cudaPointerAttributes attr;
    cudaError_t ret;
    ret = cudaPointerGetAttributes(&attr,values);
@@ -259,7 +205,7 @@ PFiSM_HYPRE_StructMatrixSetBoxValues( HYPRE_StructMatrix  matrix,
                                   device_values, 0, -1, 0);
 
    hypre_BoxDestroy(new_value_box);
-#if defined(HYPRE_USE_CUDA)
+#ifdef HYPRE_USING_CUDA
    if ( ret == cudaErrorInvalidValue )
    {
        hypre_TFree(device_values,HYPRE_MEMORY_DEVICE);
@@ -268,36 +214,3 @@ PFiSM_HYPRE_StructMatrixSetBoxValues( HYPRE_StructMatrix  matrix,
 
    return hypre_error_flag;
 }
-
-HYPRE_Int
-HYPRE_StructMatrixSetBoxValues( HYPRE_StructMatrix  matrix,
-                                HYPRE_Int          *ilower,
-                                HYPRE_Int          *iupper,
-                                HYPRE_Int           num_stencil_indices,
-                                HYPRE_Int          *stencil_indices,
-                                HYPRE_Complex      *values )
-{
-   printf("Call HYPRE_StructMatrixSetBoxValues...\n");
-   static HYPRE_Int (*my_HYPRE_StructMatrixSetBoxValues)
-                        ( HYPRE_StructMatrix  matrix,
-                                HYPRE_Int          *ilower,
-                                HYPRE_Int          *iupper,
-                                HYPRE_Int           num_stencil_indices,
-                                HYPRE_Int          *stencil_indices,
-                                HYPRE_Complex      *values );
-   char* error;
-   if(!my_HYPRE_StructMatrixSetBoxValues)
-   {
-      *(void**)(&my_HYPRE_StructMatrixSetBoxValues) =
-         dlsym(RTLD_NEXT, "HYPRE_StructMatrixSetBoxValues");
-         if((error = dlerror()) != NULL ) {
-            fputs(error, stderr);
-         }
-   }
-   my_HYPRE_StructMatrixSetBoxValues( matrix, ilower, iupper,
-       num_stencil_indices, stencil_indices, values);
-
-   PFiSM_HYPRE_StructMatrixSetBoxValues( matrix, ilower, iupper,
-       num_stencil_indices, stencil_indices, values);
-}
-

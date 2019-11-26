@@ -24,20 +24,37 @@ ENDMACRO(m4tof)
 m4tof(rhs3d)
 m4tof(computeCforPhase)
 
-set(SOURCES ${CMAKE_SOURCE_DIR}/source/main.C
-            ${CMAKE_SOURCE_DIR}/source/PFModel.C
-            ${CMAKE_SOURCE_DIR}/source/PfmFACSolver.C
-            ${CMAKE_SOURCE_DIR}/source/fortran/rhs3d.f
-            ${CMAKE_SOURCE_DIR}/source/fortran/computeCforPhase.f )
+add_library(pfismlib STATIC
+   PFModel.C
+   PfmFACSolver.C
+   PFiSM_Hypre.C
+   CellPoissonFACOps.C
+   CellPoissonHypreSolver.C
+   CellPoissonFACSolver.C
+   fortran/rhs3d.f
+   fortran/computeCforPhase.f
+   )
 
-add_executable(main ${SOURCES} )
+if(${PFISM_USE_GPU})
+  set_source_files_properties(PfmFACSolver.C PROPERTIES LANGUAGE CUDA)
+  set_source_files_properties(PFiSM_Hypre.C PROPERTIES LANGUAGE CUDA)
+  set_source_files_properties(CellPoissonFACOps.C PROPERTIES LANGUAGE CUDA)
+  set_source_files_properties(CellPoissonHypreSolver.C PROPERTIES LANGUAGE CUDA)
+  set_source_files_properties(CellPoissonFACSolver.C PROPERTIES LANGUAGE CUDA)
+endif(${PFISM_USE_GPU})
 
-add_library(PFiSM_Hypre SHARED ${CMAKE_SOURCE_DIR}/source/PFiSM_Hypre.C)
+target_compile_features(pfismlib PRIVATE cxx_std_11)
 
-target_link_libraries(main ${PROJECT_LINK_LIBS_SAMRAI}
+add_executable(main main.C)
+
+if(${PFISM_USE_GPU})
+  set_target_properties(main PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+endif(${PFISM_USE_GPU})
+
+target_link_libraries(main PRIVATE pfismlib
+                           ${PROJECT_LINK_LIBS_SAMRAI}
                            ${PROJECT_LINK_LIBS10}
                            ${PROJECT_LINK_LIBS11}
                            ${PROJECT_LINK_LIBS_HDF5}
-                           ${PFiSM_Hypre}
                       )
 
