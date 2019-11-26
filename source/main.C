@@ -54,7 +54,6 @@
 #include <fstream>
 
 using namespace SAMRAI;
-using namespace std;
 
 int main(
    int argc,
@@ -69,20 +68,21 @@ int main(
 
    {
       if (argc != 2) {
-         tbox::pout << "USAGE:  " << argv[0] << " <input filename> " << endl;
+         tbox::pout << "USAGE:  " << argv[0] << " <input filename> " << std::endl;
          exit(-1);
       }
 
-      string input_filename = argv[1];
+      std::string input_filename = argv[1];
 
       std::string run_name =
          input_filename.substr( 0, input_filename.rfind( "." ) );
 
+      tbox::pout<<"Run name: "<<run_name<<std::endl;
       std::string log_file_name = run_name + ".log";
       tbox::PIO::logOnlyNodeZero( log_file_name );
 
       // Parse all data in input file
-      tbox::pout<<"Parse input data..."<<endl;
+      tbox::pout<<"Parse input data..."<<std::endl;
       std::shared_ptr<tbox::InputDatabase> input_db(
          new tbox::InputDatabase("input_db"));
       tbox::InputManager::getManager()->parseInputFile(
@@ -107,7 +107,7 @@ int main(
       bool solution_logging =
          main_db->getBoolWithDefault("solution_logging", false);
 
-      tbox::pout<<"Build Geometry, Hierarchy,..."<<endl;
+      tbox::pout<<"Build Geometry, Hierarchy,..."<<std::endl;
 
       // Cartesian mesh geometry management
       std::shared_ptr<geom::CartesianGridGeometry> geometry(
@@ -253,7 +253,7 @@ int main(
       double print_time=0.;
       for (int interval = 1; interval <= max_steps; ++interval) {
 
-         //tbox::plog << "interval = "<<interval<<endl;
+         //tbox::plog << "interval = "<<interval<<std::endl;
 
          final_time += print_interval;
          cvode_solver->setFinalValueOfIndependentVariable(final_time, false);
@@ -264,7 +264,7 @@ int main(
          t_cvode_solve->start();
          int ret = cvode_solver->solve();
          t_cvode_solve->stop();
-         if( ret!=0 )tbox::plog << "return code = " << ret << endl;
+         if( ret!=0 )tbox::plog << "return code = " << ret << std::endl;
 
          double actual_time =
             cvode_solver->getActualFinalValueOfIndependentVariable();
@@ -272,7 +272,7 @@ int main(
             cvode_solver->getStepSizeForLastInternalStep();
          tbox::pout << "# step = "<<interval
                     <<", time = "<<actual_time
-                    <<", dt = "<<dt<<endl;
+                    <<", dt = "<<dt<<std::endl;
 
          /*
           * Print statistics
@@ -286,7 +286,7 @@ int main(
          maxnorm[interval - 1] = y_result->maxNorm();
 
          if (solution_logging) {
-            tbox::plog << "CVODE stastistics:"<<endl;
+            tbox::plog << "CVODE stastistics:"<<std::endl;
             cvode_solver->printStatistics(tbox::pout);
          }
 
@@ -315,7 +315,7 @@ int main(
             tbox::pout.precision(18);
             tbox::pout << "  " << time[interval] << "  \t";
             tbox::pout.precision(6);
-            tbox::pout << "  " << maxnorm[interval] << endl;
+            tbox::pout << "  " << maxnorm[interval] << std::endl;
          }
       }
 
