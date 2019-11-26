@@ -74,19 +74,25 @@ int main(
 
       std::string input_filename = argv[1];
 
-      std::string run_name =
-         input_filename.substr( 0, input_filename.rfind( "." ) );
-
-      tbox::pout<<"Run name: "<<run_name<<std::endl;
-      std::string log_file_name = run_name + ".log";
-      tbox::PIO::logOnlyNodeZero( log_file_name );
-
       // Parse all data in input file
       tbox::pout<<"Parse input data..."<<std::endl;
       std::shared_ptr<tbox::InputDatabase> input_db(
          new tbox::InputDatabase("input_db"));
       tbox::InputManager::getManager()->parseInputFile(
          input_filename, input_db);
+
+      std::size_t found = input_filename.rfind("/");
+      if (found!=std::string::npos){
+         input_filename = input_filename.substr(found+1);
+         tbox::pout<<"Input filename: "<<input_filename<<std::endl;
+      }
+
+      std::string run_name =
+         input_filename.substr( 0, input_filename.rfind( "." ) );
+
+      tbox::pout<<"Run name: "<<run_name<<std::endl;
+      std::string log_file_name = run_name + ".log";
+      tbox::PIO::logOnlyNodeZero( log_file_name );
 
       // Retreive "Main" section of input db.
       std::shared_ptr<tbox::Database> main_db(input_db->getDatabase("Main"));
@@ -203,8 +209,7 @@ int main(
 
       // Set up Visualization plot file writer
       int visit_number_procs_per_file=1;
-      const std::string visit_dump_dirname 
-         = "v."+input_filename.substr( 0, input_filename.rfind( "." ) );
+      const std::string visit_dump_dirname("visit_"+run_name);
       std::shared_ptr<appu::VisItDataWriter> visit_data_writer(
          new appu::VisItDataWriter(
             dim,
