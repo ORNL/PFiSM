@@ -31,7 +31,7 @@ add_test(NAME testHyprePoisson
 #regression tests
 add_test(NAME PlanarFront
          COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/PlanarFront/test.py
-         ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4
+         ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ${MPIEXEC_PREFLAGS}
          ${CMAKE_CURRENT_BINARY_DIR}/../source/main
          ${CMAKE_CURRENT_SOURCE_DIR}/PlanarFront/pfm3d.input
          )
