@@ -1,4 +1,5 @@
 #include "PFModel.h"
+#include "tools.h"
 
 #ifdef __GNUC__
 #pragma GCC diagnostic push
@@ -77,6 +78,7 @@ PFModel::PFModel(
    d_temperature_var(new pdat::CellVariable<double>(dim, "temperature", 1)),
    d_phase_var(new pdat::CellVariable<double>(dim, "phase", 1)),
    d_cfield_phase_var(new pdat::CellVariable<double>(dim, "cfield", 1)),
+   d_vol_var(new pdat::CellVariable<double>(dim, "vol", 1)),
    d_temperature_component(0),
    d_phase_component(1),
    d_FAC_solver_temperature(fac_solver_temperature),
@@ -115,6 +117,11 @@ PFModel::PFModel(
 
    d_cfield_phase_id = variable_db->registerVariableAndContext(
          d_cfield_phase_var,
+         d_cur_cxt,
+         hier::IntVector(d_dim, 0));
+
+   d_vol_id = variable_db->registerVariableAndContext(
+         d_vol_var,
          d_cur_cxt,
          hier::IntVector(d_dim, 0));
 
@@ -829,9 +836,10 @@ void PFModel::setInitialConditions()
    std::shared_ptr<hier::PatchHierarchy> hierarchy(
       init_samvect->getPatchHierarchy());
 
-   const double zmax = d_grid_geometry->getXLower()[2];
-   const double zmin = d_grid_geometry->getXUpper()[2];
+   const double zmin = d_grid_geometry->getXLower()[2];
+   const double zmax = d_grid_geometry->getXUpper()[2];
    const double lz   = zmax-zmin;
+   tbox::pout<<"Length in z-direction: "<<lz<<std::endl;
 
    for (int ln = 0; ln < hierarchy->getNumberOfLevels(); ++ln) {
       std::shared_ptr<hier::PatchLevel> level(hierarchy->getPatchLevel(ln));
@@ -869,7 +877,7 @@ void PFModel::setInitialConditions()
 
          for ( ; ic != icend; ++ic) {
             hier::IntVector icell = *ic;
-            const double zval=(h[2]*(0.5+icell[2])-zmin);
+            const double zval=(h[2]*(0.5+icell[2]));
 
             if( zval>d_init_solid_fraction*lz)
             (*phase_init)(*ic)=0.;
@@ -878,6 +886,13 @@ void PFModel::setInitialConditions()
          }
       }
    }
+
+   for (int ln = 0; ln < hierarchy->getNumberOfLevels(); ++ln) {
+      std::shared_ptr<hier::PatchLevel> level(hierarchy->getPatchLevel(ln));
+      level->allocatePatchData( d_vol_id );
+   }
+
+   computeVectorWeights(hierarchy, d_vol_id, 0, hierarchy->getFinestLevelNumber());
 }
 
 /*************************************************************************
@@ -919,6 +934,24 @@ void PFModel::setCforPhase(
       } // loop over patches
    } // loop over levels
 }
+
+/*************************************************************************
+ * Compute solid fraction
+ *************************************************************************/
+double PFModel::computeSolidFraction(
+   const std::shared_ptr<hier::PatchHierarchy>& hierarchy)
+{
+   assert( d_vol_id>=0 );
+
+   const double* lo=d_grid_geometry->getXLower();
+   const double* up=d_grid_geometry->getXUpper();
+   const double volume=(up[0]-lo[0])*(up[1]-lo[1])*(up[2]-lo[2]);
+
+   math::HierarchyCellDataOpsReal<double> cmat(hierarchy);
+
+   return cmat.integral(d_phase_cur_id, d_vol_id)/volume;
+}
+
 
 void PFModel::printCounters(const double final_time)
 {

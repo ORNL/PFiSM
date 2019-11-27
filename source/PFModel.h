@@ -183,6 +183,8 @@ public:
     */
    void setInitialConditions();
 
+   double computeSolidFraction(const std::shared_ptr<hier::PatchHierarchy>& hierarchy);
+
    /**
     * Print program counters.
     */
@@ -228,6 +230,7 @@ private:
    std::shared_ptr<pdat::CellVariable<double> > d_temperature_var;
    std::shared_ptr<pdat::CellVariable<double> > d_phase_var;
    std::shared_ptr<pdat::CellVariable<double> > d_cfield_phase_var;
+   std::shared_ptr<pdat::CellVariable<double> > d_vol_var;
 
    // Variable Contexts
    std::shared_ptr<hier::VariableContext> d_cur_cxt;
@@ -239,6 +242,7 @@ private:
    int d_phase_cur_id;
    int d_phase_scr_id;
    int d_cfield_phase_id;
+   int d_vol_id;
 
    // component indexes for SAMRAI vectors
    const int d_temperature_component;
