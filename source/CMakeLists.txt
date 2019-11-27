@@ -31,6 +31,7 @@ add_library(pfismlib STATIC
    CellPoissonFACOps.C
    CellPoissonHypreSolver.C
    CellPoissonFACSolver.C
+   tools.C
    fortran/rhs3d.f
    fortran/computeCforPhase.f
    )

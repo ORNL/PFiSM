@@ -79,13 +79,6 @@ int TestHyprePoisson::run(const std::string input_filename)
    {
       bool converged = true;
 
-#if !defined(HAVE_HYPRE)
-      tbox::pout << "This example requires the package HYPRE"
-                 << "\nto work properly.  SAMRAI was not configured"
-                 << "\nwith this package."
-                 << endl;
-#else
-
       /*
        * Create input database and parse all data in input file.
        */
@@ -156,8 +149,8 @@ int TestHyprePoisson::run(const std::string input_filename)
       std::string hypre_solver_name = hypre_poisson_name + "::poisson_hypre";
       std::string bc_coefs_name = hypre_poisson_name + "::bc_coefs";
 
-      std::shared_ptr<solv::CellPoissonHypreSolver> hypre_solver(
-         new solv::CellPoissonHypreSolver(
+      std::shared_ptr<CellPoissonHypreSolver> hypre_solver(
+         new CellPoissonHypreSolver(
             dim,
             hypre_poisson_name,
             input_db->isDatabase("hypre_solver") ?
@@ -262,16 +255,12 @@ int TestHyprePoisson::run(const std::string input_filename)
 
       tbox::TimerManager::getManager()->print(tbox::plog);
 
-#endif
-
-#ifdef TESTING
       if (converged) {
          tbox::pout << "\nPASSED:  hypre" << endl;
       } else {
-         TBOX_WARNING("Hypre test did not converge.");
+         tbox::pout<<"Hypre test did not converge."<<std::endl;
          return 1;
       }
-#endif
    }
 
    return 0;

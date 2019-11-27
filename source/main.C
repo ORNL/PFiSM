@@ -303,6 +303,8 @@ int main(
             print_time+=print_interval;
          }
 
+         const double sf = pf_model->computeSolidFraction(result_hierarchy);
+         tbox::pout << "Solid fraction: "<<sf<<std::endl;
       } // end of timestep loop
 
       /*************************************************************************
