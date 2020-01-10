@@ -41,7 +41,7 @@
 // CVODE includes
 #ifndef included_cvspgmr_h
 #define included_cvspgmr_h
-#include "cvode/cvode_spgmr.h"
+//#include "cvode/cvode_spgmr.h"
 #endif
 
 #ifndef _MSC_VER
@@ -231,7 +231,6 @@ int main(
             pf_model.get(),
             uses_preconditioning);
 
-      cvode_solver->setIterationType( CV_NEWTON );
       cvode_solver->setRelativeTolerance(relative_tolerance);
       cvode_solver->setAbsoluteTolerance(absolute_tolerance);
       cvode_solver->setMaximumNumberOfInternalSteps(max_steps);

@@ -148,10 +148,7 @@ public:
       solv::SundialsAbstractVector* fy,
       int jok,
       int* jcurPtr,
-      double gamma,
-      solv::SundialsAbstractVector* vtemp1,
-      solv::SundialsAbstractVector* vtemp2,
-      solv::SundialsAbstractVector* vtemp3);
+      double gamma);
 
    int CVSpgmrPrecondSolve(
       double t,
@@ -161,8 +158,7 @@ public:
       solv::SundialsAbstractVector* z,
       double gamma,
       double delta,
-      int lr,
-      solv::SundialsAbstractVector* vtemp);
+      int lr);
 
 /*************************************************************************
  * Methods specific to PFModel class.

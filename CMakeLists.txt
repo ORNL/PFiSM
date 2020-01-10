@@ -25,7 +25,7 @@ set(PROJECT_LINK_LIBS_HDF5 ${HDF5_LIBRARIES})
 
 link_directories( ${SAMRAI_DIR}/lib )
 link_directories( ${HYPRE_DIR}/lib )
-link_directories( ${SUNDIALS_DIR}/lib )
+link_directories( ${SUNDIALS_DIR}/lib64 )
 
 include_directories( ${SAMRAI_DIR}/include )
 include_directories( ${HYPRE_DIR}/include )
