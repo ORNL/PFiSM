@@ -543,18 +543,12 @@ int PFModel::CVSpgmrPrecondSet(
    solv::SundialsAbstractVector* fy,
    int jok,
    int* jcurPtr,
-   double gamma,
-   solv::SundialsAbstractVector* vtemp1,
-   solv::SundialsAbstractVector* vtemp2,
-   solv::SundialsAbstractVector* vtemp3)
+   double gamma)
 {
    NULL_USE(t);
    NULL_USE(fy);
    NULL_USE(jok);
    NULL_USE(jcurPtr);
-   NULL_USE(vtemp1);
-   NULL_USE(vtemp2);
-   NULL_USE(vtemp3);
 
    t_precondset_timer->start();
 
@@ -637,13 +631,11 @@ int PFModel::CVSpgmrPrecondSolve(
    solv::SundialsAbstractVector* z,
    double gamma,
    double delta,
-   int lr,
-   solv::SundialsAbstractVector* vtemp)
+   int lr)
 {
    NULL_USE(t);
    NULL_USE(y);
    NULL_USE(fy);
-   NULL_USE(vtemp);
    NULL_USE(delta);
    NULL_USE(lr);
 
