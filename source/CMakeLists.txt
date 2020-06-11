@@ -38,7 +38,6 @@ add_library(pfismlib STATIC
 
 if(${PFISM_USE_GPU})
   set_source_files_properties(PFiSM_Hypre.C PROPERTIES LANGUAGE CUDA)
-  set_source_files_properties(CellPoissonHypreSolver.C PROPERTIES LANGUAGE CUDA)
 endif(${PFISM_USE_GPU})
 
 target_compile_features(pfismlib PRIVATE cxx_std_11)

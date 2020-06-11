@@ -1,4 +1,4 @@
-#include "_hypre_struct_mv.h"
+#include "HYPRE_struct_mv.h"
 
 
 HYPRE_Int
