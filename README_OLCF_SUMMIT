@@ -1,0 +1,33 @@
+#load modules
+module load hdf5
+module load cuda/9.2.148
+module load cmake
+
+#build hypre
+./configure --with-cuda --enable-unified-memory --enable-shared \
+            --prefix=$HOME/hypre/summit_xl_gpu CUDACXX=mpiCC HYPRE_CUDA_SM=70
+make
+make install
+
+#build Sundials
+cmake -DCMAKE_INSTALL_PREFIX=/autofs/nccs-svm1_home1/jeanluc/sundials/cvode-projection/install \
+      -DEXAMPLES_ENABLE=OFF -DMPI_ENABLE=ON -DBUILD_ARKODE=OFF -DBUILD_IDA=OFF -DBUILD_IDAS=OFF \
+      -DMPI_MPICC=mpicc ..
+
+#build SAMRAI without hypre
+cd objs
+cmake -DCMAKE_CXX_COMPILER=mpicxx -DCMAKE_Fortran_COMPILER=mpixlf \
+      -DHDF5_DIR=$OLCF_HDF5_ROOT \
+      -DSUNDIALS_DIR=$HOME/sundials/cvode-projection/install \
+      -DCMAKE_INSTALL_PREFIX=$HOME/SAMRAI/install_nohypre \
+      ../SAMRAI
+
+#build code
+cd build
+../scripts/build_summit_xl
+make
+
+#run code
+bsub -nnodes 1 -PMAT190 -W00:30 -Is $SHELL
+module load cuda/9.2.148
+jsrun -n4 -a1 -g1 ./build/source/main inputs/pfm3d.input
