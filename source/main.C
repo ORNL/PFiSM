@@ -1,5 +1,3 @@
-#include "_hypre_utilities.h"
-
 #include "SAMRAI/SAMRAI_config.h"
 
 #include "PFModel.h"
@@ -34,6 +32,8 @@
 #include "SAMRAI/solv/SundialsAbstractVector.h"
 #include "SAMRAI/solv/CVODESolver.h"
 
+#include "HYPRE_struct_ls.h"
+
 #ifdef __GNUC__
 #pragma GCC diagnostic pop
 #endif
@@ -64,7 +64,7 @@ int main(
    tbox::SAMRAIManager::initialize();
    tbox::SAMRAIManager::startup();
 
-   HYPRE_Init(argc, argv);
+   HYPRE_Init();
 
    {
       if (argc != 2) {
