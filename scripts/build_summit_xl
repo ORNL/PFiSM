@@ -1,7 +1,7 @@
 #!/bin/csh
 module load hdf5
 module load xl
-module load cuda
+module load cuda/9.2.148
 module load cmake
 
 cmake \
@@ -10,10 +10,10 @@ cmake \
         -DCMAKE_BUILD_TYPE=Debug \
         -DPFISM_USE_GPU=ON \
         -DCMAKE_CUDA_FLAGS="-arch=sm_70" \
-        -DMPIEXEC_EXECUTABLE="/sw/summit/xalt/1.1.4/bin/jsrun" \
+        -DMPIEXEC_EXECUTABLE="/sw/summit/xalt/1.2.0/bin/jsrun" \
         -DMPIEXEC_NUMPROCS_FLAG="-n" \
         -DMPIEXEC_PREFLAGS="-a1;-c7;-bpacked:2;-g1" \
-	-DSAMRAI_DIR=$HOME/GIT/SAMRAI/build_summit_xl \
+	-DSAMRAI_DIR=$HOME/SAMRAI/install_nohypre \
         -DHYPRE_DIR=$HOME/hypre/summit_xl_gpu \
         -DSUNDIALS_DIR=$HOME/sundials/sundials-5.0.0_summit_xl \
 	..
