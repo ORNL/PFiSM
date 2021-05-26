@@ -24,6 +24,22 @@ message(STATUS ${HDF5_VERSION} )
 include_directories(${HDF5_INCLUDE_DIR})
 set(PROJECT_LINK_LIBS_HDF5 ${HDF5_LIBRARIES})
 
+# clang-format (optional)
+set(PFISM_WITH_CLANG_FORMAT FALSE CACHE BOOL "Indent code with clang-format")
+if(${PFISM_WITH_CLANG_FORMAT})
+  find_program(CLANG_FORMAT_EXECUTABLE
+             NAMES clang-format
+             DOC "clang-format executable")
+  mark_as_advanced(CLANG_FORMAT_EXECUTABLE)
+  if(CLANG_FORMAT_EXECUTABLE)
+    message(STATUS "Indent with clang-format")
+    file(GLOB FORMAT_SOURCES src/*.cc src/*.h tests/*.cc tests/*.h)
+    add_custom_target(format
+      COMMAND ${CLANG_FORMAT_EXECUTABLE} -i -style=file ${FORMAT_SOURCES}
+      DEPENDS ${FORMAT_SOURCES})
+  endif(CLANG_FORMAT_EXECUTABLE)
+endif()
+
 link_directories( ${SAMRAI_DIR}/lib )
 link_directories( ${HYPRE_DIR}/lib )
 link_directories( ${SUNDIALS_DIR}/lib64 )

@@ -43,135 +43,101 @@ class CellPoissonFACSolver;
 
 using namespace SAMRAI;
 
-class PFModel:
-   public mesh::StandardTagAndInitStrategy,
-   public xfer::RefinePatchStrategy,
-   public xfer::CoarsenPatchStrategy,
-   public solv::CVODEAbstractFunctions
+class PFModel : public mesh::StandardTagAndInitStrategy,
+                public xfer::RefinePatchStrategy,
+                public xfer::CoarsenPatchStrategy,
+                public solv::CVODEAbstractFunctions
 {
-public:
-
-   PFModel(
-      const std::string& object_name,
-      const tbox::Dimension& dim,
-      std::shared_ptr<CellPoissonFACSolver> fac_solver_temperature,
-      std::shared_ptr<CellPoissonFACSolver> fac_solver_phase,
-      std::shared_ptr<tbox::Database> input_db,
-      std::shared_ptr<geom::CartesianGridGeometry> grid_geom);
+ public:
+   PFModel(const std::string& object_name, const tbox::Dimension& dim,
+           std::shared_ptr<CellPoissonFACSolver> fac_solver_temperature,
+           std::shared_ptr<CellPoissonFACSolver> fac_solver_phase,
+           std::shared_ptr<tbox::Database> input_db,
+           std::shared_ptr<geom::CartesianGridGeometry> grid_geom);
 
    ~PFModel();
 
-/*************************************************************************
- * Methods inherited from StandardTagAndInitStrategy.
- ************************************************************************/
+   /*************************************************************************
+    * Methods inherited from StandardTagAndInitStrategy.
+    ************************************************************************/
    void initializeLevelData(
-      const std::shared_ptr<hier::PatchHierarchy>& hierarchy,
-      const int level_number,
-      const double time,
-      const bool can_be_refined,
-      const bool initial_time,
-      const std::shared_ptr<hier::PatchLevel>& old_level =
-         std::shared_ptr<hier::PatchLevel>(),
-      const bool allocate_data = true);
+       const std::shared_ptr<hier::PatchHierarchy>& hierarchy,
+       const int level_number, const double time, const bool can_be_refined,
+       const bool initial_time,
+       const std::shared_ptr<hier::PatchLevel>& old_level =
+           std::shared_ptr<hier::PatchLevel>(),
+       const bool allocate_data = true);
 
    void resetHierarchyConfiguration(
-      const std::shared_ptr<hier::PatchHierarchy>& hierarchy,
-      const int coarsest_level,
-      const int finest_level);
+       const std::shared_ptr<hier::PatchHierarchy>& hierarchy,
+       const int coarsest_level, const int finest_level);
 
    void applyGradientDetector(
-      const std::shared_ptr<hier::PatchHierarchy>& hierarchy,
-      const int level_number,
-      const double time,
-      const int tag_index,
-      const bool initial_time,
-      const bool uses_richardson_extrapolation_too);
+       const std::shared_ptr<hier::PatchHierarchy>& hierarchy,
+       const int level_number, const double time, const int tag_index,
+       const bool initial_time, const bool uses_richardson_extrapolation_too);
 
-/*************************************************************************
- * Methods inherited from RefinePatchStrategy.
- ************************************************************************/
+   /*************************************************************************
+    * Methods inherited from RefinePatchStrategy.
+    ************************************************************************/
    void setPhysicalBoundaryConditions(
-      hier::Patch& patch,
-      const double time,
-      const hier::IntVector& ghost_width_to_fill);
+       hier::Patch& patch, const double time,
+       const hier::IntVector& ghost_width_to_fill);
 
-   void preprocessRefine(
-      hier::Patch& fine,
-      const hier::Patch& coarse,
-      const hier::Box& fine_box,
-      const hier::IntVector& ratio);
+   void preprocessRefine(hier::Patch& fine, const hier::Patch& coarse,
+                         const hier::Box& fine_box,
+                         const hier::IntVector& ratio);
 
-   void postprocessRefine(
-      hier::Patch& fine,
-      const hier::Patch& coarse,
-      const hier::Box& fine_box,
-      const hier::IntVector& ratio);
+   void postprocessRefine(hier::Patch& fine, const hier::Patch& coarse,
+                          const hier::Box& fine_box,
+                          const hier::IntVector& ratio);
 
-   hier::IntVector getRefineOpStencilWidth(
-      const tbox::Dimension& dim) const
+   hier::IntVector getRefineOpStencilWidth(const tbox::Dimension& dim) const
    {
       return hier::IntVector(dim, 0);
    }
 
-/*************************************************************************
- * Methods inherited from CoarsenPatchStrategy.
- ************************************************************************/
-   void preprocessCoarsen(
-      hier::Patch& coarse,
-      const hier::Patch& fine,
-      const hier::Box& coarse_box,
-      const hier::IntVector& ratio);
+   /*************************************************************************
+    * Methods inherited from CoarsenPatchStrategy.
+    ************************************************************************/
+   void preprocessCoarsen(hier::Patch& coarse, const hier::Patch& fine,
+                          const hier::Box& coarse_box,
+                          const hier::IntVector& ratio);
 
-   void postprocessCoarsen(
-      hier::Patch& coarse,
-      const hier::Patch& fine,
-      const hier::Box& coarse_box,
-      const hier::IntVector& ratio);
+   void postprocessCoarsen(hier::Patch& coarse, const hier::Patch& fine,
+                           const hier::Box& coarse_box,
+                           const hier::IntVector& ratio);
 
-   hier::IntVector getCoarsenOpStencilWidth(
-      const tbox::Dimension& dim) const
+   hier::IntVector getCoarsenOpStencilWidth(const tbox::Dimension& dim) const
    {
       return hier::IntVector(dim, 0);
    }
 
-/*************************************************************************
- * Methods inherited from CVODEAbstractFunctions
- ************************************************************************/
-   int evaluateRHSFunction(
-      double time,
-      solv::SundialsAbstractVector* y,
-      solv::SundialsAbstractVector* y_dot);
+   /*************************************************************************
+    * Methods inherited from CVODEAbstractFunctions
+    ************************************************************************/
+   int evaluateRHSFunction(double time, solv::SundialsAbstractVector* y,
+                           solv::SundialsAbstractVector* y_dot);
 
-   int evaluateJTimesRHSFunction(
-      double t,
-      solv::SundialsAbstractVector* y,
-      solv::SundialsAbstractVector* y_dot)
-   { return evaluateRHSFunction(t, y, y_dot); }
+   int evaluateJTimesRHSFunction(double t, solv::SundialsAbstractVector* y,
+                                 solv::SundialsAbstractVector* y_dot)
+   {
+      return evaluateRHSFunction(t, y, y_dot);
+   }
 
-   int CVSpgmrPrecondSet(
-      double t,
-      solv::SundialsAbstractVector* y,
-      solv::SundialsAbstractVector* fy,
-      int jok,
-      int* jcurPtr,
-      double gamma);
+   int CVSpgmrPrecondSet(double t, solv::SundialsAbstractVector* y,
+                         solv::SundialsAbstractVector* fy, int jok,
+                         int* jcurPtr, double gamma);
 
-   int CVSpgmrPrecondSolve(
-      double t,
-      solv::SundialsAbstractVector* y,
-      solv::SundialsAbstractVector* fy,
-      solv::SundialsAbstractVector* r,
-      solv::SundialsAbstractVector* z,
-      double gamma,
-      double delta,
-      int lr);
+   int CVSpgmrPrecondSolve(double t, solv::SundialsAbstractVector* y,
+                           solv::SundialsAbstractVector* fy,
+                           solv::SundialsAbstractVector* r,
+                           solv::SundialsAbstractVector* z, double gamma,
+                           double delta, int lr);
 
-   int applyProjection(
-      double time,
-      solv::SundialsAbstractVector* y,
-      solv::SundialsAbstractVector* corr,
-      double epsProj,
-      solv::SundialsAbstractVector* err)
+   int applyProjection(double time, solv::SundialsAbstractVector* y,
+                       solv::SundialsAbstractVector* corr, double epsProj,
+                       solv::SundialsAbstractVector* err)
    {
       (void)time;
 
@@ -180,12 +146,10 @@ public:
       return 0;
    }
 
-/*************************************************************************
- * Methods specific to PFModel class.
- ************************************************************************/
-   void setPrintSolverInfo(const bool info){
-      d_print_solver_info = info;
-  }
+   /*************************************************************************
+    * Methods specific to PFModel class.
+    ************************************************************************/
+   void setPrintSolverInfo(const bool info) { d_print_solver_info = info; }
 
    void setupSolutionVector(std::shared_ptr<hier::PatchHierarchy> hierarchy);
 
@@ -199,7 +163,8 @@ public:
     */
    void setInitialConditions();
 
-   double computeSolidFraction(const std::shared_ptr<hier::PatchHierarchy>& hierarchy);
+   double computeSolidFraction(
+       const std::shared_ptr<hier::PatchHierarchy>& hierarchy);
 
    /**
     * Print program counters.
@@ -211,26 +176,24 @@ public:
     * This routine is a concrete implementation of the function
     * declared in the tbox::Serializable abstract base class.
     */
-   void putToRestart(
-      const std::shared_ptr<tbox::Database>& restart_db) const;
+   void putToRestart(const std::shared_ptr<tbox::Database>& restart_db) const;
 
    /**
     * Register a VisIt data writer so this class will write
     * plot files that may be postprocessed with VisIt
     */
    void registerVisItDataWriter(
-      std::shared_ptr<appu::VisItDataWriter> viz_writer);
+       std::shared_ptr<appu::VisItDataWriter> viz_writer);
 
    // Prints all class data members, if assertion is thrown.
    void printClassData(std::ostream& os) const;
 
-private:
+ private:
    PFModel(const PFModel&);
    PFModel& operator=(const PFModel&);
 
-   void getFromInput(
-      std::shared_ptr<tbox::Database> input_db,
-      bool is_from_restart);
+   void getFromInput(std::shared_ptr<tbox::Database> input_db,
+                     bool is_from_restart);
 
    void getFromRestart();
 
@@ -318,13 +281,12 @@ private:
    solv::LocationIndexRobinBcCoefs* d_temperature_bc_corr_coeffs;
    solv::LocationIndexRobinBcCoefs* d_phase_bc_corr_coeffs;
 
-   void setCforPhase(
-      const std::shared_ptr<hier::PatchHierarchy>& hierarchy,
-      std::shared_ptr<solv::SAMRAIVectorReal<double> > y_samvect,
-      const double gamma);
+   void setCforPhase(const std::shared_ptr<hier::PatchHierarchy>& hierarchy,
+                     std::shared_ptr<solv::SAMRAIVectorReal<double> > y_samvect,
+                     const double gamma);
 
    void initializeSolvers(
-      const std::shared_ptr<hier::PatchHierarchy>& hierarchy);
+       const std::shared_ptr<hier::PatchHierarchy>& hierarchy);
 };
 
 #endif

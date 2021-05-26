@@ -7,22 +7,19 @@ using namespace SAMRAI;
 // Function adapted from SAMRAI::solv::CellPoissonFACOps::computeVectorWeights()
 
 void computeVectorWeights(
-   const std::shared_ptr<hier::PatchHierarchy>& hierarchy,
-   int weight_id,
-   int coarsest_ln,
-   int finest_ln)
+    const std::shared_ptr<hier::PatchHierarchy>& hierarchy, int weight_id,
+    int coarsest_ln, int finest_ln)
 {
    assert(hierarchy);
-   assert(weight_id>=0);
+   assert(weight_id >= 0);
 
    const tbox::Dimension dim(hierarchy->getDim());
 
    if (coarsest_ln == -1) coarsest_ln = 0;
    if (finest_ln == -1) finest_ln = hierarchy->getFinestLevelNumber();
    if (finest_ln < coarsest_ln) {
-      TBOX_ERROR(
-         "Illegal level number range.  finest_ln < coarsest_ln."
-         << std::endl);
+      TBOX_ERROR("Illegal level number range.  finest_ln < coarsest_ln."
+                 << std::endl);
    }
 
    for (int ln = finest_ln; ln >= coarsest_ln; --ln) {
@@ -32,12 +29,13 @@ void computeVectorWeights(
        */
 
       std::shared_ptr<hier::PatchLevel> level(hierarchy->getPatchLevel(ln));
-      for (hier::PatchLevel::iterator p(level->begin());
-           p != level->end(); ++p) {
+      for (hier::PatchLevel::iterator p(level->begin()); p != level->end();
+           ++p) {
          const std::shared_ptr<hier::Patch>& patch = *p;
          std::shared_ptr<geom::CartesianPatchGeometry> patch_geometry(
-            SAMRAI_SHARED_PTR_CAST<geom::CartesianPatchGeometry, hier::PatchGeometry>(
-               patch->getPatchGeometry()));
+             SAMRAI_SHARED_PTR_CAST<geom::CartesianPatchGeometry,
+                                    hier::PatchGeometry>(
+                 patch->getPatchGeometry()));
 
          assert(patch_geometry);
 
@@ -52,8 +50,8 @@ void computeVectorWeights(
          }
 
          std::shared_ptr<pdat::CellData<double> > w(
-            SAMRAI_SHARED_PTR_CAST<pdat::CellData<double>, hier::PatchData>(
-               patch->getPatchData(weight_id)));
+             SAMRAI_SHARED_PTR_CAST<pdat::CellData<double>, hier::PatchData>(
+                 patch->getPatchData(weight_id)));
          assert(w);
          w->fillAll(cell_vol);
       }
@@ -72,7 +70,7 @@ void computeVectorWeights(
           */
 
          std::shared_ptr<hier::PatchLevel> next_finer_level(
-            hierarchy->getPatchLevel(ln + 1));
+             hierarchy->getPatchLevel(ln + 1));
          hier::BoxContainer coarsened_boxes = next_finer_level->getBoxes();
          hier::IntVector coarsen_ratio(next_finer_level->getRatioToLevelZero());
          coarsen_ratio /= level->getRatioToLevelZero();
@@ -84,8 +82,8 @@ void computeVectorWeights(
           * Note that all assignments are local.
           */
 
-         for (hier::PatchLevel::iterator p(level->begin());
-              p != level->end(); ++p) {
+         for (hier::PatchLevel::iterator p(level->begin()); p != level->end();
+              ++p) {
 
             const std::shared_ptr<hier::Patch>& patch = *p;
             for (hier::BoxContainer::iterator i = coarsened_boxes.begin();
@@ -94,15 +92,15 @@ void computeVectorWeights(
                hier::Box intersection = *i * (patch->getBox());
                if (!intersection.empty()) {
                   std::shared_ptr<pdat::CellData<double> > w(
-                     SAMRAI_SHARED_PTR_CAST<pdat::CellData<double>, hier::PatchData>(
-                        patch->getPatchData(weight_id)));
+                      SAMRAI_SHARED_PTR_CAST<pdat::CellData<double>,
+                                             hier::PatchData>(
+                          patch->getPatchData(weight_id)));
                   TBOX_ASSERT(w);
                   w->fillAll(0.0, intersection);
 
                }  // assignment only in non-empty intersection
-            }  // loop over coarsened boxes from finer level
-         }  // loop over patches in level
-      }  // all levels except finest
-   }  // loop over levels
+            }     // loop over coarsened boxes from finer level
+         }        // loop over patches in level
+      }           // all levels except finest
+   }              // loop over levels
 }
-

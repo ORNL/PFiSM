@@ -6,7 +6,7 @@
 
 class TestHyprePoisson
 {
-public:
+ public:
    TestHyprePoisson(MPI_Comm comm);
 
    ~TestHyprePoisson();

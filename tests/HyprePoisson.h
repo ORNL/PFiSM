@@ -32,7 +32,8 @@
 
 using namespace std;
 
-namespace SAMRAI {
+namespace SAMRAI
+{
 
 /*!
  * @brief Class to solve a sample Poisson equation on a SAMR grid.
@@ -59,12 +60,11 @@ namespace SAMRAI {
  * - appu::VisDerivedDataStrategy to write out certain data
  *   in a vis file, such as the error of the solution.
  */
-class HyprePoisson:
-   public mesh::StandardTagAndInitStrategy,
-   public appu::VisDerivedDataStrategy
+class HyprePoisson : public mesh::StandardTagAndInitStrategy,
+                     public appu::VisDerivedDataStrategy
 {
 
-public:
+ public:
    /*!
     * @brief Constructor.
     *
@@ -75,11 +75,9 @@ public:
     * @param dim
     * @param database
     */
-   HyprePoisson(
-      const string& object_name,
-      const tbox::Dimension& dim,
-      std::shared_ptr<CellPoissonHypreSolver>& hypre_solver,
-      std::shared_ptr<solv::LocationIndexRobinBcCoefs>& bc_coefs);
+   HyprePoisson(const string& object_name, const tbox::Dimension& dim,
+                std::shared_ptr<CellPoissonHypreSolver>& hypre_solver,
+                std::shared_ptr<solv::LocationIndexRobinBcCoefs>& bc_coefs);
 
    virtual ~HyprePoisson();
 
@@ -95,38 +93,29 @@ public:
     *
     * @see mesh::StandardTagAndInitStrategy::initializeLevelData()
     */
-   virtual void
-   initializeLevelData(
-      const std::shared_ptr<hier::PatchHierarchy>& hierarchy,
-      const int level_number,
-      const double init_data_time,
-      const bool can_be_refined,
-      const bool initial_time,
-      const std::shared_ptr<hier::PatchLevel>& old_level =
-         std::shared_ptr<hier::PatchLevel>(),
-      const bool allocate_data = true);
+   virtual void initializeLevelData(
+       const std::shared_ptr<hier::PatchHierarchy>& hierarchy,
+       const int level_number, const double init_data_time,
+       const bool can_be_refined, const bool initial_time,
+       const std::shared_ptr<hier::PatchLevel>& old_level =
+           std::shared_ptr<hier::PatchLevel>(),
+       const bool allocate_data = true);
 
    /*!
     * @brief Reset any internal hierarchy-dependent information.
     */
-   virtual void
-   resetHierarchyConfiguration(
-      const std::shared_ptr<hier::PatchHierarchy>& new_hierarchy,
-      int coarsest_level,
-      int finest_level);
+   virtual void resetHierarchyConfiguration(
+       const std::shared_ptr<hier::PatchHierarchy>& new_hierarchy,
+       int coarsest_level, int finest_level);
 
    //@}
 
    //@{ @name appu::VisDerivedDataStrategy virtuals
 
-   virtual bool
-   packDerivedDataIntoDoubleBuffer(
-      double* buffer,
-      const hier::Patch& patch,
-      const hier::Box& region,
-      const std::string& variable_name,
-      int depth_id,
-      double simulation_time = 0.0) const;
+   virtual bool packDerivedDataIntoDoubleBuffer(
+       double* buffer, const hier::Patch& patch, const hier::Box& region,
+       const std::string& variable_name, int depth_id,
+       double simulation_time = 0.0) const;
 
    //@}
 
@@ -142,8 +131,7 @@ public:
     *
     * @return whether solver converged
     */
-   bool
-   solvePoisson();
+   bool solvePoisson();
 
    /*!
     * @brief Set up external plotter to plot internal
@@ -161,11 +149,9 @@ public:
     *
     * @param visit_writer VisIt data writer
     */
-   int
-   registerVariablesWithPlotter(
-      appu::VisItDataWriter& visit_writer) const;
+   int registerVariablesWithPlotter(appu::VisItDataWriter& visit_writer) const;
 
-private:
+ private:
    std::string d_object_name;
 
    const tbox::Dimension d_dim;
@@ -190,7 +176,7 @@ private:
    //@}
 
    //@{
-private:
+ private:
    /*!
     * @name Private state variables for solution.
     */
@@ -208,9 +194,8 @@ private:
    int d_comp_soln_id, d_exact_id, d_rhs_id;
 
    //@}
-
 };
 
-}
+}  // namespace SAMRAI
 
 #endif  // included_HyprePoisson

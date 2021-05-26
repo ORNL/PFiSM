@@ -4,7 +4,7 @@
 #include <iostream>
 #include <mpi.h>
 
-int main( int argc, char *argv[] )
+int main(int argc, char *argv[])
 {
    // Initialize MPI
    MPI_Init(&argc, &argv);
@@ -12,7 +12,7 @@ int main( int argc, char *argv[] )
    int ret = 0;
 
    {
-      //create main object
+      // create main object
       TestHyprePoisson test(MPI_COMM_WORLD);
 
       /*
