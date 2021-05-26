@@ -230,7 +230,7 @@ void PFModel::applyGradientDetector(
       std::shared_ptr<pdat::CellData<int> > tag_data(
           SAMRAI_SHARED_PTR_CAST<pdat::CellData<int>, hier::PatchData>(
               patch->getPatchData(tag_index)));
-      TBOX_ASSERT(tag_data);
+      assert(tag_data);
 
       // dumb implementation:
       // that tags all cells to refine everywhere
@@ -366,9 +366,9 @@ int PFModel::evaluateRHSFunction(double time, solv::SundialsAbstractVector* y,
              SAMRAI_SHARED_PTR_CAST<pdat::CellData<double>, hier::PatchData>(
                  patch->getPatchData(y_dot_samvect->getComponentDescriptorIndex(
                      d_phase_component))));
-         TBOX_ASSERT(phase);
-         TBOX_ASSERT(temperature);
-         TBOX_ASSERT(rhs);
+         assert(phase);
+         assert(temperature);
+         assert(rhs);
 
          const hier::Index ifirst(patch->getBox().lower());
          const hier::Index ilast(patch->getBox().upper());
@@ -377,7 +377,7 @@ int PFModel::evaluateRHSFunction(double time, solv::SundialsAbstractVector* y,
              SAMRAI_SHARED_PTR_CAST<geom::CartesianPatchGeometry,
                                     hier::PatchGeometry>(
                  patch->getPatchGeometry()));
-         TBOX_ASSERT(patch_geom);
+         assert(patch_geom);
          const double* dx = patch_geom->getDx();
 
          SAMRAI_F77_FUNC(comprhsphase3d, COMPRHSPHASE3D)
@@ -410,9 +410,9 @@ int PFModel::evaluateRHSFunction(double time, solv::SundialsAbstractVector* y,
                  patch->getPatchData(y_dot_samvect->getComponentDescriptorIndex(
                      d_phase_component))));
 
-         TBOX_ASSERT(y);
-         TBOX_ASSERT(rhs);
-         TBOX_ASSERT(phi_dot);
+         assert(y);
+         assert(rhs);
+         assert(phi_dot);
 
          const hier::Index ifirst(patch->getBox().lower());
          const hier::Index ilast(patch->getBox().upper());
@@ -421,7 +421,7 @@ int PFModel::evaluateRHSFunction(double time, solv::SundialsAbstractVector* y,
              SAMRAI_SHARED_PTR_CAST<geom::CartesianPatchGeometry,
                                     hier::PatchGeometry>(
                  patch->getPatchGeometry()));
-         TBOX_ASSERT(patch_geom);
+         assert(patch_geom);
          const double* dx = patch_geom->getDx();
 
          SAMRAI_F77_FUNC(comprhs3d, COMPRHS3D)
@@ -609,14 +609,14 @@ int PFModel::CVSpgmrPrecondSolve(double t, solv::SundialsAbstractVector* y,
          std::shared_ptr<pdat::CellData<double> > r_data(
              SAMRAI_SHARED_PTR_CAST<pdat::CellData<double>, hier::PatchData>(
                  patch->getPatchData(r0_indx)));
-         TBOX_ASSERT(r_data);
+         assert(r_data);
          math_ops.scale(r_data, 1.0 / gamma, r_data, r_data->getBox());
 
          // Set initial guess to 0
          std::shared_ptr<pdat::CellData<double> > z_scr_data(
              SAMRAI_SHARED_PTR_CAST<pdat::CellData<double>, hier::PatchData>(
                  patch->getPatchData(d_temperature_scr_id)));
-         TBOX_ASSERT(z_scr_data);
+         assert(z_scr_data);
          z_scr_data->fillAll(0.);
       }
    }
@@ -641,14 +641,14 @@ int PFModel::CVSpgmrPrecondSolve(double t, solv::SundialsAbstractVector* y,
          std::shared_ptr<pdat::CellData<double> > r_data(
              SAMRAI_SHARED_PTR_CAST<pdat::CellData<double>, hier::PatchData>(
                  patch->getPatchData(r1_indx)));
-         TBOX_ASSERT(r_data);
+         assert(r_data);
          math_ops.scale(r_data, 1.0 / gamma, r_data, r_data->getBox());
 
          //  Set initial guess to 0
          std::shared_ptr<pdat::CellData<double> > z_scr_data(
              SAMRAI_SHARED_PTR_CAST<pdat::CellData<double>, hier::PatchData>(
                  patch->getPatchData(d_phase_scr_id)));
-         TBOX_ASSERT(z_scr_data);
+         assert(z_scr_data);
          z_scr_data->fillAll(0.);
       }
    }
@@ -742,7 +742,7 @@ void PFModel::setupSolutionVector(
    const int nlevels = hierarchy->getNumberOfLevels();
    for (int ln = 0; ln < nlevels; ++ln) {
       std::shared_ptr<hier::PatchLevel> level(hierarchy->getPatchLevel(ln));
-      TBOX_ASSERT(level);
+      assert(level);
       level->allocatePatchData(d_cfield_phase_id);
    }
 }
@@ -774,7 +774,7 @@ void PFModel::setInitialConditions()
              SAMRAI_SHARED_PTR_CAST<geom::CartesianPatchGeometry,
                                     hier::PatchGeometry>(
                  patch->getPatchGeometry()));
-         TBOX_ASSERT(pg);
+         assert(pg);
 
          const double* h = pg->getDx();
 
@@ -783,7 +783,7 @@ void PFModel::setInitialConditions()
              SAMRAI_SHARED_PTR_CAST<pdat::CellData<double>, hier::PatchData>(
                  init_samvect->getComponentPatchData(d_temperature_component,
                                                      *patch)));
-         TBOX_ASSERT(temperature_init);
+         assert(temperature_init);
 
          temperature_init->fillAll(d_temperature_init);
 
@@ -793,7 +793,7 @@ void PFModel::setInitialConditions()
              SAMRAI_SHARED_PTR_CAST<pdat::CellData<double>, hier::PatchData>(
                  init_samvect->getComponentPatchData(d_phase_component,
                                                      *patch)));
-         TBOX_ASSERT(phase_init);
+         assert(phase_init);
 
          const hier::Box patch_box = patch->getBox();
          pdat::CellIterator ic(pdat::CellGeometry::begin(patch_box));
@@ -843,8 +843,8 @@ void PFModel::setCforPhase(
              SAMRAI_SHARED_PTR_CAST<pdat::CellData<double>, hier::PatchData>(
                  patch->getPatchData(d_cfield_phase_id)));
 
-         TBOX_ASSERT(phi);
-         TBOX_ASSERT(cfield);
+         assert(phi);
+         assert(cfield);
 
          const hier::Index ifirst(patch->getBox().lower());
          const hier::Index ilast(patch->getBox().upper());
@@ -931,7 +931,7 @@ void PFModel::putToRestart(
 {
    NULL_USE(restart_db);
 
-   TBOX_ASSERT(restart_db);
+   assert(restart_db);
 }
 
 /*************************************************************************
@@ -955,7 +955,7 @@ void PFModel::getFromRestart()
 void PFModel::registerVisItDataWriter(
     std::shared_ptr<appu::VisItDataWriter> viz_writer)
 {
-   TBOX_ASSERT(viz_writer);
+   assert(viz_writer);
    d_visit_writer = viz_writer;
 
    if (d_visit_writer) {

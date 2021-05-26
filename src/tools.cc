@@ -95,7 +95,7 @@ void computeVectorWeights(
                       SAMRAI_SHARED_PTR_CAST<pdat::CellData<double>,
                                              hier::PatchData>(
                           patch->getPatchData(weight_id)));
-                  TBOX_ASSERT(w);
+                  assert(w);
                   w->fillAll(0.0, intersection);
 
                }  // assignment only in non-empty intersection

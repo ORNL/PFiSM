@@ -32,20 +32,10 @@
 #include "SAMRAI/solv/SundialsAbstractVector.h"
 #include "SAMRAI/solv/CVODESolver.h"
 
-#include "HYPRE_struct_ls.h"
+#include "HYPRE_utilities.h"
 
 #ifdef __GNUC__
 #pragma GCC diagnostic pop
-#endif
-
-// CVODE includes
-#ifndef included_cvspgmr_h
-#define included_cvspgmr_h
-//#include "cvode/cvode_spgmr.h"
-#endif
-
-#ifndef _MSC_VER
-#include <unistd.h>
 #endif
 
 #include <stdio.h>
