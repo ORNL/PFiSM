@@ -60,7 +60,7 @@ set (CMAKE_CXX_STANDARD 11)
 
 set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g -std=c++11")
 
-add_subdirectory(source)
+add_subdirectory(src)
 
 add_subdirectory(tests)
 

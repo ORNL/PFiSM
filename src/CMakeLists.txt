@@ -9,13 +9,13 @@ endif( NOT M4_EXECUTABLE )
 
 # script used to convert m4 files
 MACRO(m4tof filename)
-  IF(NOT EXISTS ${CMAKE_SOURCE_DIR}/source/fortran/${filename}.f)
+  IF(NOT EXISTS ${CMAKE_SOURCE_DIR}/src/fortran/${filename}.f)
     ADD_CUSTOM_COMMAND(
-      OUTPUT ${CMAKE_SOURCE_DIR}/source/fortran/${filename}.f
+      OUTPUT ${CMAKE_SOURCE_DIR}/src/fortran/${filename}.f
       COMMAND m4 
-      ARGS -DPDAT_FORTDIR=${CMAKE_SOURCE_DIR}/source/fortran
-          ${CMAKE_SOURCE_DIR}/source/fortran/${filename}.m4 >
-              ${CMAKE_SOURCE_DIR}/source/fortran/${filename}.f
+      ARGS -DPDAT_FORTDIR=${CMAKE_SOURCE_DIR}/src/fortran
+          ${CMAKE_SOURCE_DIR}/src/fortran/${filename}.m4 >
+              ${CMAKE_SOURCE_DIR}/src/fortran/${filename}.f
       VERBATIM
       )
   ENDIF()

@@ -3,9 +3,9 @@ set( TEST_DIR ${CMAKE_SOURCE_DIR}/tests )
 if(${PFISM_USE_GPU})
   set_source_files_properties(TestHyprePoisson.C PROPERTIES LANGUAGE CUDA)
   set_source_files_properties(HyprePoisson.C PROPERTIES LANGUAGE CUDA)
-  set_source_files_properties(${CMAKE_SOURCE_DIR}/source/samrai_internal/CellPoissonHypreSolver.C
+  set_source_files_properties(${CMAKE_SOURCE_DIR}/src/samrai_internal/CellPoissonHypreSolver.C
                               PROPERTIES LANGUAGE CUDA)
-  set_source_files_properties(${CMAKE_SOURCE_DIR}/source/PFiSM_Hypre.C
+  set_source_files_properties(${CMAKE_SOURCE_DIR}/src/PFiSM_Hypre.C
                               PROPERTIES LANGUAGE CUDA)
 endif(${PFISM_USE_GPU})
 
@@ -14,8 +14,8 @@ add_executable(testHyprePoisson mainTestHyprePoisson.C)
 
 add_library(testHyprePoissonLib STATIC
    TestHyprePoisson.C
-   ${CMAKE_SOURCE_DIR}/source/samrai_internal/CellPoissonHypreSolver.C
-   ${CMAKE_SOURCE_DIR}/source/PFiSM_Hypre.C
+   ${CMAKE_SOURCE_DIR}/src/samrai_internal/CellPoissonHypreSolver.C
+   ${CMAKE_SOURCE_DIR}/src/PFiSM_Hypre.C
    HyprePoisson.C
    hyprepoisson3d.f)
 
@@ -32,7 +32,7 @@ add_test(NAME testHyprePoisson
 add_test(NAME PlanarFront
          COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/PlanarFront/test.py
          ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ${MPIEXEC_PREFLAGS}
-         ${CMAKE_CURRENT_BINARY_DIR}/../source/main
+         ${CMAKE_CURRENT_BINARY_DIR}/../src/main
          ${CMAKE_CURRENT_SOURCE_DIR}/PlanarFront/pfm3d.input
          )
 
@@ -44,9 +44,9 @@ target_link_libraries(testHyprePoisson testHyprePoissonLib
                                        ${PROJECT_LINK_LIBS_HDF5})
 
 target_include_directories(testHyprePoissonLib PUBLIC
-                           ${CMAKE_SOURCE_DIR}/source)
+                           ${CMAKE_SOURCE_DIR}/src)
 
-target_include_directories(testHyprePoisson PUBLIC ${CMAKE_SOURCE_DIR}/source)
+target_include_directories(testHyprePoisson PUBLIC ${CMAKE_SOURCE_DIR}/src)
 
 target_compile_features(testHyprePoissonLib PRIVATE cxx_std_11)
 target_compile_features(testHyprePoisson PRIVATE cxx_std_11)
