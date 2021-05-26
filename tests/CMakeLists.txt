@@ -53,4 +53,6 @@ target_compile_features(testHyprePoisson PRIVATE cxx_std_11)
 
 if(${PFISM_USE_GPU})
   set_target_properties(testHyprePoisson PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+  set_property(TARGET testHyprePoisson PROPERTY CUDA_ARCHITECTURES
+               ${PFISM_CUDA_ARCHITECTURES})
 endif(${PFISM_USE_GPU})

@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
 project (PFiSM LANGUAGES C CXX Fortran)
 
+set(PFISM_CUDA_ARCHITECTURES "" CACHE STRING "target gpu architectures")
 if(${PFISM_USE_GPU})
   enable_language(CUDA)
 endif(${PFISM_USE_GPU})

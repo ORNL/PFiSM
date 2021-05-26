@@ -13,7 +13,7 @@ MACRO(m4tof filename)
     ADD_CUSTOM_COMMAND(
       OUTPUT ${CMAKE_SOURCE_DIR}/source/fortran/${filename}.f
       COMMAND m4 
-      ARGS -DPDAT_FORTDIR=${SAMRAI_DIR}/include/SAMRAI/pdat/fortran 
+      ARGS -DPDAT_FORTDIR=${CMAKE_SOURCE_DIR}/source/fortran
           ${CMAKE_SOURCE_DIR}/source/fortran/${filename}.m4 >
               ${CMAKE_SOURCE_DIR}/source/fortran/${filename}.f
       VERBATIM
@@ -46,6 +46,10 @@ add_executable(main main.C)
 
 if(${PFISM_USE_GPU})
   set_target_properties(main PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+  set_property(TARGET main PROPERTY CUDA_ARCHITECTURES
+               ${PFISM_CUDA_ARCHITECTURES})
+  set_property(TARGET pfismlib PROPERTY CUDA_ARCHITECTURES
+               ${PFISM_CUDA_ARCHITECTURES})
 endif(${PFISM_USE_GPU})
 
 target_link_libraries(main PRIVATE pfismlib
