@@ -10,6 +10,8 @@
 #ifndef included_HyprePoisson
 #define included_HyprePoisson
 
+#include "samrai_internal/CellPoissonHypreSolver.h"
+
 #include "SAMRAI/SAMRAI_config.h"
 
 #include "SAMRAI/pdat/CellVariable.h"
@@ -20,7 +22,6 @@
 #include "SAMRAI/hier/PatchHierarchy.h"
 #include "SAMRAI/hier/PatchLevel.h"
 #include "SAMRAI/hier/IntVector.h"
-#include "CellPoissonHypreSolver.h"
 #include "SAMRAI/pdat/SideVariable.h"
 #include "SAMRAI/mesh/StandardTagAndInitStrategy.h"
 #include "SAMRAI/hier/VariableContext.h"

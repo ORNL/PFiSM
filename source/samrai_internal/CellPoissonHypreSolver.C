@@ -7,6 +7,8 @@
  * Description:   Hypre solver interface for diffusion-like elliptic problems.
  *
  ************************************************************************/
+#include "../PFiSM_Hypre.h"
+
 #include "CellPoissonHypreSolver.h"
 
 #include "SAMRAI/geom/CartesianPatchGeometry.h"
@@ -32,7 +34,6 @@
 #include "SAMRAI/tbox/TimerManager.h"
 #include "SAMRAI/tbox/StartupShutdownManager.h"
 
-#include "PFiSM_Hypre.h"
 
 #include <cstdlib>
 

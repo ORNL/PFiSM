@@ -28,9 +28,9 @@ add_library(pfismlib STATIC
    PFModel.C
    PfmFACSolver.C
    PFiSM_Hypre.C
-   CellPoissonFACOps.C
-   CellPoissonHypreSolver.C
-   CellPoissonFACSolver.C
+   samrai_internal/CellPoissonFACOps.C
+   samrai_internal/CellPoissonHypreSolver.C
+   samrai_internal/CellPoissonFACSolver.C
    tools.C
    fortran/rhs3d.f
    fortran/computeCforPhase.f

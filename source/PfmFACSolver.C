@@ -1,5 +1,6 @@
 #include "PfmFACSolver.h"
-#include "CellPoissonHypreSolver.h"
+
+#include "samrai_internal/CellPoissonHypreSolver.h"
 
 PfmFACSolver::PfmFACSolver(std::string name,
                            const tbox::Dimension &dim,

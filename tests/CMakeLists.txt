@@ -3,7 +3,7 @@ set( TEST_DIR ${CMAKE_SOURCE_DIR}/tests )
 if(${PFISM_USE_GPU})
   set_source_files_properties(TestHyprePoisson.C PROPERTIES LANGUAGE CUDA)
   set_source_files_properties(HyprePoisson.C PROPERTIES LANGUAGE CUDA)
-  set_source_files_properties(${CMAKE_SOURCE_DIR}/source/CellPoissonHypreSolver.C
+  set_source_files_properties(${CMAKE_SOURCE_DIR}/source/samrai_internal/CellPoissonHypreSolver.C
                               PROPERTIES LANGUAGE CUDA)
   set_source_files_properties(${CMAKE_SOURCE_DIR}/source/PFiSM_Hypre.C
                               PROPERTIES LANGUAGE CUDA)
@@ -14,7 +14,7 @@ add_executable(testHyprePoisson mainTestHyprePoisson.C)
 
 add_library(testHyprePoissonLib STATIC
    TestHyprePoisson.C
-   ${CMAKE_SOURCE_DIR}/source/CellPoissonHypreSolver.C
+   ${CMAKE_SOURCE_DIR}/source/samrai_internal/CellPoissonHypreSolver.C
    ${CMAKE_SOURCE_DIR}/source/PFiSM_Hypre.C
    HyprePoisson.C
    hyprepoisson3d.f)

@@ -1,6 +1,7 @@
-#include "CellPoissonFACOps.h"
+#include "samrai_internal/CellPoissonFACOps.h"
+#include "samrai_internal/CellPoissonFACSolver.h"
+
 #include "SAMRAI/solv/FACPreconditioner.h"
-#include "CellPoissonFACSolver.h"
 #include "SAMRAI/tbox/Database.h"
 #include "SAMRAI/tbox/Dimension.h"
 
