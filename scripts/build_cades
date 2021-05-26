@@ -7,9 +7,9 @@ setenv CMAKE_PREFIX_PATH $HDF5_DIR
 
 cmake -DCMAKE_CXX_COMPILER=mpiCC -DCMAKE_C_COMPILER=mpicc \
 	-DCMAKE_Fortran_COMPILER=mpif77 \
-	-DSAMRAI_DIR=$HOME/GIT/SAMRAI/build \
-	-DHYPRE_DIR=$HOME/hypre/hypre-2.11.1/src/hypre \
-	-DSUNDIALS_DIR=$HOME/sundials/build \
+	-DSAMRAI_DIR=$HOME/SAMRAI/SAMRAI-v4.1.0 \
+	-DHYPRE_DIR=$HOME/hypre/gnu-cpu \
+	-DSUNDIALS_DIR=$HOME/sundials/sundials-5.4.0/install \
 	-DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF \
 	-DMPI_EXEC="mpirun" \
 	..

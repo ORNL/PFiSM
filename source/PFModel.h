@@ -142,6 +142,12 @@ public:
       solv::SundialsAbstractVector* y,
       solv::SundialsAbstractVector* y_dot);
 
+   int evaluateJTimesRHSFunction(
+      double t,
+      solv::SundialsAbstractVector* y,
+      solv::SundialsAbstractVector* y_dot)
+   { return evaluateRHSFunction(t, y, y_dot); }
+
    int CVSpgmrPrecondSet(
       double t,
       solv::SundialsAbstractVector* y,
@@ -159,6 +165,20 @@ public:
       double gamma,
       double delta,
       int lr);
+
+   int applyProjection(
+      double time,
+      solv::SundialsAbstractVector* y,
+      solv::SundialsAbstractVector* corr,
+      double epsProj,
+      solv::SundialsAbstractVector* err)
+   {
+      (void)time;
+
+      // Zero all components of the correction
+      corr->setToScalar(0.);
+      return 0;
+   }
 
 /*************************************************************************
  * Methods specific to PFModel class.
