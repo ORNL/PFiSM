@@ -25,13 +25,13 @@ m4tof(rhs3d)
 m4tof(computeCforPhase)
 
 add_library(pfismlib STATIC
-   PFModel.C
-   PfmFACSolver.C
-   PFiSM_Hypre.C
+   PFModel.cc
+   PfmFACSolver.cc
+   PFiSM_Hypre.cc
    samrai_internal/CellPoissonFACOps.C
    samrai_internal/CellPoissonHypreSolver.C
    samrai_internal/CellPoissonFACSolver.C
-   tools.C
+   tools.cc
    fortran/rhs3d.f
    fortran/computeCforPhase.f
    )
@@ -42,7 +42,7 @@ endif(${PFISM_USE_GPU})
 
 target_compile_features(pfismlib PRIVATE cxx_std_11)
 
-add_executable(main main.C)
+add_executable(main main.cc)
 
 if(${PFISM_USE_GPU})
   set_target_properties(main PROPERTIES CUDA_SEPARABLE_COMPILATION ON)

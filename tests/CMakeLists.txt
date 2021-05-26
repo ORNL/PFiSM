@@ -10,13 +10,13 @@ if(${PFISM_USE_GPU})
 endif(${PFISM_USE_GPU})
 
 add_executable(testMPI testMPI.C)
-add_executable(testHyprePoisson mainTestHyprePoisson.C)
+add_executable(testHyprePoisson mainTestHyprePoisson.cc)
 
 add_library(testHyprePoissonLib STATIC
-   TestHyprePoisson.C
+   TestHyprePoisson.cc
    ${CMAKE_SOURCE_DIR}/src/samrai_internal/CellPoissonHypreSolver.C
-   ${CMAKE_SOURCE_DIR}/src/PFiSM_Hypre.C
-   HyprePoisson.C
+   ${CMAKE_SOURCE_DIR}/src/PFiSM_Hypre.cc
+   HyprePoisson.cc
    hyprepoisson3d.f)
 
 #unit tests
