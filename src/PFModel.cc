@@ -348,6 +348,32 @@ int PFModel::evaluateRHSFunction(double time, solv::SundialsAbstractVector* y,
       bdry_fill_alg_schedule->fillData(time);
    }
 
+   // now actually compute rhs
+   int y_dot_phase_id =
+       y_dot_samvect->getComponentDescriptorIndex(d_phase_component);
+   int y_dot_temperature_id =
+       y_dot_samvect->getComponentDescriptorIndex(d_temperature_component);
+
+   evaluateRHSPhase(hierarchy, y_dot_phase_id);
+
+   evaluateRHSTemperature(hierarchy, y_dot_temperature_id, y_dot_phase_id);
+
+   // free up temporary array allocations
+   for (int ln = hierarchy->getFinestLevelNumber(); ln >= 0; --ln) {
+      hierarchy->getPatchLevel(ln)->deallocatePatchData(d_temperature_scr_id);
+      hierarchy->getPatchLevel(ln)->deallocatePatchData(d_phase_scr_id);
+   }
+
+   d_current_time = time;
+   ++d_number_rhs_eval;
+
+   t_rhs_timer->stop();
+
+   return 0;
+}
+void PFModel::evaluateRHSPhase(std::shared_ptr<hier::PatchHierarchy> hierarchy,
+                               const int y_dot_phase_id)
+{
    // Compute rhs for phase first, since it is used in rhs for temperature
    for (int ln = hierarchy->getFinestLevelNumber(); ln >= 0; --ln) {
       std::shared_ptr<hier::PatchLevel> level(hierarchy->getPatchLevel(ln));
@@ -364,8 +390,7 @@ int PFModel::evaluateRHSFunction(double time, solv::SundialsAbstractVector* y,
                  patch->getPatchData(d_temperature_scr_id)));
          std::shared_ptr<pdat::CellData<double> > rhs(
              SAMRAI_SHARED_PTR_CAST<pdat::CellData<double>, hier::PatchData>(
-                 patch->getPatchData(y_dot_samvect->getComponentDescriptorIndex(
-                     d_phase_component))));
+                 patch->getPatchData(y_dot_phase_id)));
          assert(phase);
          assert(temperature);
          assert(rhs);
@@ -389,7 +414,12 @@ int PFModel::evaluateRHSFunction(double time, solv::SundialsAbstractVector* y,
 
       }  // loop over patches
    }     // loop over levels
+}
 
+void PFModel::evaluateRHSTemperature(
+    std::shared_ptr<hier::PatchHierarchy> hierarchy,
+    const int y_dot_temperature_id, const int y_dot_phase_id)
+{
    // now compute rhs for temperature
    for (int ln = hierarchy->getFinestLevelNumber(); ln >= 0; --ln) {
       std::shared_ptr<hier::PatchLevel> level(hierarchy->getPatchLevel(ln));
@@ -403,12 +433,10 @@ int PFModel::evaluateRHSFunction(double time, solv::SundialsAbstractVector* y,
                  patch->getPatchData(d_temperature_scr_id)));
          std::shared_ptr<pdat::CellData<double> > rhs(
              SAMRAI_SHARED_PTR_CAST<pdat::CellData<double>, hier::PatchData>(
-                 patch->getPatchData(y_dot_samvect->getComponentDescriptorIndex(
-                     d_temperature_component))));
+                 patch->getPatchData(y_dot_temperature_id)));
          std::shared_ptr<pdat::CellData<double> > phi_dot(
              SAMRAI_SHARED_PTR_CAST<pdat::CellData<double>, hier::PatchData>(
-                 patch->getPatchData(y_dot_samvect->getComponentDescriptorIndex(
-                     d_phase_component))));
+                 patch->getPatchData(y_dot_phase_id)));
 
          assert(y);
          assert(rhs);
@@ -431,18 +459,6 @@ int PFModel::evaluateRHSFunction(double time, solv::SundialsAbstractVector* y,
 
       }  // loop over patches
    }     // loop over levels
-
-   for (int ln = hierarchy->getFinestLevelNumber(); ln >= 0; --ln) {
-      hierarchy->getPatchLevel(ln)->deallocatePatchData(d_temperature_scr_id);
-      hierarchy->getPatchLevel(ln)->deallocatePatchData(d_phase_scr_id);
-   }
-
-   d_current_time = time;
-   ++d_number_rhs_eval;
-
-   t_rhs_timer->stop();
-
-   return 0;
 }
 
 // Initialize FAC solvers.
