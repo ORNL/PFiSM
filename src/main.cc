@@ -102,6 +102,9 @@ int main(int argc, char* argv[])
       bool solution_logging =
           main_db->getBoolWithDefault("solution_logging", false);
 
+      bool evolve_temperature =
+          main_db->getBoolWithDefault("evolve_temperature", true);
+
       tbox::pout << "Build Geometry, Hierarchy,..." << std::endl;
 
       // Cartesian mesh geometry management
@@ -119,10 +122,13 @@ int main(int argc, char* argv[])
       std::shared_ptr<CellPoissonFACSolver> fac_solver_phase(
           phase_fac_solver.getCellPoissonFACSolver());
 
-      PfmFACSolver temperature_fac_solver("TemperatureFACsolver", dim,
-                                          input_db);
-      std::shared_ptr<CellPoissonFACSolver> fac_solver_temperature(
-          temperature_fac_solver.getCellPoissonFACSolver());
+      std::shared_ptr<CellPoissonFACSolver> fac_solver_temperature;
+      if (evolve_temperature) {
+         PfmFACSolver temperature_fac_solver("TemperatureFACsolver", dim,
+                                             input_db);
+         fac_solver_temperature =
+             temperature_fac_solver.getCellPoissonFACSolver();
+      }
 
       // construct main object
       std::shared_ptr<PFModel> pf_model(
