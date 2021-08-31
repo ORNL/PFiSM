@@ -282,8 +282,7 @@ class PFModel : public mesh::StandardTagAndInitStrategy,
    solv::LocationIndexRobinBcCoefs* d_phase_bc_corr_coeffs;
 
    void setCforPhase(const std::shared_ptr<hier::PatchHierarchy>& hierarchy,
-                     std::shared_ptr<solv::SAMRAIVectorReal<double> > y_samvect,
-                     const double gamma);
+                     const int phase_id, const double gamma);
 
    void initializeSolvers(
        const std::shared_ptr<hier::PatchHierarchy>& hierarchy);
@@ -292,6 +291,10 @@ class PFModel : public mesh::StandardTagAndInitStrategy,
                                 int r0_indx, int z0_indx, double gamma);
    bool PrecondSolvePhase(std::shared_ptr<hier::PatchHierarchy> hierarchy,
                           int r1_indx, int z1_indx, double gamma);
+
+   void PrecondSetTemperature(const double gamma);
+   void PrecondSetPhase(std::shared_ptr<hier::PatchHierarchy> hierarchy,
+                        int y_indx, const double gamma);
 };
 
 #endif

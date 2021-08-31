@@ -496,8 +496,27 @@ int PFModel::CVSpgmrPrecondSet(
    std::shared_ptr<solv::SAMRAIVectorReal<double> > y_samvect(
        solv::Sundials_SAMRAIVector::getSAMRAIVector(y));
 
-   int y_indx = y_samvect->getComponentDescriptorIndex(d_phase_component);
+   std::shared_ptr<hier::PatchHierarchy> hierarchy(
+       y_samvect->getPatchHierarchy());
 
+   int y_indx = y_samvect->getComponentDescriptorIndex(d_phase_component);
+   PrecondSetPhase(hierarchy, y_indx, gamma);
+
+   PrecondSetTemperature(gamma);
+
+   initializeSolvers(hierarchy);
+
+   ++d_number_precond_setup;
+
+   t_precondset_timer->stop();
+
+   // assume success and return 0
+   return 0;
+}
+
+void PFModel::PrecondSetPhase(std::shared_ptr<hier::PatchHierarchy> hierarchy,
+                              int y_indx, const double gamma)
+{
    // Construct coarsen algorithm to fill interiors on coarser levels
    // with solution on finer level.
    xfer::CoarsenAlgorithm fill_phase_interior_on_coarser(d_dim);
@@ -506,9 +525,6 @@ int PFModel::CVSpgmrPrecondSet(
                                               "CONSERVATIVE_COARSEN"));
 
    fill_phase_interior_on_coarser.registerCoarsen(y_indx, y_indx, coarsen_op);
-
-   std::shared_ptr<hier::PatchHierarchy> hierarchy(
-       y_samvect->getPatchHierarchy());
 
    for (int amr_level = hierarchy->getFinestLevelNumber(); amr_level >= 0;
         --amr_level) {
@@ -532,24 +548,18 @@ int PFModel::CVSpgmrPrecondSet(
 
    }  // level loop
 
-   // setup temperature FAC solver
-   d_FAC_solver_temperature->setCConstant(1.0 / gamma);
-   d_FAC_solver_temperature->setDConstant(d_temperature_diffusion);
-
    // setup phase FAC solver
-   setCforPhase(hierarchy, y_samvect, gamma);
+   setCforPhase(hierarchy, y_indx, gamma);
 
    d_FAC_solver_phase->setCPatchDataId(d_cfield_phase_id);
    d_FAC_solver_phase->setDConstant(-d_mobility * d_epsilon * d_epsilon);
+}
 
-   initializeSolvers(hierarchy);
-
-   ++d_number_precond_setup;
-
-   t_precondset_timer->stop();
-
-   // assume success and return 0
-   return 0;
+void PFModel::PrecondSetTemperature(const double gamma)
+{
+   // setup temperature FAC solver
+   d_FAC_solver_temperature->setCConstant(1.0 / gamma);
+   d_FAC_solver_temperature->setDConstant(d_temperature_diffusion);
 }
 
 /*************************************************************************
@@ -832,8 +842,7 @@ void PFModel::setInitialConditions()
  * Set C in operator -div*D*grad*phi+C*phi
  *************************************************************************/
 void PFModel::setCforPhase(
-    const std::shared_ptr<hier::PatchHierarchy>& hierarchy,
-    std::shared_ptr<solv::SAMRAIVectorReal<double> > y_samvect,
+    const std::shared_ptr<hier::PatchHierarchy>& hierarchy, int phase_id,
     const double gamma)
 {
    for (int ln = hierarchy->getFinestLevelNumber(); ln >= 0; --ln) {
@@ -845,8 +854,7 @@ void PFModel::setCforPhase(
 
          std::shared_ptr<pdat::CellData<double> > phi(
              SAMRAI_SHARED_PTR_CAST<pdat::CellData<double>, hier::PatchData>(
-                 patch->getPatchData(y_samvect->getComponentDescriptorIndex(
-                     d_phase_component))));
+                 patch->getPatchData(phase_id)));
          std::shared_ptr<pdat::CellData<double> > cfield(
              SAMRAI_SHARED_PTR_CAST<pdat::CellData<double>, hier::PatchData>(
                  patch->getPatchData(d_cfield_phase_id)));
