@@ -116,12 +116,12 @@ int main(int argc, char* argv[])
 
       // create two FAC solvers for the two blocks of the preconditioner
       PfmFACSolver phase_fac_solver("PhaseFACsolver", dim, input_db);
-      std::shared_ptr<CellPoissonFACSolver> fac_solver_temperature(
+      std::shared_ptr<CellPoissonFACSolver> fac_solver_phase(
           phase_fac_solver.getCellPoissonFACSolver());
 
       PfmFACSolver temperature_fac_solver("TemperatureFACsolver", dim,
                                           input_db);
-      std::shared_ptr<CellPoissonFACSolver> fac_solver_phase(
+      std::shared_ptr<CellPoissonFACSolver> fac_solver_temperature(
           temperature_fac_solver.getCellPoissonFACSolver());
 
       // construct main object
