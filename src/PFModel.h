@@ -287,6 +287,11 @@ class PFModel : public mesh::StandardTagAndInitStrategy,
 
    void initializeSolvers(
        const std::shared_ptr<hier::PatchHierarchy>& hierarchy);
+
+   bool PrecondSolveTemperature(std::shared_ptr<hier::PatchHierarchy> hierarchy,
+                                int r0_indx, int z0_indx, double gamma);
+   bool PrecondSolvePhase(std::shared_ptr<hier::PatchHierarchy> hierarchy,
+                          int r1_indx, int z1_indx, double gamma);
 };
 
 #endif

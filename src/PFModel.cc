@@ -588,6 +588,51 @@ int PFModel::CVSpgmrPrecondSolve(double t, solv::SundialsAbstractVector* y,
        r_samvect->getComponentDescriptorIndex(d_temperature_component);
    int z0_indx =
        z_samvect->getComponentDescriptorIndex(d_temperature_component);
+
+   bool converge0 = PrecondSolveTemperature(hierarchy, r0_indx, z0_indx, gamma);
+
+   int r1_indx = r_samvect->getComponentDescriptorIndex(d_phase_component);
+   int z1_indx = z_samvect->getComponentDescriptorIndex(d_phase_component);
+
+   bool converge1 = PrecondSolvePhase(hierarchy, r1_indx, z1_indx, gamma);
+
+   bool converge = (converge0 && converge1);
+
+   if (d_print_solver_info) {
+      double avg_convergence, final_convergence;
+      d_FAC_solver_temperature->getConvergenceFactors(avg_convergence,
+                                                      final_convergence);
+      tbox::pout << "TEMPERATURE:" << '\n';
+      tbox::pout << "   \t\t\tFinal Residual Norm: "
+                 << d_FAC_solver_temperature->getResidualNorm() << '\n';
+      tbox::pout << "   \t\t\tFinal Convergence Error: " << final_convergence
+                 << endl;
+      tbox::pout << "   \t\t\tFinal Convergence Rate: " << avg_convergence
+                 << endl;
+      tbox::pout << "PHASE:" << '\n';
+      d_FAC_solver_phase->getConvergenceFactors(avg_convergence,
+                                                final_convergence);
+      tbox::pout << "   \t\t\tFinal Residual Norm: "
+                 << d_FAC_solver_temperature->getResidualNorm() << endl;
+      tbox::pout << "   \t\t\tFinal Convergence Error: " << final_convergence
+                 << endl;
+      tbox::pout << "   \t\t\tFinal Convergence Rate: " << avg_convergence
+                 << endl;
+   }
+
+   ++d_number_precond_solve;
+
+   int ret_val = (converge == true) ? 0 : 1;
+
+   t_precondsolve_timer->stop();
+
+   return ret_val;
+}
+
+bool PFModel::PrecondSolveTemperature(
+    std::shared_ptr<hier::PatchHierarchy> hierarchy, int r0_indx, int z0_indx,
+    double gamma)
+{
    // We need to supply to the FAC solver a "version" of the z vector
    // that contains ghost cells.  The operations below allocate
    // on the patches a scratch context of the solution vector z and
@@ -621,9 +666,24 @@ int PFModel::CVSpgmrPrecondSolve(double t, solv::SundialsAbstractVector* y,
       }
    }
 
-   int r1_indx = r_samvect->getComponentDescriptorIndex(d_phase_component);
-   int z1_indx = z_samvect->getComponentDescriptorIndex(d_phase_component);
+   t_factemperature_timer->start();
 
+   bool converge0 =
+       d_FAC_solver_temperature->solveSystem(d_temperature_scr_id, r0_indx);
+
+   t_factemperature_timer->stop();
+
+   // computed solutions are stored in scratch data space
+   // copy them into zvector
+   math::HierarchyCellDataOpsReal<double> cell_ops(hierarchy);
+   cell_ops.copyData(z0_indx, d_temperature_scr_id, false);
+
+   return converge0;
+}
+
+bool PFModel::PrecondSolvePhase(std::shared_ptr<hier::PatchHierarchy> hierarchy,
+                                int r1_indx, int z1_indx, double gamma)
+{
    for (int ln = hierarchy->getFinestLevelNumber(); ln >= 0; --ln) {
       std::shared_ptr<hier::PatchLevel> level(hierarchy->getPatchLevel(ln));
 
@@ -653,70 +713,18 @@ int PFModel::CVSpgmrPrecondSolve(double t, solv::SundialsAbstractVector* y,
       }
    }
 
-   // Apply the FAC solver.  It solves the system Az=r with the
-   // format "solveSystem(z, r)".
-   // The matrix was constructed in the precondSetup() method.
-   if (d_print_solver_info) {
-      tbox::pout << "\t\tBefore FAC Solve (Az=r): "
-                 << "\n   \t\t\tz_l2norm = " << z_samvect->L2Norm()
-                 << "\n   \t\t\tz_maxnorm = " << z_samvect->maxNorm()
-                 << "\n   \t\t\tr_l2norm = " << r_samvect->L2Norm()
-                 << "\n   \t\t\tr_maxnorm = " << r_samvect->maxNorm() << endl;
-   }
-
-   const int coarsest_solve_ln = 0;
-   const int finest_solve_ln = hierarchy->getFinestLevelNumber();
-
-   t_factemperature_timer->start();
-
-   bool converge0 =
-       d_FAC_solver_temperature->solveSystem(d_temperature_scr_id, r0_indx);
-
-   t_factemperature_timer->stop();
-
    t_facphase_timer->start();
 
    bool converge1 = d_FAC_solver_phase->solveSystem(d_phase_scr_id, r1_indx);
 
    t_facphase_timer->stop();
 
-   bool converge = (converge0 && converge1);
-
-   if (d_print_solver_info) {
-      double avg_convergence, final_convergence;
-      d_FAC_solver_temperature->getConvergenceFactors(avg_convergence,
-                                                      final_convergence);
-      tbox::pout << "TEMPERATURE:" << '\n';
-      tbox::pout << "   \t\t\tFinal Residual Norm: "
-                 << d_FAC_solver_temperature->getResidualNorm() << '\n';
-      tbox::pout << "   \t\t\tFinal Convergence Error: " << final_convergence
-                 << endl;
-      tbox::pout << "   \t\t\tFinal Convergence Rate: " << avg_convergence
-                 << endl;
-      tbox::pout << "PHASE:" << '\n';
-      d_FAC_solver_phase->getConvergenceFactors(avg_convergence,
-                                                final_convergence);
-      tbox::pout << "   \t\t\tFinal Residual Norm: "
-                 << d_FAC_solver_temperature->getResidualNorm() << endl;
-      tbox::pout << "   \t\t\tFinal Convergence Error: " << final_convergence
-                 << endl;
-      tbox::pout << "   \t\t\tFinal Convergence Rate: " << avg_convergence
-                 << endl;
-   }
-
    // computed solutions are stored in scratch data space
    // copy them into zvector
    math::HierarchyCellDataOpsReal<double> cell_ops(hierarchy);
-   cell_ops.copyData(z0_indx, d_temperature_scr_id, false);
    cell_ops.copyData(z1_indx, d_phase_scr_id, false);
 
-   ++d_number_precond_solve;
-
-   int ret_val = (converge == true) ? 0 : 1;
-
-   t_precondsolve_timer->stop();
-
-   return ret_val;
+   return converge1;
 }
 
 /*************************************************************************
