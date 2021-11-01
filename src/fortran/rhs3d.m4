@@ -152,7 +152,7 @@ c        compute  RHS
      &         -32.d0*well_height*phil*(1.d0-phil)*(1.d0-2.d0*phil)
             rhs(ic0,ic1,ic2) = rhs(ic0,ic1,ic2)
      &         -6.d0*latent_heat*(temp(ic0,ic1,ic2)-tmelting)
-     &                          *phil*(1.d0-phil)
+     &                          *phil*(1.d0-phil)/tmelting
 
             rhs(ic0,ic1,ic2) = rhs(ic0,ic1,ic2)*mobility
             enddo

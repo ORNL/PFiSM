@@ -132,7 +132,8 @@ int main(int argc, char* argv[])
 
       // construct main object
       std::shared_ptr<PFModel> pf_model(
-          new PFModel("PFModel", dim, fac_solver_temperature, fac_solver_phase,
+          new PFModel("PFModel", dim, evolve_temperature,
+                      fac_solver_temperature, fac_solver_phase,
                       input_db->getDatabase("PFModel"), geometry));
 
       // defines an implementation for level initialization and cell

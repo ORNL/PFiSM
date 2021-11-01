@@ -53,6 +53,7 @@ void SAMRAI_F77_FUNC(compcforphase,
 }
 
 PFModel::PFModel(const string& object_name, const tbox::Dimension& dim,
+                 bool evolve_temperature,
                  std::shared_ptr<CellPoissonFACSolver> fac_solver_temperature,
                  std::shared_ptr<CellPoissonFACSolver> fac_solver_phase,
                  std::shared_ptr<tbox::Database> input_db,
@@ -68,6 +69,7 @@ PFModel::PFModel(const string& object_name, const tbox::Dimension& dim,
       d_vol_var(new pdat::CellVariable<double>(dim, "vol", 1)),
       d_temperature_component(0),
       d_phase_component(1),
+      d_evolve_temperature(evolve_temperature),
       d_FAC_solver_temperature(fac_solver_temperature),
       d_FAC_solver_phase(fac_solver_phase),
       d_grid_geometry(grid_geom),
@@ -321,18 +323,17 @@ int PFModel::evaluateRHSFunction(double time, solv::SundialsAbstractVector* y,
        y_samvect->getPatchHierarchy());
 
    // fill ghost values for temperature and phase variables
+   // do it even if T does not evolve since values of T are used
    std::shared_ptr<xfer::RefineAlgorithm> bdry_fill_alg(
        new xfer::RefineAlgorithm());
-   if (d_FAC_solver_temperature) {
-      std::shared_ptr<hier::RefineOperator> refine_op(
-          d_grid_geometry->lookupRefineOperator(d_temperature_var,
-                                                "CONSERVATIVE_LINEAR_REFINE"));
-      bdry_fill_alg->registerRefine(d_temperature_scr_id,  // dest
-                                    y_samvect->getComponentDescriptorIndex(
-                                        d_temperature_component),  // src
-                                    d_temperature_scr_id,          // scratch
-                                    refine_op);
-   }
+   std::shared_ptr<hier::RefineOperator> refine_op(
+       d_grid_geometry->lookupRefineOperator(d_temperature_var,
+                                             "CONSERVATIVE_LINEAR_REFINE"));
+   bdry_fill_alg->registerRefine(d_temperature_scr_id,  // dest
+                                 y_samvect->getComponentDescriptorIndex(
+                                     d_temperature_component),  // src
+                                 d_temperature_scr_id,          // scratch
+                                 refine_op);
 
    std::shared_ptr<hier::RefineOperator> phase_refine_op(
        d_grid_geometry->lookupRefineOperator(d_phase_var,
@@ -367,7 +368,7 @@ int PFModel::evaluateRHSFunction(double time, solv::SundialsAbstractVector* y,
 
    evaluateRHSPhase(hierarchy, y_dot_phase_id);
 
-   if (d_FAC_solver_temperature) {
+   if (d_evolve_temperature) {
       int y_dot_temperature_id =
           y_dot_samvect->getComponentDescriptorIndex(d_temperature_component);
 
