@@ -27,7 +27,7 @@ PFModel {
       initial_value     = 0.7
       diffusion_coeff   = 1.e-7 // [cm^2/s]
       melting           = 1.
-      latent_heat       = 17.
+      latent_heat       = 1.
       cp                = 17.
    }
 

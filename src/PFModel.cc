@@ -949,7 +949,7 @@ void PFModel::getFromInput(std::shared_ptr<tbox::Database> input_db,
    // conversion from [J/mol] to [pJ/(mu m)^3]
    double molar_volume = input_db->getDouble("molar_volume");
    d_cp *= (1.e-6 / molar_volume);
-   d_latent_heat = (1.e-6 / molar_volume);
+   d_latent_heat *= (1.e-6 / molar_volume);
 
    d_print_solver_info =
        input_db->getBoolWithDefault("print_solver_info", d_print_solver_info);
