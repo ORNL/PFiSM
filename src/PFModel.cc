@@ -53,6 +53,7 @@ void SAMRAI_F77_FUNC(compcforphase,
 }
 
 PFModel::PFModel(const string& object_name, const tbox::Dimension& dim,
+                 bool evolve_temperature,
                  std::shared_ptr<CellPoissonFACSolver> fac_solver_temperature,
                  std::shared_ptr<CellPoissonFACSolver> fac_solver_phase,
                  std::shared_ptr<tbox::Database> input_db,
@@ -68,6 +69,7 @@ PFModel::PFModel(const string& object_name, const tbox::Dimension& dim,
       d_vol_var(new pdat::CellVariable<double>(dim, "vol", 1)),
       d_temperature_component(0),
       d_phase_component(1),
+      d_evolve_temperature(evolve_temperature),
       d_FAC_solver_temperature(fac_solver_temperature),
       d_FAC_solver_phase(fac_solver_phase),
       d_grid_geometry(grid_geom),
@@ -120,12 +122,15 @@ PFModel::PFModel(const string& object_name, const tbox::Dimension& dim,
    std::shared_ptr<tbox::Database> bc_db(
        input_db->getDatabase("BoundaryConditions"));
 
-   d_temperature_bc_coeffs =
-       new solv::LocationIndexRobinBcCoefs(d_dim, "TemperatureBCcoeffs",
-                                           bc_db->getDatabase("Temperature"));
+   if (d_FAC_solver_temperature) {
+      d_temperature_bc_coeffs =
+          new solv::LocationIndexRobinBcCoefs(d_dim, "TemperatureBCcoeffs",
+                                              bc_db->getDatabase("Temperatur"
+                                                                 "e"));
 
-   d_temperature_bc_helper->setTargetDataId(d_temperature_scr_id);
-   d_temperature_bc_helper->setCoefImplementation(d_temperature_bc_coeffs);
+      d_temperature_bc_helper->setTargetDataId(d_temperature_scr_id);
+      d_temperature_bc_helper->setCoefImplementation(d_temperature_bc_coeffs);
+   }
 
    d_phase_bc_coeffs =
        new solv::LocationIndexRobinBcCoefs(d_dim, "PhaseBCcoeffs",
@@ -136,17 +141,20 @@ PFModel::PFModel(const string& object_name, const tbox::Dimension& dim,
 
    // Boundary conditions for FAC solvers should be homogeneous
    // since solver computes corrections to current guess
-   d_temperature_bc_corr_coeffs =
-       new solv::LocationIndexRobinBcCoefs(d_dim, "BCcorrcoeffs",
-                                           bc_db->getDatabase("Temperature"));
-   for (int i = 0; i < d_dim.getValue() * 2; i++) {
-      double a, b, g;
-      d_temperature_bc_corr_coeffs->getCoefficients(i, a, b, g);
-      g = 0.;
-      d_temperature_bc_corr_coeffs->setRawCoefficients(i, a, b, g);
-   }
+   if (d_FAC_solver_temperature) {
+      d_temperature_bc_corr_coeffs =
+          new solv::LocationIndexRobinBcCoefs(d_dim, "BCcorrcoeffs",
+                                              bc_db->getDatabase("Temperatur"
+                                                                 "e"));
+      for (int i = 0; i < d_dim.getValue() * 2; i++) {
+         double a, b, g;
+         d_temperature_bc_corr_coeffs->getCoefficients(i, a, b, g);
+         g = 0.;
+         d_temperature_bc_corr_coeffs->setRawCoefficients(i, a, b, g);
+      }
 
-   d_FAC_solver_temperature->setBcObject(d_temperature_bc_corr_coeffs);
+      d_FAC_solver_temperature->setBcObject(d_temperature_bc_corr_coeffs);
+   }
 
    d_phase_bc_corr_coeffs =
        new solv::LocationIndexRobinBcCoefs(d_dim, "PhaseBCcorrcoeffs",
@@ -245,8 +253,10 @@ void PFModel::setPhysicalBoundaryConditions(
     hier::Patch& patch, const double time,
     const hier::IntVector& ghost_width_to_fill)
 {
-   d_temperature_bc_helper->setPhysicalBoundaryConditions(patch, time,
-                                                          ghost_width_to_fill);
+   if (d_FAC_solver_temperature) {
+      d_temperature_bc_helper->setPhysicalBoundaryConditions(
+          patch, time, ghost_width_to_fill);
+   }
 
    d_phase_bc_helper->setPhysicalBoundaryConditions(patch, time,
                                                     ghost_width_to_fill);
@@ -313,6 +323,7 @@ int PFModel::evaluateRHSFunction(double time, solv::SundialsAbstractVector* y,
        y_samvect->getPatchHierarchy());
 
    // fill ghost values for temperature and phase variables
+   // do it even if T does not evolve since values of T are used
    std::shared_ptr<xfer::RefineAlgorithm> bdry_fill_alg(
        new xfer::RefineAlgorithm());
    std::shared_ptr<hier::RefineOperator> refine_op(
@@ -337,8 +348,11 @@ int PFModel::evaluateRHSFunction(double time, solv::SundialsAbstractVector* y,
       std::shared_ptr<hier::PatchLevel> level(hierarchy->getPatchLevel(ln));
       if (!level->checkAllocated(d_temperature_scr_id)) {
          level->allocatePatchData(d_temperature_scr_id);
+      }
+      if (!level->checkAllocated(d_phase_scr_id)) {
          level->allocatePatchData(d_phase_scr_id);
       }
+
 
       // a pointer to "this" tells the refine schedule to invoke
       // the setPhysicalBCs defined in this class.
@@ -351,12 +365,15 @@ int PFModel::evaluateRHSFunction(double time, solv::SundialsAbstractVector* y,
    // now actually compute rhs
    int y_dot_phase_id =
        y_dot_samvect->getComponentDescriptorIndex(d_phase_component);
-   int y_dot_temperature_id =
-       y_dot_samvect->getComponentDescriptorIndex(d_temperature_component);
 
    evaluateRHSPhase(hierarchy, y_dot_phase_id);
 
-   evaluateRHSTemperature(hierarchy, y_dot_temperature_id, y_dot_phase_id);
+   if (d_evolve_temperature) {
+      int y_dot_temperature_id =
+          y_dot_samvect->getComponentDescriptorIndex(d_temperature_component);
+
+      evaluateRHSTemperature(hierarchy, y_dot_temperature_id, y_dot_phase_id);
+   }
 
    // free up temporary array allocations
    for (int ln = hierarchy->getFinestLevelNumber(); ln >= 0; --ln) {
@@ -469,16 +486,19 @@ void PFModel::initializeSolvers(
    const int coarsest_solve_ln = 0;
    const int finest_solve_ln = hierarchy->getFinestLevelNumber();
 
-   t_factempinit_timer->start();
+   if (d_FAC_solver_temperature) {
+      t_factempinit_timer->start();
 
-   d_FAC_solver_temperature->deallocateSolverState();
+      d_FAC_solver_temperature->deallocateSolverState();
 
-   d_FAC_solver_temperature->initializeSolverState(d_temperature_scr_id,
-                                                   d_temperature_cur_id,
-                                                   hierarchy, coarsest_solve_ln,
-                                                   finest_solve_ln);
+      d_FAC_solver_temperature->initializeSolverState(d_temperature_scr_id,
+                                                      d_temperature_cur_id,
+                                                      hierarchy,
+                                                      coarsest_solve_ln,
+                                                      finest_solve_ln);
 
-   t_factempinit_timer->stop();
+      t_factempinit_timer->stop();
+   }
 
    t_facphaseinit_timer->start();
 
@@ -515,10 +535,14 @@ int PFModel::CVSpgmrPrecondSet(
    std::shared_ptr<hier::PatchHierarchy> hierarchy(
        y_samvect->getPatchHierarchy());
 
+   // preconditioner for phase depends on values of phase field
    int y_indx = y_samvect->getComponentDescriptorIndex(d_phase_component);
    PrecondSetPhase(hierarchy, y_indx, gamma);
 
-   PrecondSetTemperature(gamma);
+   if (d_FAC_solver_temperature) {
+      // preconditioner for temperature does not depend on temperature field
+      PrecondSetTemperature(gamma);
+   }
 
    initializeSolvers(hierarchy);
 
@@ -573,6 +597,8 @@ void PFModel::PrecondSetPhase(std::shared_ptr<hier::PatchHierarchy> hierarchy,
 
 void PFModel::PrecondSetTemperature(const double gamma)
 {
+   assert(d_FAC_solver_temperature);
+
    // setup temperature FAC solver
    d_FAC_solver_temperature->setCConstant(1.0 / gamma);
    d_FAC_solver_temperature->setDConstant(d_temperature_diffusion);
@@ -610,12 +636,23 @@ int PFModel::CVSpgmrPrecondSolve(double t, solv::SundialsAbstractVector* y,
    std::shared_ptr<hier::PatchHierarchy> hierarchy(
        r_samvect->getPatchHierarchy());
 
-   int r0_indx =
-       r_samvect->getComponentDescriptorIndex(d_temperature_component);
-   int z0_indx =
-       z_samvect->getComponentDescriptorIndex(d_temperature_component);
+   for (int ln = hierarchy->getFinestLevelNumber(); ln >= 0; --ln) {
+      std::shared_ptr<hier::PatchLevel> level(hierarchy->getPatchLevel(ln));
 
-   bool converge0 = PrecondSolveTemperature(hierarchy, r0_indx, z0_indx, gamma);
+      if (!level->checkAllocated(d_temperature_scr_id)) {
+         level->allocatePatchData(d_temperature_scr_id);
+      }
+   }
+
+   bool converge0 = true;
+   if (d_FAC_solver_temperature) {
+      int r0_indx =
+          r_samvect->getComponentDescriptorIndex(d_temperature_component);
+      int z0_indx =
+          z_samvect->getComponentDescriptorIndex(d_temperature_component);
+
+      converge0 = PrecondSolveTemperature(hierarchy, r0_indx, z0_indx, gamma);
+   }
 
    int r1_indx = r_samvect->getComponentDescriptorIndex(d_phase_component);
    int z1_indx = z_samvect->getComponentDescriptorIndex(d_phase_component);
@@ -626,15 +663,17 @@ int PFModel::CVSpgmrPrecondSolve(double t, solv::SundialsAbstractVector* y,
 
    if (d_print_solver_info) {
       double avg_convergence, final_convergence;
-      d_FAC_solver_temperature->getConvergenceFactors(avg_convergence,
-                                                      final_convergence);
-      tbox::pout << "TEMPERATURE:" << '\n';
-      tbox::pout << "   \t\t\tFinal Residual Norm: "
-                 << d_FAC_solver_temperature->getResidualNorm() << '\n';
-      tbox::pout << "   \t\t\tFinal Convergence Error: " << final_convergence
-                 << endl;
-      tbox::pout << "   \t\t\tFinal Convergence Rate: " << avg_convergence
-                 << endl;
+      if (d_FAC_solver_temperature) {
+         d_FAC_solver_temperature->getConvergenceFactors(avg_convergence,
+                                                         final_convergence);
+         tbox::pout << "TEMPERATURE:" << '\n';
+         tbox::pout << "   \t\t\tFinal Residual Norm: "
+                    << d_FAC_solver_temperature->getResidualNorm() << '\n';
+         tbox::pout << "   \t\t\tFinal Convergence Error: " << final_convergence
+                    << endl;
+         tbox::pout << "   \t\t\tFinal Convergence Rate: " << avg_convergence
+                    << endl;
+      }
       tbox::pout << "PHASE:" << '\n';
       d_FAC_solver_phase->getConvergenceFactors(avg_convergence,
                                                 final_convergence);
@@ -659,16 +698,14 @@ bool PFModel::PrecondSolveTemperature(
     std::shared_ptr<hier::PatchHierarchy> hierarchy, int r0_indx, int z0_indx,
     double gamma)
 {
+   assert(d_FAC_solver_temperature);
+
    // We need to supply to the FAC solver a "version" of the z vector
    // that contains ghost cells.  The operations below allocate
    // on the patches a scratch context of the solution vector z and
    // fill it with 0 (initial guess for computed correction)
    for (int ln = hierarchy->getFinestLevelNumber(); ln >= 0; --ln) {
       std::shared_ptr<hier::PatchLevel> level(hierarchy->getPatchLevel(ln));
-
-      if (!level->checkAllocated(d_temperature_scr_id)) {
-         level->allocatePatchData(d_temperature_scr_id);
-      }
 
       for (hier::PatchLevel::iterator p(level->begin()); p != level->end();
            ++p) {
@@ -710,6 +747,8 @@ bool PFModel::PrecondSolveTemperature(
 bool PFModel::PrecondSolvePhase(std::shared_ptr<hier::PatchHierarchy> hierarchy,
                                 int r1_indx, int z1_indx, double gamma)
 {
+   assert(d_FAC_solver_phase);
+
    for (int ln = hierarchy->getFinestLevelNumber(); ln >= 0; --ln) {
       std::shared_ptr<hier::PatchLevel> level(hierarchy->getPatchLevel(ln));
 
@@ -764,7 +803,9 @@ void PFModel::setupSolutionVector(
        new solv::SAMRAIVectorReal<double>("solution", hierarchy, 0,
                                           hierarchy->getFinestLevelNumber()));
 
-   samvect->addComponent(d_temperature_var, d_temperature_cur_id);
+   if (d_FAC_solver_phase) {
+      samvect->addComponent(d_temperature_var, d_temperature_cur_id);
+   }
    samvect->addComponent(d_phase_var, d_phase_cur_id);
 
    samvect->allocateVectorData();
@@ -797,6 +838,11 @@ void PFModel::setInitialConditions()
    const double lz = zmax - zmin;
    tbox::pout << "Length in z-direction: " << lz << std::endl;
 
+   int temp_id =
+       d_FAC_solver_phase
+           ? init_samvect->getComponentDescriptorIndex(d_temperature_component)
+           : d_temperature_cur_id;
+
    for (int ln = 0; ln < hierarchy->getNumberOfLevels(); ++ln) {
       std::shared_ptr<hier::PatchLevel> level(hierarchy->getPatchLevel(ln));
 
@@ -815,8 +861,7 @@ void PFModel::setInitialConditions()
          // Set initial conditions for temperature
          std::shared_ptr<pdat::CellData<double> > temperature_init(
              SAMRAI_SHARED_PTR_CAST<pdat::CellData<double>, hier::PatchData>(
-                 init_samvect->getComponentPatchData(d_temperature_component,
-                                                     *patch)));
+                 patch->getPatchData(temp_id)));
          assert(temperature_init);
 
          temperature_init->fillAll(d_temperature_init);

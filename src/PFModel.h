@@ -50,6 +50,7 @@ class PFModel : public mesh::StandardTagAndInitStrategy,
 {
  public:
    PFModel(const std::string& object_name, const tbox::Dimension& dim,
+           bool evolve_temperature,
            std::shared_ptr<CellPoissonFACSolver> fac_solver_temperature,
            std::shared_ptr<CellPoissonFACSolver> fac_solver_phase,
            std::shared_ptr<tbox::Database> input_db,
@@ -226,6 +227,8 @@ class PFModel : public mesh::StandardTagAndInitStrategy,
    // component indexes for SAMRAI vectors
    const int d_temperature_component;
    const int d_phase_component;
+
+   const bool d_evolve_temperature;
 
    // FAC solvers
    std::shared_ptr<CellPoissonFACSolver> d_FAC_solver_temperature;

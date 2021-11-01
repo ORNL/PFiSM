@@ -1,0 +1,113 @@
+Main {
+   evolve_temperature       = FALSE
+
+   init_time                = 0.0
+   init_cycle               = 0
+   print_interval           = 1.e-4
+   max_steps                = 2000
+   solution_logging         = FALSE
+
+   relative_tolerance       = 1e-6
+   absolute_tolerance       = 1e-5
+// 0=use default
+   max_order                = 2
+   uses_preconditioning     = TRUE
+   visit_output             = TRUE
+}
+
+Visit {
+   interval = 1.e-4
+   interval_type = "time"
+}
+
+TimerManager {
+    timer_list = "PFiSM::*::*"
+    print_threshold = 0.0
+}
+
+PFModel {
+   
+   Temperature{
+      melting           = 921.12
+      initial_value = 920.87
+      diffusion_coeff   = 1.e-7 // [cm^2/s]
+      latent_heat       = 9.5e3 // [J/mol*K]
+      cp                = 9.5e3
+   }
+   
+   PFM{
+      initial_solid_fraction =0.05
+      epsilon = 1.77669990185572 // sqrt(6.*delta*L*Gamma/Tm)
+      well_height = 0.022017765260778047 // ((eps/delta)**2)/32
+      mobility = 1.985 // muk*Tm/(6.*delta*L)
+   }
+
+   molar_volume = 1.e-5 // [m^3/mol]
+
+   BoundaryConditions {
+       Phase{
+         boundary_0 = "slope", "0"
+         boundary_1 = "slope", "0"
+         boundary_2 = "slope", "0"
+         boundary_3 = "slope", "0"
+         boundary_4 = "slope", "0"
+         boundary_5 = "value", "0"
+      }
+   }
+}
+
+PhaseFACsolver{
+   fac_precond {
+      residual_tol         = 1.e-4
+   }
+
+   fac_solver{
+      //enable_logging = TRUE
+   }
+
+   fac_ops{
+      //enable_logging = TRUE
+      coarse_solver_tolerance      = 1.e-2
+   }
+
+   hypre_solver {
+      use_smg              = FALSE
+      relative_residual_tol = 1.e-2
+   }
+}
+
+ScalarDiagnostics {
+   interval = 1.
+   interval_type = "time"
+}   
+
+Geometry{
+   periodic_dimension = 0, 0, 0
+   domain_boxes  = [ (0,0,0) , (15,15,255) ]
+   x_lo         =  0.,    0.,  0.
+   x_up         =  25., 25., 400.
+}
+
+PatchHierarchy {
+   max_levels              = 1 // Maximum number of levels in hierarchy.
+}
+
+StandardTagAndInitialize{
+   tagging_method = "REFINE_BOXES"
+
+   level_0 {
+      boxes = [ (0,0,0) , (19,19,19) ]
+   }
+}
+
+BergerRigoutsos {
+   efficiency_tolerance     = 0.70e0   // min % of tag cells in new patch level
+   combine_efficiency       = 0.85e0   // chop box if sum of volumes of smaller
+                                       // boxes < efficiency * vol of large box
+}
+
+LoadBalancer {
+}
+
+GriddingAlgorithm {
+}
