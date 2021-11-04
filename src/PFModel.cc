@@ -142,31 +142,9 @@ PFModel::PFModel(const string& object_name, const tbox::Dimension& dim,
    // Boundary conditions for FAC solvers should be homogeneous
    // since solver computes corrections to current guess
    if (d_FAC_solver_temperature) {
-      d_temperature_bc_corr_coeffs =
-          new solv::LocationIndexRobinBcCoefs(d_dim, "BCcorrcoeffs",
-                                              bc_db->getDatabase("Temperatur"
-                                                                 "e"));
-      for (int i = 0; i < d_dim.getValue() * 2; i++) {
-         double a, b, g;
-         d_temperature_bc_corr_coeffs->getCoefficients(i, a, b, g);
-         g = 0.;
-         d_temperature_bc_corr_coeffs->setRawCoefficients(i, a, b, g);
-      }
-
-      d_FAC_solver_temperature->setBcObject(d_temperature_bc_corr_coeffs);
+      d_FAC_solver_temperature->setBoundaries("Dirichlet");
    }
-
-   d_phase_bc_corr_coeffs =
-       new solv::LocationIndexRobinBcCoefs(d_dim, "PhaseBCcorrcoeffs",
-                                           bc_db->getDatabase("Phase"));
-   for (int i = 0; i < d_dim.getValue() * 2; i++) {
-      double a, b, g;
-      d_phase_bc_corr_coeffs->getCoefficients(i, a, b, g);
-      g = 0.;
-      d_phase_bc_corr_coeffs->setRawCoefficients(i, a, b, g);
-   }
-
-   d_FAC_solver_phase->setBcObject(d_phase_bc_corr_coeffs);
+   d_FAC_solver_phase->setBoundaries("Dirichlet");
 
    tbox::TimerManager* tman = tbox::TimerManager::getManager();
    t_rhs_timer = tman->getTimer("PFiSM::rhs");
