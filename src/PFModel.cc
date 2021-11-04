@@ -601,7 +601,7 @@ void PFModel::PrecondSetTemperature(const double gamma)
 
    // setup temperature FAC solver
    d_FAC_solver_temperature->setCConstant(1.0 / gamma);
-   d_FAC_solver_temperature->setDConstant(d_temperature_diffusion);
+   d_FAC_solver_temperature->setDConstant(-d_temperature_diffusion);
 }
 
 /*************************************************************************
