@@ -122,7 +122,7 @@ PFModel::PFModel(const string& object_name, const tbox::Dimension& dim,
    std::shared_ptr<tbox::Database> bc_db(
        input_db->getDatabase("BoundaryConditions"));
 
-   if (d_FAC_solver_temperature) {
+   if (d_evolve_temperature) {
       d_temperature_bc_coeffs =
           new solv::LocationIndexRobinBcCoefs(d_dim, "TemperatureBCcoeffs",
                                               bc_db->getDatabase("Temperatur"
@@ -231,7 +231,7 @@ void PFModel::setPhysicalBoundaryConditions(
     hier::Patch& patch, const double time,
     const hier::IntVector& ghost_width_to_fill)
 {
-   if (d_FAC_solver_temperature) {
+   if (d_evolve_temperature) {
       d_temperature_bc_helper->setPhysicalBoundaryConditions(
           patch, time, ghost_width_to_fill);
    }
