@@ -968,6 +968,7 @@ void PFModel::getFromInput(std::shared_ptr<tbox::Database> input_db,
    d_cp = temperature_db->getDouble("cp");
 
    d_temperature_diffusion = temperature_db->getDouble("diffusion_coeff");
+   d_temperature_diffusion *= 1.e8;  // cm^2/s -> um^2/s
 
    // conversion from [J/mol] to [pJ/(mu m)^3]
    double molar_volume = input_db->getDouble("molar_volume");
