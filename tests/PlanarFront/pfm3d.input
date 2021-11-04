@@ -2,8 +2,8 @@ Main {
 
    init_time                = 0.0
    init_cycle               = 0
-   print_interval           = 10.
-   max_steps                = 900
+   print_interval           = 1.
+   max_steps                = 800
    solution_logging         = FALSE
 
    relative_tolerance       = 1e-6
@@ -20,12 +20,14 @@ PFModel {
       epsilon = 2.
       well_height = 0.25
       mobility = 0.25
-      initial_solid_fraction = 0.05
+      initial_solid_fraction = 0.1
    }
 
    Temperature{
       initial_value     = 0.7
-      diffusion_coeff   = 1.e-7 // [cm^2/s]
+      // physical diffusion would be ~1.e-3,
+      // too fast to allow solidification in 900 steps
+      diffusion_coeff   = 1.e-6 // [cm^2/s]
       melting           = 1.
       latent_heat       = 1.
       cp                = 17.
@@ -49,7 +51,7 @@ PFModel {
          boundary_1 = "slope", "0"
          boundary_2 = "slope", "0"
          boundary_3 = "slope", "0"
-         boundary_4 = "slope", "0."
+         boundary_4 = "value", "1."
          boundary_5 = "value", "0."
       }
    }

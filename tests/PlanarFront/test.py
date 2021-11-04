@@ -22,7 +22,6 @@ output = subprocess.check_output(command,shell=True)
 #analyse PFiSM standard output
 lines=output.split(b'\n')
 
-lz = 20. #length of domain
 time=0.
 sfraction=0.
 for line in lines:
@@ -36,13 +35,13 @@ for line in lines:
     words=line.split()
     sfraction=eval(words[2])
 
-print("Last time: {}".format(time))
-if time < 55.:
+print("Final time: {}".format(time))
+if time < 44.:
   print("Expected time not reached!!!")
   sys.exit(1)
 
-print("Last fraction: {}".format(sfraction))
-if sfraction < 0.82:
+print("Final solid fraction: {}".format(sfraction))
+if sfraction < 0.77:
   print("Expected solid fraction not reached!!!")
   sys.exit(1)
 
