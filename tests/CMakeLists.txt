@@ -35,6 +35,12 @@ add_test(NAME PlanarFront
          ${CMAKE_CURRENT_BINARY_DIR}/../src/main
          ${CMAKE_CURRENT_SOURCE_DIR}/PlanarFront/pfm3d.input
          )
+add_test(NAME PlanarFrontNoP
+         COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/PlanarFront/testNoP.py
+         ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ${MPIEXEC_PREFLAGS}
+         ${CMAKE_CURRENT_BINARY_DIR}/../src/main
+         ${CMAKE_CURRENT_SOURCE_DIR}/PlanarFront/pfm3dNoP.input
+         )
 add_test(NAME PlanarFrontUniformT
          COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/PlanarFrontUniformT/test.py
          ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ${MPIEXEC_PREFLAGS}
