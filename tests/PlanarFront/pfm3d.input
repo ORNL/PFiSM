@@ -8,7 +8,6 @@ Main {
 
    relative_tolerance       = 1e-6
    absolute_tolerance       = 1e-6
-// 0=use default
    max_order                = 2
    uses_preconditioning     = TRUE
    visit_output             = TRUE
@@ -16,6 +15,7 @@ Main {
 
 PFModel {
 
+   // phase-field parameters
    PFM{
       epsilon = 2.
       well_height = 0.25
@@ -120,24 +120,12 @@ Geometry {
 PatchHierarchy {
    max_levels              = 1 // Maximum number of levels in hierarchy.
 
-// Note: For the following regridding information, data is required for each
-//       potential in the patch hierarchy; i.e., levels 0 thru max_levels-1.
-//       If more data values than needed are given, only the number required
-//       will be read in.  If fewer values are given, an error will result.
-//
-// Specify coarsening ratios for each level 1 through max_levels-1
-   ratio_to_coarser {         // vector ratio to next coarser level
-      level_1               = 2 , 2 , 2
-   }
-
    largest_patch_size {
       level_0 = 16, 16, 16
-      // all finer levels will use same values as level_0...
    }
 
    smallest_patch_size {
       level_0 = 2 , 2 , 2
-      // all finer levels will use same values as level_0...
    }
 
 }

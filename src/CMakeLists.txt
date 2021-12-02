@@ -26,6 +26,7 @@ m4tof(computeCforPhase)
 
 add_library(pfismlib STATIC
    PFModel.cc
+   PFModelCV.cc
    PfmFACSolver.cc
    PFiSM_Hypre.cc
    samrai_internal/CellPoissonFACOps.C
