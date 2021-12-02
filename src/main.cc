@@ -1,6 +1,6 @@
 #include "SAMRAI/SAMRAI_config.h"
 
-#include "PFModel.h"
+#include "PFModelCV.h"
 #include "PfmFACSolver.h"
 
 #ifdef __GNUC__
@@ -131,10 +131,10 @@ int main(int argc, char* argv[])
       }
 
       // construct main object
-      std::shared_ptr<PFModel> pf_model(
-          new PFModel("PFModel", dim, evolve_temperature,
-                      fac_solver_temperature, fac_solver_phase,
-                      input_db->getDatabase("PFModel"), geometry));
+      std::shared_ptr<PFModelCV> pf_model(
+          new PFModelCV("PFModel", dim, evolve_temperature,
+                        fac_solver_temperature, fac_solver_phase,
+                        input_db->getDatabase("PFModel"), geometry));
 
       // defines an implementation for level initialization and cell
       // tagging routines needed by the GriddingAlgorithm class
@@ -223,7 +223,7 @@ int main(int argc, char* argv[])
       cvode_solver->initialize(solution_vector);
 
       /**********************************************************************
-       * Start time-stepping.
+       * Time-stepping.
        ***********************************************************************/
 
       std::vector<double> time(max_steps);
@@ -260,10 +260,10 @@ int main(int argc, char* argv[])
          std::shared_ptr<hier::PatchHierarchy> result_hierarchy(
              y_result->getPatchHierarchy());
 
-         time[interval - 1] = actual_time;
-         maxnorm[interval - 1] = y_result->maxNorm();
-
          if (solution_logging) {
+            time[interval - 1] = actual_time;
+            maxnorm[interval - 1] = y_result->maxNorm();
+
             tbox::plog << "CVODE stastistics:" << std::endl;
             cvode_solver->printStatistics(tbox::pout);
          }
@@ -281,9 +281,7 @@ int main(int argc, char* argv[])
       /*************************************************************************
        * Write summary information
        ************************************************************************/
-      if (solution_logging) {
-         pf_model->printCounters(final_time);
-      }
+      pf_model->printCounters(final_time);
       if (solution_logging) {
          tbox::pout << "\n\nTimestep Summary of solution vector y()\n"
                     << "  time                   \t"
