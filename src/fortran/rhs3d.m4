@@ -1,5 +1,11 @@
 c Adapted from test example in SAMRAI distribution.
 c
+c Includes frunctions               for im_ex=0 or 1:
+c                     comprhs3d and comprhsphase3d
+c                                   for im_ex=2:
+c                     comprhsimpphase implicit
+c                     comprhsex3d and comprhsexphase explicit
+c
 define(NDIM,3)dnl
 include(PDAT_FORTDIR/pdat_m4arrdim3d.i)dnl
 
@@ -162,4 +168,64 @@ c
       return
       end
 c
+c
+c
+      subroutine comprhsex3d(
+     &  ifirst0,ilast0,ifirst1,ilast1,ifirst2,ilast2,
+     &  dx,
+     &  field, ng,
+     &  frame_velocity,
+     &  rhs)
+c***********************************************************************
+      implicit none
+      double precision one
+      parameter(one=1.d0)
+c***********************************************************************
+c input arrays:
+      integer ifirst0,ilast0,ifirst1,ilast1,ifirst2,ilast2
+      integer ng
+      double precision dx(0:NDIM-1)
+      double precision frame_velocity
+      double precision
+     &  field(CELL3d(ifirst,ilast,ng))
+c output arrays:
+      double precision
+     &  rhs(CELL3d(ifirst,ilast,0))
+c
+c***********************************************************************
+c
+      integer ic0,ic1,ic2
+      double precision dgrade0p, dgrade0m,
+     &                 dgrade1p, dgrade1m,
+     &                 dgrade2p, dgrade2m
+      double precision invdx2(0:3-1)
+      double precision factor
+      double precision vel
 
+      vel = frame_velocity
+
+      invdx2(0)=1./(dx(0)*dx(0))
+      invdx2(1)=1./(dx(1)*dx(1))
+      invdx2(2)=1./(dx(2)*dx(2))
+c
+c  Computes RHS for 1 eqn diffusion
+c
+c      RHS = div ( D * grad(y) )
+c
+      do ic2=ifirst2,ilast2
+         do ic1=ifirst1,ilast1
+            do ic0=ifirst0,ilast0
+
+c        compute  RHS
+
+           rhs(ic0,ic1,ic2) =
+     &         0.5d0*vel/dx(2)*(field(ic0,ic1,ic2+1)
+     &         -field(ic0,ic1,ic2-1))
+
+            enddo
+         enddo
+      enddo
+c
+      return
+      end
+c
