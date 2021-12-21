@@ -1,7 +1,10 @@
 #include "SAMRAI/SAMRAI_config.h"
 
+#include "PFModelCV.h"
 #include "PFModelARK.h"
 #include "PfmFACSolver.h"
+#include "ARKODESolver.h"
+#include "Model.h"
 
 #ifdef __GNUC__
 #pragma GCC diagnostic push
@@ -30,7 +33,7 @@
 #include "SAMRAI/mesh/StandardTagAndInitialize.h"
 
 #include "SAMRAI/solv/SundialsAbstractVector.h"
-#include "ARKODESolver.h"
+#include "SAMRAI/solv/CVODESolver.h"
 
 #include "HYPRE_utilities.h"
 
@@ -88,9 +91,6 @@ int main(int argc, char* argv[])
 
       const tbox::Dimension dim(static_cast<unsigned short>(3));
 
-      int arkode_order = main_db->getInteger(
-          "arkode_order");  // trying to add another parameter
-      int max_iter = main_db->getInteger("max_iter");
       int max_order = main_db->getInteger("max_order");
       int max_steps = main_db->getInteger("max_steps");
       double init_time = main_db->getDouble("init_time");
@@ -100,7 +100,6 @@ int main(int argc, char* argv[])
 
       double relative_tolerance = main_db->getDouble("relative_tolerance");
       double absolute_tolerance = main_db->getDouble("absolute_tolerance");
-      int im_ex = main_db->getInteger("im_ex");
       bool uses_preconditioning =
           main_db->getBoolWithDefault("uses_preconditioning", false);
       bool solution_logging =
@@ -108,6 +107,11 @@ int main(int argc, char* argv[])
 
       bool evolve_temperature =
           main_db->getBoolWithDefault("evolve_temperature", true);
+
+      // ARKODE specific options
+      int arkode_order = main_db->getIntegerWithDefault("arkode_order", -1);
+      int im_ex = main_db->getIntegerWithDefault("im_ex", -1);
+      int max_iter = main_db->getIntegerWithDefault("max_iter", -1);
 
       tbox::pout << "Build Geometry, Hierarchy,..." << std::endl;
 
@@ -135,19 +139,44 @@ int main(int argc, char* argv[])
       }
 
       // construct main object
-      std::shared_ptr<PFModelARK> pf_model(
-          new PFModelARK("PFModelARK", dim, evolve_temperature,
-                         fac_solver_temperature, fac_solver_phase,
-                         input_db->getDatabase("PFModel"), geometry));
+      std::shared_ptr<Model> pf_model;
+      if (im_ex >= 0)
+         pf_model.reset(new PFModelARK("PFModel", dim, evolve_temperature,
+                                       fac_solver_temperature, fac_solver_phase,
+                                       input_db->getDatabase("PFModel"),
+                                       geometry));
+      else
+         pf_model.reset(new PFModelCV("PFModel", dim, evolve_temperature,
+                                      fac_solver_temperature, fac_solver_phase,
+                                      input_db->getDatabase("PFModel"),
+                                      geometry));
+
+      std::shared_ptr<PFModelARK> pf_model_ark =
+          std::dynamic_pointer_cast<PFModelARK>(pf_model);
+      std::shared_ptr<PFModelCV> pf_model_cv =
+          std::dynamic_pointer_cast<PFModelCV>(pf_model);
 
       // defines an implementation for level initialization and cell
       // tagging routines needed by the GriddingAlgorithm class
-      std::shared_ptr<mesh::StandardTagAndInitialize> error_est(
-          new mesh::StandardTagAndInitialize("StandardTagAndInitialize",
-                                             pf_model.get(),
-                                             input_db->getDatabase("StandardTag"
-                                                                   "AndInitiali"
-                                                                   "ze")));
+      std::shared_ptr<mesh::StandardTagAndInitialize> error_est;
+      if (im_ex >= 0)
+         error_est.reset(
+             new mesh::StandardTagAndInitialize("StandardTagAndInitialize",
+                                                pf_model_ark.get(),
+                                                input_db->getDatabase("Standard"
+                                                                      "Tag"
+                                                                      "AndIniti"
+                                                                      "ali"
+                                                                      "ze")));
+      else
+         error_est.reset(
+             new mesh::StandardTagAndInitialize("StandardTagAndInitialize",
+                                                pf_model_cv.get(),
+                                                input_db->getDatabase("Standard"
+                                                                      "Tag"
+                                                                      "AndIniti"
+                                                                      "ali"
+                                                                      "ze")));
 
       std::shared_ptr<mesh::BergerRigoutsos> box_generator(
           new mesh::BergerRigoutsos(dim, input_db->getDatabase("BergerRigoutso"
@@ -187,7 +216,7 @@ int main(int argc, char* argv[])
 
       // Setup timer manager for profiling code.
       tbox::TimerManager::createManager(input_db->getDatabase("TimerManager"));
-      std::shared_ptr<tbox::Timer> t_arkode_solve(
+      std::shared_ptr<tbox::Timer> t_ode_solve(
           tbox::TimerManager::getManager()->getTimer("PFiSM::time_integrator"));
 
       // Set up Visualization plot file writer
@@ -204,93 +233,148 @@ int main(int argc, char* argv[])
 
       pf_model->setInitialConditions();
 
-      /***********************************************************************
-       * Setup ARKODESolver object.
-       ***********************************************************************/
-      ARKODESolver* arkode_solver =
-          new ARKODESolver("arkode_solver", pf_model.get(),
-                           uses_preconditioning, im_ex);
-
-      arkode_solver->setRelativeTolerance(relative_tolerance);
-      arkode_solver->setAbsoluteTolerance(absolute_tolerance);
-      arkode_solver->setMaximumNumberOfInternalSteps(max_steps);
-      arkode_solver->setSteppingMethod(ARK_ONE_STEP);
-      arkode_solver->setMethodOrder(arkode_order);
-      arkode_solver->setMaximumNumberOfIterations(max_iter);
-      arkode_solver->setMaximumLinearMultistepMethodOrder(max_order);
-      // arkode_solver->setImplicitExplictMethod(im_ex);
-      if (uses_preconditioning) {
-         arkode_solver->setPreconditioningType(PREC_LEFT);
-      }
-
-      arkode_solver->setInitialValueOfIndependentVariable(init_time);
-      solv::SundialsAbstractVector* solution_vector =
-          pf_model->getSolutionVector();
-      arkode_solver->setInitialConditionVector(solution_vector);
-      arkode_solver->initialize(solution_vector);
-
-      /**********************************************************************
-       * Time-stepping.
-       ***********************************************************************/
-
       std::vector<double> time(max_steps);
       std::vector<double> maxnorm(max_steps);
 
       double final_time = init_time;
       double print_time = 0.;
-      for (int interval = 1; interval <= max_steps; ++interval) {
 
-         // tbox::plog << "interval = "<<interval<<std::endl;
+      if (im_ex >= 0)  // ARKODE
+      {
+         ARKODESolver* arkode_solver =
+             new ARKODESolver("arkode_solver", pf_model_ark.get(),
+                              uses_preconditioning, im_ex);
 
-         final_time += print_interval;
-         arkode_solver->setFinalValueOfIndependentVariable(final_time, false);
-
-         /*
-          * Perform ARKODE solve to the requested interval time.
-          */
-         t_arkode_solve->start();
-         int ret = arkode_solver->solve();
-         t_arkode_solve->stop();
-         if (ret != 0) tbox::plog << "return code = " << ret << std::endl;
-
-         double actual_time =
-             arkode_solver->getActualFinalValueOfIndependentVariable();
-         double dt = arkode_solver->getStepSizeForLastInternalStep();
-         tbox::pout << "# step = " << interval << ", time = " << actual_time
-                    << ", dt = " << dt << std::endl;
-
-         /*
-          * Print statistics
-          */
-         std::shared_ptr<solv::SAMRAIVectorReal<double> > y_result(
-             solv::Sundials_SAMRAIVector::getSAMRAIVector(solution_vector));
-         std::shared_ptr<hier::PatchHierarchy> result_hierarchy(
-             y_result->getPatchHierarchy());
-
-         if (solution_logging) {
-            tbox::plog << "ARKODE stastistics:" << std::endl;
-            arkode_solver->printStatistics(tbox::pout);
-            time[interval - 1] = actual_time;
-            maxnorm[interval - 1] = y_result->maxNorm();
+         arkode_solver->setRelativeTolerance(relative_tolerance);
+         arkode_solver->setAbsoluteTolerance(absolute_tolerance);
+         arkode_solver->setMaximumNumberOfInternalSteps(max_steps);
+         arkode_solver->setSteppingMethod(ARK_ONE_STEP);
+         arkode_solver->setMethodOrder(arkode_order);
+         arkode_solver->setMaximumNumberOfIterations(max_iter);
+         arkode_solver->setMaximumLinearMultistepMethodOrder(max_order);
+         if (uses_preconditioning) {
+            arkode_solver->setPreconditioningType(PREC_LEFT);
          }
 
-         if (actual_time > print_time && visit_flag) {
-            visit_data_writer->writePlotData(result_hierarchy, interval,
-                                             actual_time);
-            print_time += print_interval;
+         arkode_solver->setInitialValueOfIndependentVariable(init_time);
+         solv::SundialsAbstractVector* solution_vector =
+             pf_model->getSolutionVector();
+         arkode_solver->setInitialConditionVector(solution_vector);
+         arkode_solver->initialize(solution_vector);
+
+         // Time-stepping.
+         for (int interval = 1; interval <= max_steps; ++interval) {
+
+            final_time += print_interval;
+            arkode_solver->setFinalValueOfIndependentVariable(final_time,
+                                                              false);
+
+            // Perform ARKODE solve to the requested interval time.
+            t_ode_solve->start();
+            int ret = arkode_solver->solve();
+            t_ode_solve->stop();
+            if (ret != 0) tbox::plog << "return code = " << ret << std::endl;
+
+            double actual_time =
+                arkode_solver->getActualFinalValueOfIndependentVariable();
+            double dt = arkode_solver->getStepSizeForLastInternalStep();
+            tbox::pout << "# step = " << interval << ", time = " << actual_time
+                       << ", dt = " << dt << std::endl;
+
+            // Print statistics
+            std::shared_ptr<solv::SAMRAIVectorReal<double> > y_result(
+                solv::Sundials_SAMRAIVector::getSAMRAIVector(solution_vector));
+            std::shared_ptr<hier::PatchHierarchy> result_hierarchy(
+                y_result->getPatchHierarchy());
+
+            if (solution_logging) {
+               tbox::plog << "ARKODE stastistics:" << std::endl;
+               arkode_solver->printStatistics(tbox::pout);
+               time[interval - 1] = actual_time;
+               maxnorm[interval - 1] = y_result->maxNorm();
+            }
+
+            if (actual_time > print_time && visit_flag) {
+               visit_data_writer->writePlotData(result_hierarchy, interval,
+                                                actual_time);
+               print_time += print_interval;
+            }
+
+            const double sf = pf_model->computeSolidFraction(result_hierarchy);
+            tbox::pout << "Solid fraction: " << sf << std::endl;
+         }    // end of timestep loop
+      } else  // CVODE
+      {
+         // Setup CVODESolver object.
+         solv::CVODESolver* cvode_solver =
+             new solv::CVODESolver("cvode_solver", pf_model_cv.get(),
+                                   uses_preconditioning);
+
+         cvode_solver->setRelativeTolerance(relative_tolerance);
+         cvode_solver->setAbsoluteTolerance(absolute_tolerance);
+         cvode_solver->setMaximumNumberOfInternalSteps(max_steps);
+         cvode_solver->setSteppingMethod(CV_ONE_STEP);
+         cvode_solver->setMaximumLinearMultistepMethodOrder(max_order);
+         if (uses_preconditioning) {
+            cvode_solver->setPreconditioningType(PREC_LEFT);
          }
 
-         const double sf = pf_model->computeSolidFraction(result_hierarchy);
-         tbox::pout << "step, " << interval << ", time, " << actual_time
-                    << ", dt, " << dt << ", solid fraction, " << sf
-                    << std::endl;
-      }  // end of timestep loop
+         cvode_solver->setInitialValueOfIndependentVariable(init_time);
+         solv::SundialsAbstractVector* solution_vector =
+             pf_model->getSolutionVector();
+         cvode_solver->setInitialConditionVector(solution_vector);
+         cvode_solver->initialize(solution_vector);
 
-      /*************************************************************************
-       * Write summary information
-       ************************************************************************/
+         // Time-stepping.
+         for (int interval = 1; interval <= max_steps; ++interval) {
+
+            // tbox::plog << "interval = "<<interval<<std::endl;
+
+            final_time += print_interval;
+            cvode_solver->setFinalValueOfIndependentVariable(final_time, false);
+
+            // Perform CVODE solve to the requested interval time.
+            t_ode_solve->start();
+            int ret = cvode_solver->solve();
+            t_ode_solve->stop();
+            if (ret != 0) tbox::plog << "return code = " << ret << std::endl;
+
+            double actual_time =
+                cvode_solver->getActualFinalValueOfIndependentVariable();
+            double dt = cvode_solver->getStepSizeForLastInternalStep();
+            tbox::pout << "# step = " << interval << ", time = " << actual_time
+                       << ", dt = " << dt << std::endl;
+
+            // Print statistics
+            std::shared_ptr<solv::SAMRAIVectorReal<double> > y_result(
+                solv::Sundials_SAMRAIVector::getSAMRAIVector(solution_vector));
+            std::shared_ptr<hier::PatchHierarchy> result_hierarchy(
+                y_result->getPatchHierarchy());
+
+            if (solution_logging) {
+               time[interval - 1] = actual_time;
+               maxnorm[interval - 1] = y_result->maxNorm();
+
+               tbox::plog << "CVODE stastistics:" << std::endl;
+               cvode_solver->printStatistics(tbox::pout);
+            }
+
+            if (actual_time > print_time && visit_flag) {
+               visit_data_writer->writePlotData(result_hierarchy, interval,
+                                                actual_time);
+               print_time += print_interval;
+            }
+
+            const double sf = pf_model->computeSolidFraction(result_hierarchy);
+            tbox::pout << "Solid fraction: " << sf << std::endl;
+         }  // end of timestep loop
+
+         tbox::pout << "Delete solver..." << std::endl;
+         delete cvode_solver;
+      }
+
+      // Write summary information
       pf_model->printCounters(final_time);
-
       if (solution_logging) {
          tbox::pout << "\n\nTimestep Summary of solution vector y()\n"
                     << "  time                   \t"
@@ -305,9 +389,6 @@ int main(int argc, char* argv[])
       }
 
       tbox::TimerManager::getManager()->print(tbox::pout);
-
-      tbox::pout << "Delete solver..." << std::endl;
-      delete arkode_solver;
 
       tbox::pout << "Clean up..." << std::endl;
       pf_model.reset();

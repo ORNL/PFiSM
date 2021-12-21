@@ -3,7 +3,7 @@ Main {
    init_time                = 0.0
    init_cycle               = 0
    print_interval           = 10.
-   max_steps                = 100
+   max_steps                = 50
    solution_logging         = FALSE
 
    relative_tolerance       = 1e-6
@@ -12,7 +12,10 @@ Main {
    max_iter                 = 100
 // 0=use default
    max_order                = 2
-   im_ex                    = 1
+   // im_ex = 0 is explicit
+   // im_ex = 1 is implicit
+   // im_ex = 2 IMEX
+   im_ex                    = 2
    uses_preconditioning     = TRUE
    visit_output             = TRUE
 }
@@ -156,4 +159,3 @@ GriddingAlgorithm {
 
 LoadBalancer {
 }
-

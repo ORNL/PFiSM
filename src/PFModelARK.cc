@@ -1,5 +1,6 @@
 #include "PFModelARK.h"
 #include "tools.h"
+#include "FortranInterface.h"
 
 #include "samrai_internal/CellPoissonFACSolver.h"
 
@@ -31,31 +32,6 @@
 #endif
 
 using namespace std;
-
-extern "C" {
-void SAMRAI_F77_FUNC(comprhs3d,
-                     COMPRHS3D)(const int&, const int&, const int&, const int&,
-                                const int&, const int&, const double*,
-                                const double*, const int&, const double&,
-                                const double*, const double&, const double&,
-                                const double&, double*);
-void SAMRAI_F77_FUNC(comprhsphase3d, COMPRHSPHASE3D)(
-    const int&, const int&, const int&, const int&, const int&, const int&,
-    const double*, const int&, const double*, const int&, const double*,
-    const double&, const double&, const double&, const double&, const double&,
-    const double&, const double*);
-void SAMRAI_F77_FUNC(comprhsex3d,
-                     COMPRHSEX3D)(const int&, const int&, const int&,
-                                  const int&, const int&, const int&,
-                                  const double*, const double*, const int&,
-                                  const double&, double*);
-void SAMRAI_F77_FUNC(compcforphase,
-                     COMPCFORPHASE)(const int&, const int&, const int&,
-                                    const int&, const int&, const int&,
-                                    const double*, const int&, const double&,
-                                    const double&, const double&, const double*,
-                                    const int&);
-}
 
 PFModelARK::PFModelARK(
     const string& object_name, const tbox::Dimension& dim,
@@ -413,7 +389,11 @@ void PFModelARK::evaluateRHSPhase(
           phase->getPointer(), phase->getGhostCellWidth()[0],
           temperature->getPointer(), temperature->getGhostCellWidth()[0], dx,
           d_mobility, d_well_height, d_epsilon, d_latent_heat, d_Tmelting,
-          d_frame_velocity, rhs->getPointer());
+          rhs->getPointer());
+         SAMRAI_F77_FUNC(addvel2rhs3d, ADDVEL2RHS3D)
+         (ifirst(0), ilast(0), ifirst(1), ilast(1), ifirst(2), ilast(2), dx,
+          phase->getPointer(), phase->getGhostCellWidth()[0], d_frame_velocity,
+          rhs->getPointer());
 
       }  // loop over patches
    }     // loop over levels
@@ -458,7 +438,10 @@ void PFModelARK::evaluateRHSTemperature(
          SAMRAI_F77_FUNC(comprhs3d, COMPRHS3D)
          (ifirst(0), ilast(0), ifirst(1), ilast(1), ifirst(2), ilast(2), dx,
           y->getPointer(), y->getGhostCellWidth()[0], d_temperature_diffusion,
-          phi_dot->getPointer(), d_latent_heat, d_cp, d_frame_velocity,
+          phi_dot->getPointer(), d_latent_heat, d_cp, rhs->getPointer());
+         SAMRAI_F77_FUNC(addvel2rhs3d, ADDVEL2RHS3D)
+         (ifirst(0), ilast(0), ifirst(1), ilast(1), ifirst(2), ilast(2), dx,
+          y->getPointer(), y->getGhostCellWidth()[0], d_frame_velocity,
           rhs->getPointer());
 
       }  // loop over patches
@@ -558,7 +541,11 @@ int PFModelARK::evaluateRHSFunctionImp(double time,
           phase->getPointer(), phase->getGhostCellWidth()[0],
           temperature->getPointer(), temperature->getGhostCellWidth()[0], dx,
           d_mobility, d_well_height, d_epsilon, d_latent_heat, d_Tmelting,
-          d_frame_velocity, rhsimp->getPointer());
+          rhsimp->getPointer());
+         SAMRAI_F77_FUNC(addvel2rhs3d, ADDVEL2RHS3D)
+         (ifirst(0), ilast(0), ifirst(1), ilast(1), ifirst(2), ilast(2), dx,
+          phase->getPointer(), phase->getGhostCellWidth()[0], d_frame_velocity,
+          rhsimp->getPointer());
 
       }  // loop over patches
    }     // loop over levels
@@ -601,7 +588,7 @@ int PFModelARK::evaluateRHSFunctionImp(double time,
          SAMRAI_F77_FUNC(comprhs3d, COMPRHS3D)
          (ifirst(0), ilast(0), ifirst(1), ilast(1), ifirst(2), ilast(2), dx,
           y->getPointer(), y->getGhostCellWidth()[0], d_temperature_diffusion,
-          phi_dot->getPointer(), d_latent_heat, d_cp, 0., rhsimp->getPointer());
+          phi_dot->getPointer(), d_latent_heat, d_cp, rhsimp->getPointer());
 
       }  // loop over patches
    }     // loop over levels
@@ -750,7 +737,7 @@ int PFModelARK::evaluateRHSFunctionExp(double time,
          assert(patch_geom);
          const double* dx = patch_geom->getDx();
 
-         SAMRAI_F77_FUNC(comprhsex3d, COMPRHS3D)
+         SAMRAI_F77_FUNC(addvel2rhs3d, ADDVEL2RHS3D)
          (ifirst(0), ilast(0), ifirst(1), ilast(1), ifirst(2), ilast(2), dx,
           y->getPointer(), y->getGhostCellWidth()[0], d_frame_velocity,
           rhsex->getPointer());

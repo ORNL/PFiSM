@@ -1,6 +1,8 @@
 #ifndef PFiSM_PFModel_H
 #define PFiSM_PFModel_H
 
+#include "Model.h"
+
 #ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
@@ -43,7 +45,8 @@ using namespace SAMRAI;
 
 class PFModel : public mesh::StandardTagAndInitStrategy,
                 public xfer::RefinePatchStrategy,
-                public xfer::CoarsenPatchStrategy
+                public xfer::CoarsenPatchStrategy,
+                public Model
 {
  public:
    PFModel(const std::string& object_name, const tbox::Dimension& dim,
@@ -130,11 +133,6 @@ class PFModel : public mesh::StandardTagAndInitStrategy,
    ///
    double computeSolidFraction(
        const std::shared_ptr<hier::PatchHierarchy>& hierarchy);
-
-   ///
-   /// Print program counters.
-   ///
-   void printCounters(const double);
 
    ///
    /// Writes state of PFModel object to the specified restart database.

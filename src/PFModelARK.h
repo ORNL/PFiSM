@@ -1,6 +1,8 @@
 #ifndef PFiSM_PFModelARK_H
 #define PFiSM_PFModelARK_H
 
+#include "Model.h"
+
 #ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
@@ -46,7 +48,8 @@ using namespace SAMRAI;
 class PFModelARK : public mesh::StandardTagAndInitStrategy,
                    public xfer::RefinePatchStrategy,
                    public xfer::CoarsenPatchStrategy,
-                   public ARKODEAbstractFunctions
+                   public ARKODEAbstractFunctions,
+                   public Model
 {
  public:
    PFModelARK(const std::string& object_name, const tbox::Dimension& dim,
@@ -56,7 +59,7 @@ class PFModelARK : public mesh::StandardTagAndInitStrategy,
               std::shared_ptr<tbox::Database> input_db,
               std::shared_ptr<geom::CartesianGridGeometry> grid_geom);
 
-   ~PFModelARK();
+   virtual ~PFModelARK();
 
    /*************************************************************************
     * Methods inherited from StandardTagAndInitStrategy.

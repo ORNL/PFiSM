@@ -86,7 +86,49 @@ c
       end
 c
 c
+      subroutine addvel2rhs3d(
+     &  ifirst0,ilast0,ifirst1,ilast1,ifirst2,ilast2,
+     &  dx,
+     &  field, ng,
+     &  frame_velocity,
+     &  rhs)
+c***********************************************************************
+      implicit none
+      double precision one
+      parameter(one=1.d0)
+c***********************************************************************
+c input arrays:
+      integer ifirst0,ilast0,ifirst1,ilast1,ifirst2,ilast2
+      integer ng
+      double precision dx(0:NDIM-1)
+      double precision frame_velocity
+      double precision
+     &  field(CELL3d(ifirst,ilast,ng))
+c output arrays:
+      double precision
+     &  rhs(CELL3d(ifirst,ilast,0))
+c
+c***********************************************************************
+c
+      integer ic0,ic1,ic2
+      double precision invdx
 
+      invdx=1./dx(2)
+
+      do ic2=ifirst2,ilast2
+         do ic1=ifirst1,ilast1
+            do ic0=ifirst0,ilast0
+           rhs(ic0,ic1,ic2) = rhs(ic0,ic1,ic2)+
+     &         0.5d0*frame_velocity*invdx*(field(ic0,ic1,ic2+1)
+     &         -field(ic0,ic1,ic2-1))
+            enddo
+         enddo
+      enddo
+c
+      return
+      end
+c
+c
       subroutine comprhsphase3d(
      &  ifirst0,ilast0,ifirst1,ilast1,ifirst2,ilast2,
      &  phi, ngp,
