@@ -33,7 +33,7 @@ if(${PFISM_WITH_CLANG_FORMAT})
   mark_as_advanced(CLANG_FORMAT_EXECUTABLE)
   if(CLANG_FORMAT_EXECUTABLE)
     message(STATUS "Indent with clang-format")
-    file(GLOB FORMAT_SOURCES src/*.cc src/*.h tests/*.cc tests/*.h)
+    file(GLOB FORMAT_SOURCES src/*.cc src/*.h tests/*.cc tests/*.h src/samrai_extra/*.C src/samrai_extra/*.h)
     add_custom_target(format
       COMMAND ${CLANG_FORMAT_EXECUTABLE} -i -style=file ${FORMAT_SOURCES}
       DEPENDS ${FORMAT_SOURCES})
@@ -47,6 +47,7 @@ link_directories( ${SUNDIALS_DIR}/lib64 )
 include_directories( ${SAMRAI_DIR}/include )
 include_directories( ${HYPRE_DIR}/include )
 include_directories( ${SUNDIALS_DIR}/include )
+include_directories( ${PROJECT_SOURCE_DIR}/src/samrai_extra )
 
 set( PROJECT_LINK_LIBS1 libSAMRAI_tbox.a )
 set( PROJECT_LINK_LIBS2 libSAMRAI_math.a )
@@ -69,6 +70,7 @@ set( PROJECT_LINK_LIBS_SAMRAI ${PROJECT_LINK_LIBS9}
 
 set( PROJECT_LINK_LIBS10 libHYPRE.so )
 set( PROJECT_LINK_LIBS11 libsundials_cvode.a )
+set( PROJECT_LINK_LIBS12 libsundials_arkode.a )
 
 enable_testing()
 

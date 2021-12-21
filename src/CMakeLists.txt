@@ -25,8 +25,11 @@ m4tof(rhs3d)
 m4tof(computeCforPhase)
 
 add_library(pfismlib STATIC
+   samrai_extra/ARKODESolver.C
+   samrai_extra/ARKODEAbstractFunctions.C
    PFModel.cc
    PFModelCV.cc
+   PFModelARK.cc
    PfmFACSolver.cc
    PFiSM_Hypre.cc
    samrai_internal/CellPoissonFACOps.C
@@ -57,6 +60,7 @@ target_link_libraries(main PRIVATE pfismlib
                            ${PROJECT_LINK_LIBS_SAMRAI}
                            ${PROJECT_LINK_LIBS10}
                            ${PROJECT_LINK_LIBS11}
+			   ${PROJECT_LINK_LIBS12}
                            ${PROJECT_LINK_LIBS_HDF5}
                       )
 

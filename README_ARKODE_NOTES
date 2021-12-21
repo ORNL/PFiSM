@@ -1,0 +1,6 @@
+Quick notes for ARKCODE
+  run using tests/PlanarFront/pfm3dark.input
+     im_ex=0 for explicit
+     im_ex=1 for implicit
+     im_ex=2 for IMEX, see src/fortran/rhs3d.f for IMEX split 
+

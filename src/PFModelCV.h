@@ -23,7 +23,7 @@ class PFModelCV : public PFModel, public solv::CVODEAbstractFunctions
              std::shared_ptr<tbox::Database> input_db,
              std::shared_ptr<geom::CartesianGridGeometry> grid_geom);
 
-   ~PFModelCV();
+   virtual ~PFModelCV();
 
    ///
    /// Methods inherited from CVODEAbstractFunctions
