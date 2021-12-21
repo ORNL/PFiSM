@@ -12,11 +12,11 @@
 /**
  * Class ARKODEAbstractFunctions is an abstract base class that defines
  * an interface for the user-supplied RHSFunction and preconditioner
- * routines to be used with ARKODE and CVSpgmr via the C++ wrapper
+ * routines to be used with ARKODE and ARKSpgmr via the C++ wrapper
  * class ARKODESolver.  To use ARKODE with the C++ wrapper one must
  * derive a subclass of this base class and pass it into the ARKODESolver
  * constructor.  The pure virtual member functions in this interface are
- * used by ARKODE and CVSpgmr during the ODE integration process.  The
+ * used by ARKODE and ARKSpgmr during the ODE integration process.  The
  * complete argument lists in the function signatures defined by ARKODE
  * for the user-supplied routines have been preserved for the most part.
  * In a few cases, some arguments do not appear in the function signatures
@@ -41,14 +41,9 @@ class ARKODEAbstractFunctions
     *
     * The function arguments are:
     *
-    *
-    *
     * - \b t        (INPUT) {current value of the independent variable}
     * - \b y        (INPUT) {current value of dependent variable vector}
     * - \b y_dot   (OUTPUT){current value of the derivative of y}
-    *
-    *
-    *
     *
     * IMPORTANT: This function must not modify the vector y.
     */
@@ -57,14 +52,14 @@ class ARKODEAbstractFunctions
        SAMRAI::solv::SundialsAbstractVector* y_dot) = 0;
 
    /*
-    * added Implicit
+    * Implicit
     */
    virtual int evaluateRHSFunctionImp(
        double t, SAMRAI::solv::SundialsAbstractVector* y,
        SAMRAI::solv::SundialsAbstractVector* y_dot) = 0;
 
    /*
-    * added Explicit
+    * Explicit
     */
    virtual int evaluateRHSFunctionExp(
        double t, SAMRAI::solv::SundialsAbstractVector* y,
@@ -75,61 +70,22 @@ class ARKODEAbstractFunctions
     * to be used in the solution of the linear system that arises
     * during Newton iteration.
     */
-   virtual int CVSpgmrPrecondSet(double t,
-                                 SAMRAI::solv::SundialsAbstractVector* y,
-                                 SAMRAI::solv::SundialsAbstractVector* fy,
-                                 int jok, int* jcurPtr, double gamma) = 0;
+   virtual int ARKSpgmrPrecondSet(double t,
+                                  SAMRAI::solv::SundialsAbstractVector* y,
+                                  SAMRAI::solv::SundialsAbstractVector* fy,
+                                  int jok, int* jcurPtr, double gamma) = 0;
 
    /**
     * User-supplied function for setting up the preconditioner
     * to be used in the solution of the linear system that arises
     * during Newton iteration.
     */
-   virtual int CVSpgmrPrecondSolve(double t,
-                                   SAMRAI::solv::SundialsAbstractVector* y,
-                                   SAMRAI::solv::SundialsAbstractVector* fy,
-                                   SAMRAI::solv::SundialsAbstractVector* r,
-                                   SAMRAI::solv::SundialsAbstractVector* z,
-                                   double gamma, double delta, int lr) = 0;
-
-   /*!
-    * @brief User-supplied function to project the current solution and
-    * estimated error onto the constraint manifold.
-    *
-    * The function arguments are:
-    *
-    * - \b t (INPUT) {current value of the independent variable}
-    * - \b y (INPUT) {current value of the dependent variable vector}
-    * - \b corr (OUTPUT) {correction such that y+corr is on the constraint
-    *                     manifold}
-    * - \b epsProj (INPUT) {WRMS norm tolerance for a nonlinear solver
-    *                       iteration}
-    * - \b err (INPUT/OUTPUT) {input: unprojected error , output: projected
-    *                          error}
-    *
-    * IMPORTANT: This function must not modify the vector y.
-    */
-   virtual int applyProjection(double t,
-                               SAMRAI::solv::SundialsAbstractVector* y,
-                               SAMRAI::solv::SundialsAbstractVector* corr,
-                               double epsProj,
-                               SAMRAI::solv::SundialsAbstractVector* err) = 0;
-
-   /*!
-    * @brief User-supplied right-hand side function used in evaluating finite
-    * difference Jacobian -vector products.
-    *
-    * The function arguments are:
-    *
-    * - \b t (INPUT) {current value of the independent variable}
-    * - \b y (INPUT) {current value of the dependent variable vector}
-    * - \b ydot (OUTPUT) {current value of the derivative of y}
-    *
-    * IMPORTANT: This function must not modify the vector y
-    */
-   virtual int evaluateJTimesRHSFunction(
-       double t, SAMRAI::solv::SundialsAbstractVector* y,
-       SAMRAI::solv::SundialsAbstractVector* y_dot) = 0;
+   virtual int ARKSpgmrPrecondSolve(double t,
+                                    SAMRAI::solv::SundialsAbstractVector* y,
+                                    SAMRAI::solv::SundialsAbstractVector* fy,
+                                    SAMRAI::solv::SundialsAbstractVector* r,
+                                    SAMRAI::solv::SundialsAbstractVector* z,
+                                    double gamma, double delta, int lr) = 0;
 };
 
 #endif

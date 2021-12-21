@@ -29,7 +29,7 @@ ARKODESolver::ARKODESolver(const std::string& object_name,
    d_solution_vector = 0;
 
    /*
-    * Set default parameters to safe values or to ARKODE/CVSpgmr defaults.
+    * Set default parameters to safe values or to ARKODE/ARKSpgmr defaults.
     */
 
    /*
@@ -51,15 +51,12 @@ ARKODESolver::ARKODESolver(const std::string& object_name,
    /*
     * ODE integration parameters.
     */
-
-   // setLinearMultistepMethod(CV_BDF); //Backward difference for CV
    setRelativeTolerance(0.0);
    setAbsoluteTolerance(0.0);
    d_absolute_tolerance_vector = 0;
    setSteppingMethod(ARK_NORMAL);
 
 
-   d_max_order = -1;
    d_max_num_internal_steps = -1;
    d_max_num_warnings = -1;
    d_init_step_size = -1;
@@ -69,21 +66,19 @@ ARKODESolver::ARKODESolver(const std::string& object_name,
    d_max_iter = -1;
 
    /*
-    * CVSpgmr parameters.
+    * ARKSpgmr parameters.
     *
-    * Note that when the maximum krylov dimension and CVSpgmr
-    * tolerance scale factor are set to 0, CVSpgmr uses its
+    * Note that when the maximum krylov dimension and ARKSpgmr
+    * tolerance scale factor are set to 0, ARKSpgmr uses its
     * internal default values.  These are described in the header for
     * this class.
     */
    setPreconditioningType(PREC_NONE);
    setGramSchmidtType(MODIFIED_GS);
    setMaxKrylovDimension(0);
-   setCVSpgmrToleranceScaleFactor(0);
+   setARKSpgmrToleranceScaleFactor(0);
 
    d_ARKODE_needs_initialization = true;
-   d_uses_projectionfn = false;
-   d_uses_jtimesrhsfn = false;
 }
 
 ARKODESolver::~ARKODESolver()
@@ -165,7 +160,7 @@ void ARKODESolver::initializeARKODE()
       ARKRhsFn RHSFuncExp = ARKODESolver::ARKODERHSFuncEvalExp;
 
       /*
-       * Free previously allocated CVode memory.  Note that the
+       * Free previously allocated ARKode memory.  Note that the
        * CVReInit() function is not used since the d_neq variable
        * might have been changed from the previous initializeARKODE()
        * call.
@@ -176,14 +171,12 @@ void ARKODESolver::initializeARKODE()
        * Allocate main memory for ARKODE package.
        */
 
-
       /*
        * Create ARKode member
        * im_ex = 0 is explicit
        * im_ex = 1 is implicit
        * im_ex = 2 IMEX
        */
-
       if (d_im_ex == 0) {
          d_arkode_mem =
              ARKStepCreate(RHSFunc, NULL, d_t_0, d_ic_vector->getNVector());
@@ -197,18 +190,13 @@ void ARKODESolver::initializeARKODE()
          }
       }
 
-      //  ARKStepCreate takes place of this
-      // int ierr = ARKodeInit(d_arkode_mem,
-      //      RHSFunc,
-      //      d_t_0,
-      //      d_ic_vector->getNVector());
-      // ARKODE_SAMRAI_ERROR(ierr); //arkInitialSetup
+      //  ARKStepCreate takes place of CVodeInit
 
       int ierr = ARKStepSetUserData(d_arkode_mem, this);
       ARKODE_SAMRAI_ERROR(ierr);
 
-      ierr = ARKStepSStolerances(d_arkode_mem, d_absolute_tolerance_scalar,
-                                 d_relative_tolerance);
+      ierr = ARKStepSStolerances(d_arkode_mem, d_relative_tolerance,
+                                 d_absolute_tolerance_scalar);
 
       ierr = ARKStepSetOrder(d_arkode_mem, d_arkode_order);
 
@@ -222,24 +210,14 @@ void ARKODESolver::initializeARKODE()
          ierr = ARKStepSetLinearSolver(d_arkode_mem, ls, NULL);
          ARKODE_SAMRAI_ERROR(ierr);
       }
-      // if (!(d_max_order < 1)) {
-      //   ierr = CVodeSetMaxOrd(d_cvode_mem, d_max_order);
-      //   ARKODE_SAMRAI_ERROR(ierr);
-      //}
 
       /*
-       * Setup CVSpgmr function pointers.
+       * Setup ARKSpgmr function pointers.
        */
-      // ARKLsPrecSetupFn precond_set = 0;
-      // ARKLsPrecSolveFn precond_solve = 0;
-
       if (d_uses_preconditioner) {
-         ARKLsPrecSetupFn precond_set = 0;
-         ARKLsPrecSolveFn precond_solve = 0;
-         precond_set = ARKODESolver::CVSpgmrPrecondSet;
-         precond_solve = ARKODESolver::CVSpgmrPrecondSolve;
-         ARKStepSetPreconditioner(d_arkode_mem, precond_set,
-                                  precond_solve);  //?? Preconditioner CV??
+         ARKLsPrecSetupFn precond_set = ARKODESolver::ARKSpgmrPrecondSet;
+         ARKLsPrecSolveFn precond_solve = ARKODESolver::ARKSpgmrPrecondSolve;
+         ARKStepSetPreconditioner(d_arkode_mem, precond_set, precond_solve);
       }
 
       if (!(d_max_num_internal_steps < 0)) {
@@ -250,7 +228,7 @@ void ARKODESolver::initializeARKODE()
       if (!(d_max_num_warnings < 0)) {
          ierr = ARKStepSetMaxNumConstrFails(d_arkode_mem, d_max_num_warnings);
          ARKODE_SAMRAI_ERROR(ierr);
-      }  // Not sure what this is
+      }
 
       /*
        * ?? Appears that step size is set by tollerance or fixed
@@ -272,16 +250,6 @@ void ARKODESolver::initializeARKODE()
          ierr = ARKStepSetMinStep(d_arkode_mem, d_min_step_size);
          ARKODE_SAMRAI_ERROR(ierr);
       }
-
-      // if (d_uses_projectionfn) {
-      //    CVProjFn proj_fn = ARKODESolver::ARKODEProjEval;
-      //    ierr = CVodeSetProjFn(d_cvode_mem , proj_fn);
-      // }
-
-      // if (d_uses_jtimesrhsfn) {
-      //    CVRhsFn jtimesrhs_fn = ARKODESolver::ARKODEJTimesRHSFuncEval;
-      //    ierr = CVodeSetJacTimesRhsFn(d_cvode_mem , jtimesrhs_fn);
-      // }
 
    }  // if no need to initialize ARKODE, function does nothing
 
@@ -332,19 +300,19 @@ void ARKODESolver::printARKODEStatistics(std::ostream& os) const
 /*
  *************************************************************************
  *
- * Access methods for CVSpgmr statistics.
+ * Access methods for ARKSpgmr statistics.
  *
  *************************************************************************
  */
 
-void ARKODESolver::printCVSpgmrStatistics(std::ostream& os) const
+void ARKODESolver::printARKSpgmrStatistics(std::ostream& os) const
 {
-   os << "ARKODESolver: CVSpgmr statistics... " << std::endl;
+   os << "ARKODESolver: ARKSpgmr statistics... " << std::endl;
 
    os << "spgmr_lrw       = "
-      << tbox::Utilities::intToString(getCVSpgmrMemoryUsageForDoubles(), 5)
+      << tbox::Utilities::intToString(getARKSpgmrMemoryUsageForDoubles(), 5)
       << "     spgmr_liw        = "
-      << tbox::Utilities::intToString(getCVSpgmrMemoryUsageForIntegers(), 5)
+      << tbox::Utilities::intToString(getARKSpgmrMemoryUsageForIntegers(), 5)
       << std::endl;
 
    os << "nli             = "
@@ -405,7 +373,6 @@ void ARKODESolver::printClassData(std::ostream& os) const
 
    os << "Optional ARKODE inputs (see ARKODE docs for details):" << std::endl;
 
-   os << "maximum linear multistep method order = " << d_max_order << std::endl;
    os << "maximum number of internal steps = " << d_max_num_internal_steps
       << std::endl;
    os << "maximum number of nil internal step warnings = " << d_max_num_warnings
@@ -420,12 +387,12 @@ void ARKODESolver::printClassData(std::ostream& os) const
    os << "...end of ARKODE parameters\n" << std::endl;
 
    os << std::endl;
-   os << "CVSpgmr parameters..." << std::endl;
+   os << "ARKSpgmr parameters..." << std::endl;
    os << "d_precondition_type = " << d_precondition_type << std::endl;
    os << "d_gram_schmidt_type = " << d_gram_schmidt_type << std::endl;
    os << "d_max_krylov_dim = " << d_max_krylov_dim << std::endl;
    os << "d_tol_scale_factor = " << d_tol_scale_factor << std::endl;
-   os << "...end of CVSpgmr parameters\n" << std::endl;
+   os << "...end of ARKSpgmr parameters\n" << std::endl;
 
    os << "d_ARKODE_needs_initialization = ";
    if (d_ARKODE_needs_initialization) {

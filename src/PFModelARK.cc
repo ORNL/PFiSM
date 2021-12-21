@@ -799,7 +799,7 @@ void PFModelARK::initializeSolvers(
 /*****************************************************************
  * Set up FAC preconditioner for Jacobian system.
  *****************************************************************/
-int PFModelARK::CVSpgmrPrecondSet(
+int PFModelARK::ARKSpgmrPrecondSet(
     double t,
     solv::SundialsAbstractVector* y,  // current value of variable vector,
                                       // the predicted value of y(t)
@@ -813,7 +813,7 @@ int PFModelARK::CVSpgmrPrecondSet(
 
    t_precondset_timer->start();
 
-   tbox::plog << "CVSpgmrPrecondSet..." << endl;
+   tbox::plog << "ARKSpgmrPrecondSet..." << endl;
 
    std::shared_ptr<solv::SAMRAIVectorReal<double> > y_samvect(
        solv::Sundials_SAMRAIVector::getSAMRAIVector(y));
@@ -898,11 +898,11 @@ void PFModelARK::PrecondSetTemperature(const double gamma)
  * Assumes preconditioner has been setup already.
  * Return 0 if preconditioner fails; 1 otherwise.
  *************************************************************************/
-int PFModelARK::CVSpgmrPrecondSolve(double t, solv::SundialsAbstractVector* y,
-                                    solv::SundialsAbstractVector* fy,
-                                    solv::SundialsAbstractVector* r,
-                                    solv::SundialsAbstractVector* z,
-                                    double gamma, double delta, int lr)
+int PFModelARK::ARKSpgmrPrecondSolve(double t, solv::SundialsAbstractVector* y,
+                                     solv::SundialsAbstractVector* fy,
+                                     solv::SundialsAbstractVector* r,
+                                     solv::SundialsAbstractVector* z,
+                                     double gamma, double delta, int lr)
 {
    NULL_USE(t);
    NULL_USE(y);
@@ -912,7 +912,7 @@ int PFModelARK::CVSpgmrPrecondSolve(double t, solv::SundialsAbstractVector* y,
 
    t_precondsolve_timer->start();
 
-   // plog<<"CVSpgmrPrecondSolve..."<<endl;
+   // plog<<"ARKSpgmrPrecondSolve..."<<endl;
 
    // Convert passed-in ARKODE vectors into SAMRAI vectors
    std::shared_ptr<solv::SAMRAIVectorReal<double> > r_samvect(

@@ -8,7 +8,7 @@ Main {
 
    relative_tolerance       = 1e-6
    absolute_tolerance       = 1e-6
-   arkode_order             = 2
+   max_order                = 2
    max_iter                 = 100
 // 0=use default
    max_order                = 2

@@ -1,11 +1,5 @@
 /*************************************************************************
- *
- * This file is part of the SAMRAI distribution.  For full copyright
- * information, see COPYRIGHT and LICENSE.
- *
- * Copyright:     (c) 1997-2021 Lawrence Livermore National Security, LLC
- * Description:   Wrapper class for ARKODE solver function calls and data
- *
+ * Inspired by SAMRAI class CVODESolver
  ************************************************************************/
 
 #ifndef included_ARKODESolver
@@ -78,11 +72,10 @@ using namespace SAMRAI;
  *
  * ARKODESolver Usage:
  *
- *
  *    -  In order to use the ARKODESolver, the user must provide a
  *           concrete subclass of ARKODEAbstractFunctions abstract
  *           base class which defines the evaluateRHSFunction(),
- *           CVSpgmrPrecondSet(), and CVSpgmrPrecondSolve() methods.
+ *           ARKSpgmrPrecondSet(), and ARKSpgmrPrecondSolve() methods.
  *
  *    -  Solving a system of ODEs using this ARKODE C++ interface
  *           requires four main stages.  First, a ARKODESolver
@@ -100,7 +93,6 @@ using namespace SAMRAI;
  *           must be specified by the user before calling the solve()
  *           method:
  *
- *
  *            - Either relative or absolute tolerance must
  *                  be set - setRelativeTolerance(relative_tolerance),
  *                  setAbsoluteTolerance(absolute_tolerance)
@@ -113,15 +105,8 @@ using namespace SAMRAI;
  *            - Initial condition vector -
  *                  setInitialConditionVector(ic_vector)
  *
- *
- *
  *    -  The following is a list of default values for integration
  *           parameters:
- *
- *
- *
- *           - @b Linear Multistep Method
- *                BDF
  *
  *           - @b Relative Tolerance
  *                0.0
@@ -131,12 +116,6 @@ using namespace SAMRAI;
  *
  *           - @b Vector Absolute Tolerance
  *                NULL
- *
- *           - @b Stepping Method
- *                NORMAL
- *
- *           - @b Maximum Order for Multistep Method
- *                12 for ADAMS, 5 for BDF
  *
  *           - @b Maximum Number of Internal Steps
  *                500
@@ -153,26 +132,17 @@ using namespace SAMRAI;
  *           - @b Minimum Absolute Value of Step Size
  *                0.0
  *
- *           - @b CVSpgmr Preconditioning Type
+ *           - @b ARKSpgmr Preconditioning Type
  *                NONE
  *
- *           - @b CVSpgmr Gram Schmidt Algorithm
+ *           - @b ARKSpgmr Gram Schmidt Algorithm
  *                MODIFIED_GS
  *
- *           - @b CVSpgmr Maximum Krylov Dimension
- *                MIN(num_equations, CVSPGMR_MAXL=5)
+ *           - @b ARKSpgmr Maximum Krylov Dimension
+ *                MIN(num_equations, ARKSPGMR_MAXL=5)
  *
- *           - @b CVSpgmr Tolerance Scale Factor
- *                CVSPGMR_DELT = 0.05.
- *
- *
- * ARKODE was developed in the Center for Applied Scientific Computing (CASC)
- * at Lawrence Livermore National Laboratory (LLNL).  Many of the comments
- * in this class were taken verbatim from ARKODE header files.  For more
- * information about ARKODE and a complete description of the operations
- * and data structures used by this class, see S.D. Cohen and A.C. Hindmarsh,
- * "ARKODE User Guide", UCRL-MA-118618, Lawrence Livermore National
- * Laboratory, 1994.
+ *           - @b ARKSpgmr Tolerance Scale Factor
+ *                ARKSPGMR_DELT = 0.05.
  *
  * @see ARKODEAbstractFunctions
  * @see SundialsAbstractVector
@@ -189,7 +159,6 @@ class ARKODESolver
     *
     * Notes:
     *
-    *    -
     *        The solution vector is not passed into the constructor.
     *        Before the solver can be used, the initialize() function must
     *        be called.
@@ -230,59 +199,9 @@ class ARKODESolver
     * a termination code defined by ARKODE.  The following is a table
     * of termination codes and a brief description of their meanings.
     *
-    * ARKODE Termination Codes:
-    *
-    *    - @b SUCCESS (=0)
-    *        CVode succeeded.
-    *
-    *    - @b ARKODE_NO_MEM (=-1)
-    *        The cvode_mem argument was NULL.
-    *
-    *    - @b ILL_INPUT (=-2)
-    *        One of the inputs to CVode is illegal. This
-    *        includes the situation when a component of the
-    *        error weight vectors becomes < 0 during
-    *        internal time-stepping. The ILL_INPUT flag
-    *        will also be returned if the linear solver
-    *        routine CV--- (called by the user after
-    *        calling CVodeMalloc) failed to set one of the
-    *        linear solver-related fields in cvode_mem or
-    *        if the linear solver's init routine failed. In
-    *        any case, the user should see the printed
-    *        error message for more details.
-    *
-    *    - @b TOO_MUCH_WORK (=-3)
-    *        The solver took maxstep internal steps but
-    *        could not reach t_f. The default value for
-    *        mxstep is MXSTEP_DEFAULT = 500.
-    *
-    *    - @b TOO_MUCH_ACC (=-4)
-    *        The solver could not satisfy the accuracy
-    *        demanded by the user for some internal step.
-    *
-    *    - @b ERR_FAILURE (=-5)
-    *        Error test failures occurred too many times
-    *        (= MXNEF = 7) during one internal time step or
-    *        occurred with |h| = hmin.
-    *
-    *    - @b CONV_FAILURE (=-6)
-    *        Convergence test failures occurred too many
-    *        times (= MXNCF = 10) during one internal time
-    *        step or occurred with |h| = hmin.
-    *
-    *    - @b SETUP_FAILURE (=-7)
-    *        The linear solver's setup routine failed in an
-    *                 unrecoverable manner.
-    *
-    *    - @b SOLVE_FAILURE (=-8)
-    *        The linear solver's solve routine failed in an
-    *                 unrecoverable manner.
-    *
-    * See cvode.h header file for more information about return values.
-    *
-    * If ARKODE or CVSpgmr requires re-initialization, it is
+    * If ARKODE or ARKSpgmr requires re-initialization, it is
     * automatically done before the solve.  This may be required if any
-    * of the ARKODE or CVSpgmr data parameters have changed since the
+    * of the ARKODE or ARKSpgmr data parameters have changed since the
     * last call to the solver.
     *
     * @pre d_user_t_f > d_t_0
@@ -344,32 +263,11 @@ class ARKODESolver
 
    /**
     * Return pointer to object that provides user-defined functions for
-    * ARKODE and CVSpgmr.
+    * ARKODE and ARKSpgmr.
     */
    ARKODEAbstractFunctions* getARKODEFunctions() const
    {
       return d_arkode_functions;
-   }
-
-   // Methods for setting ARKODE parameters.
-
-   /**
-    * Set linear multistep method.  The user can specify either
-    * ADAMS or BDF (backward differentiation formula) methods
-    * The BDF method is recommended  for stiff problems, and
-    * the ADAMS method is recommended for nonstiff problems.
-    *
-    * Note: the enumeration constants ADAMS and BDF are defined in cvode.h.
-    *
-    * @pre (linear_multistep_method == CV_ADAMS) ||
-    *      (linear_multistep_method == CV_BDF)
-    */
-   void setLinearMultistepMethod(int linear_multistep_method)
-   {
-      TBOX_ASSERT((linear_multistep_method == CV_ADAMS) ||
-                  (linear_multistep_method == CV_BDF));
-      d_linear_multistep_method = linear_multistep_method;
-      d_ARKODE_needs_initialization = true;
    }
 
    /**
@@ -440,8 +338,6 @@ class ARKODESolver
     *
     * Note: the enumeration constants NORMAL and ONE_STEP are
     * defined in cvode.h.
-    *
-    * @pre (stepping_method == CV_NORMAL) || (stepping_method == CV_ONE_STEP)
     */
    void setSteppingMethod(int stepping_method)
    {
@@ -483,20 +379,6 @@ class ARKODESolver
    {
       TBOX_ASSERT(ic_vector != 0);
       d_ic_vector = ic_vector;
-      d_ARKODE_needs_initialization = true;
-   }
-
-   /**
-    * Set maximum order for the linear multistep method.
-    * By default, this is set to 12 for ADAMS methods and 5 for BDF
-    * methods.
-    *
-    * @pre max_order >= 0
-    */
-   void setMaximumLinearMultistepMethodOrder(int max_order)
-   {
-      TBOX_ASSERT(max_order >= 0);
-      d_max_order = max_order;
       d_ARKODE_needs_initialization = true;
    }
 
@@ -581,20 +463,10 @@ class ARKODESolver
       d_ARKODE_needs_initialization = true;
    }
 
-   // void
-   // setImplicitExplicitMethod(
-   //   const int im_ex)
-   //{
-   //  TBOX_ASSERT((im_ex == 0) || (im_ex == 1));
-   //  d_im_ex = im_ex;
-   //  d_ARKODE_needs_initialization = true;
-   //}
-
-
-   // Methods for setting CVSpgmr parameters.
+   // Methods for setting ARKSpgmr parameters.
 
    /**
-    * Set the preconditioning type to be used by CVSpgmr.
+    * Set the preconditioning type to be used by ARKSpgmr.
     * This must be one of the four enumeration constants
     * NONE, LEFT, RIGHT, or BOTH defined in iterativ.h.
     * These correspond to no preconditioning, left preconditioning only,
@@ -617,7 +489,7 @@ class ARKODESolver
    }
 
    /**
-    * Set the Gram-Schmidt orthogonalization type to be used by CVSpgmr.
+    * Set the Gram-Schmidt orthogonalization type to be used by ARKSpgmr.
     * This must be one of the two enumeration constants MODIFIED_GS
     * or CLASSICAL_GS defined in iterativ.h. These correspond to
     * using modified Gram-Schmidt and classical Gram-Schmidt, respectively.
@@ -632,9 +504,9 @@ class ARKODESolver
    }
 
    /**
-    * Set the maximum Krylov dimension to be used by CVSpgmr.
-    * This is an optional input to the CVSPGMR solver. Pass 0 to
-    * use the default value MIN(num_equations, CVSPGMR_MAXL=5).
+    * Set the maximum Krylov dimension to be used by ARKSpgmr.
+    * This is an optional input to the ARKSPGMR solver. Pass 0 to
+    * use the default value MIN(num_equations, ARKSPGMR_MAXL=5).
     *
     * @pre max_krylov_dim >= 0
     */
@@ -648,39 +520,16 @@ class ARKODESolver
    /**
     * Set the factor by which the tolerance on the nonlinear
     * iteration is multiplied to get a tolerance on the linear iteration.
-    * This is an optional input to the CVSPGMR solver. Pass 0 to
-    * use the default value CVSPGMR_DELT = 0.05.
+    * This is an optional input to the ARKSPGMR solver. Pass 0 to
+    * use the default value ARKSPGMR_DELT = 0.05.
     *
     * @pre tol_scale_factor >= 0
     */
-   void setCVSpgmrToleranceScaleFactor(double tol_scale_factor)
+   void setARKSpgmrToleranceScaleFactor(double tol_scale_factor)
    {
       TBOX_ASSERT(tol_scale_factor >= 0);
       d_tol_scale_factor = tol_scale_factor;
       d_ARKODE_needs_initialization = true;
-   }
-
-   /**
-    * Enable use of a user -defined projection function. The uses_projectionfn
-    * argument indicates whether or not the user has defined a projection
-    * routines in their concrete subclass of the ARKODEAbstractFunctions class.
-    * Note this function must be called before initializeARKODE().
-    */
-   void setProjectionFunction(bool uses_projectionfn)
-   {
-      d_uses_projectionfn = uses_projectionfn;
-   }
-
-   /**
-    * Enable use of a different RHS function in Jacobian -vector products.
-    * The uses_jtimesrhsfn argument indicates whether or not the user has
-    * defined a projection routine in their concrete subclass of the
-    * ARKODEAbstractFunctions class. Note this function must be called before
-    * initializeARKODE().
-    */
-   void setJTimesRhsFunction(bool uses_jtimesrhsfn)
-   {
-      d_uses_jtimesrhsfn = uses_jtimesrhsfn;
    }
 
    /**
@@ -699,9 +548,6 @@ class ARKODESolver
     *
     * CVodeDky Return Codes:
     *
-    *
-    *
-    *
     *    - @b OKAY (=0)
     *        CVodeDky succeeded.
     *
@@ -713,15 +559,7 @@ class ARKODESolver
     *
     *    - @b DKY_NO_MEM (=-4)
     *
-    *
-    *
-    *
-    *
     * Important Notes:
-    *
-    *
-    *
-    *
     *    -
     *       t must lie in the interval [t_cur - h, t_cur]
     *       where t_cur is the current internal time reached
@@ -738,10 +576,6 @@ class ARKODESolver
     *    -
     *       it is only leagal to call this method after a
     *       successful return from the solve() method.
-    *
-    *
-    *
-    *
     *
     */
    int getDkyVector(double t, int k, solv::SundialsAbstractVector* dky) const
@@ -761,12 +595,12 @@ class ARKODESolver
    }
 
    /**
-    * Print ARKODE and CVSpgmr statistics.
+    * Print ARKODE and ARKSpgmr statistics.
     */
    void printStatistics(std::ostream& os) const
    {
       printARKODEStatistics(os);
-      printCVSpgmrStatistics(os);
+      printARKSpgmrStatistics(os);
    }
 
    /**
@@ -774,9 +608,6 @@ class ARKODESolver
     *
     * The abbreviations printed out refer to the following
     * quantities:
-    *
-    *
-    *
     *
     *    - @b lenrw
     *       size (in double words) of memory used for doubles
@@ -819,10 +650,6 @@ class ARKODESolver
     *
     *    - @b tolsf
     *       suggested tolerance scaling factor
-    *
-    *
-    *
-    *
     */
    void printARKODEStatistics(std::ostream& os) const;
 
@@ -956,7 +783,7 @@ class ARKODESolver
    }
 
    /**
-    * Return the size (in LLNL_REAL words) of memory used
+    * Return the size of memory used
     * for LLNL_REALS.
     *
     * Note: if the solver was not set to collect statistics,
@@ -1045,16 +872,13 @@ class ARKODESolver
       return r;
    }
 
-   // CVSpgmr optional return values.
+   // ARKSpgmr optional return values.
 
    /**
-    * Print CVSpgmr statistics to the stream.
+    * Print ARKSpgmr statistics to the stream.
     *
     * The abbreviations printed out refer to the following
     * quantities:
-    *
-    *
-    *
     *
     *    - @b spgmr_lrw
     *      size (in double words) of memory used for doubles
@@ -1072,13 +896,9 @@ class ARKODESolver
     *       number of preconditioner evaluations
     *
     *    - @b nps
-    *       number of calls to CVSpgmrPrecondSolve()
-    *
-    *
-    *
-    *
+    *       number of calls to ARKSpgmrPrecondSolve()
     */
-   void printCVSpgmrStatistics(std::ostream& os) const;
+   void printARKSpgmrStatistics(std::ostream& os) const;
 
    /**
     * Return the number of preconditioner evaluations.
@@ -1103,7 +923,7 @@ class ARKODESolver
    }
 
    /**
-    * Return the number of CVSpgmrPrecondSolve() calls.
+    * Return the number of ARKSpgmrPrecondSolve() calls.
     */
    int getNumberOfPrecondSolveCalls() const
    {
@@ -1127,7 +947,7 @@ class ARKODESolver
    /**
     * Return the size (in double words) of memory used for doubles.
     */
-   int getCVSpgmrMemoryUsageForDoubles() const
+   int getARKSpgmrMemoryUsageForDoubles() const
    {
       long int r1;
       long int r2;
@@ -1139,7 +959,7 @@ class ARKODESolver
    /**
     * Return the size (in integer words) of memory used for integers.
     */
-   int getCVSpgmrMemoryUsageForIntegers() const
+   int getARKSpgmrMemoryUsageForIntegers() const
    {
       long int r1;
       long int r2;
@@ -1199,54 +1019,32 @@ class ARKODESolver
    }
 
    /*
-    * Static member functions for linkage with CVSpgmr routines.
+    * Static member functions for linkage with ARKSpgmr routines.
     */
-   static int CVSpgmrPrecondSet(realtype t, N_Vector y, N_Vector fy,
-                                booleantype jok, booleantype* jcurPtr,
-                                realtype gamma, void* my_solver)
+   static int ARKSpgmrPrecondSet(realtype t, N_Vector y, N_Vector fy,
+                                 booleantype jok, booleantype* jcurPtr,
+                                 realtype gamma, void* my_solver)
    {
       int success =
           ((ARKODESolver*)my_solver)
               ->getARKODEFunctions()
-              ->CVSpgmrPrecondSet(t, SABSVEC_CAST(y), SABSVEC_CAST(fy), jok,
-                                  jcurPtr, gamma);
+              ->ARKSpgmrPrecondSet(t, SABSVEC_CAST(y), SABSVEC_CAST(fy), jok,
+                                   jcurPtr, gamma);
       return success;
    }
 
-   static int CVSpgmrPrecondSolve(realtype t, N_Vector y, N_Vector fy,
-                                  N_Vector r, N_Vector z, realtype gamma,
-                                  realtype delta, int lr, void* my_solver)
+   static int ARKSpgmrPrecondSolve(realtype t, N_Vector y, N_Vector fy,
+                                   N_Vector r, N_Vector z, realtype gamma,
+                                   realtype delta, int lr, void* my_solver)
    {
       int success =
           ((ARKODESolver*)my_solver)
               ->getARKODEFunctions()
-              ->CVSpgmrPrecondSolve(t, SABSVEC_CAST(y), SABSVEC_CAST(fy),
-                                    SABSVEC_CAST(r), SABSVEC_CAST(z), gamma,
-                                    delta, lr);
+              ->ARKSpgmrPrecondSolve(t, SABSVEC_CAST(y), SABSVEC_CAST(fy),
+                                     SABSVEC_CAST(r), SABSVEC_CAST(z), gamma,
+                                     delta, lr);
       return success;
    }
-
-   static int ARKODEProjEval(realtype t, N_Vector y, N_Vector corr,
-                             realtype epsProj, N_Vector err, void* my_solver)
-   {
-      int success =
-          ((ARKODESolver*)my_solver)
-              ->getARKODEFunctions()
-              ->applyProjection(t, SABSVEC_CAST(y), SABSVEC_CAST(corr), epsProj,
-                                SABSVEC_CAST(err));
-      return success;
-   }
-
-   static int ARKODEJTimesRHSFuncEval(realtype t, N_Vector y, N_Vector y_dot,
-                                      void* my_solver)
-   {
-      int success = ((ARKODESolver*)my_solver)
-                        ->getARKODEFunctions()
-                        ->evaluateJTimesRHSFunction(t, SABSVEC_CAST(y),
-                                                    SABSVEC_CAST(y_dot));
-      return success;
-   }
-
 
    /*
     * Open ARKODE log file, allocate main memory for ARKODE and initialize
@@ -1254,7 +1052,7 @@ class ARKODESolver
     * of solver parameter data members.  If any solver parameters have
     * changed since last initialization, this function will be automatically
     * invoked at next call to the solve() method.  Also, if NEWTON iteration
-    * is specified, this method also initializes the CVSpgmr linear solver.
+    * is specified, this method also initializes the ARKSpgmr linear solver.
     *
     * @pre d_solution_vector != 0
     */
@@ -1279,7 +1077,7 @@ class ARKODESolver
 
    /*
     * Pointer to object which provides user-supplied functions to ARKODE
-    * and CVSpgmr.
+    * and ARKSpgmr.
     */
    ARKODEAbstractFunctions* d_arkode_functions;
 
@@ -1324,14 +1122,13 @@ class ARKODESolver
    int d_arkode_order;
    int d_max_iter;
    int d_im_ex;
-   int d_max_order;
    int d_max_num_internal_steps;
    int d_max_num_warnings;
    double d_init_step_size;
    double d_max_step_size;
    double d_min_step_size;
    /*
-    * CVSpgmr parameters
+    * ARKSpgmr parameters
     */
    int d_precondition_type;
    int d_gram_schmidt_type;
@@ -1350,20 +1147,6 @@ class ARKODESolver
     * ARKODEAbstractFunctions.
     */
    bool d_uses_preconditioner;
-
-   /*
-    * Boolean flag indicating whether a user-supplied projection
-    * routine is provided in the concrete subclass of
-    * ARKODEAbstractFunctions.
-    */
-   bool d_uses_projectionfn;
-
-   /*
-    * Boolean flag indicating whether a different RHS
-    * routine for Jacobian -vector products is provided
-    * in the concrete subclass of ARKODEAbstractFunctions.
-    */
-   bool d_uses_jtimesrhsfn;
 };
 
 #endif

@@ -109,7 +109,6 @@ int main(int argc, char* argv[])
           main_db->getBoolWithDefault("evolve_temperature", true);
 
       // ARKODE specific options
-      int arkode_order = main_db->getIntegerWithDefault("arkode_order", -1);
       int im_ex = main_db->getIntegerWithDefault("im_ex", -1);
       int max_iter = main_db->getIntegerWithDefault("max_iter", -1);
 
@@ -249,9 +248,8 @@ int main(int argc, char* argv[])
          arkode_solver->setAbsoluteTolerance(absolute_tolerance);
          arkode_solver->setMaximumNumberOfInternalSteps(max_steps);
          arkode_solver->setSteppingMethod(ARK_ONE_STEP);
-         arkode_solver->setMethodOrder(arkode_order);
+         arkode_solver->setMethodOrder(max_order);
          arkode_solver->setMaximumNumberOfIterations(max_iter);
-         arkode_solver->setMaximumLinearMultistepMethodOrder(max_order);
          if (uses_preconditioning) {
             arkode_solver->setPreconditioningType(PREC_LEFT);
          }

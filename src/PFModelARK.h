@@ -135,15 +135,15 @@ class PFModelARK : public mesh::StandardTagAndInitStrategy,
       return evaluateRHSFunction(t, y, y_dot);
    }
 
-   int CVSpgmrPrecondSet(double t, solv::SundialsAbstractVector* y,
-                         solv::SundialsAbstractVector* fy, int jok,
-                         int* jcurPtr, double gamma);
+   int ARKSpgmrPrecondSet(double t, solv::SundialsAbstractVector* y,
+                          solv::SundialsAbstractVector* fy, int jok,
+                          int* jcurPtr, double gamma);
 
-   int CVSpgmrPrecondSolve(double t, solv::SundialsAbstractVector* y,
-                           solv::SundialsAbstractVector* fy,
-                           solv::SundialsAbstractVector* r,
-                           solv::SundialsAbstractVector* z, double gamma,
-                           double delta, int lr);
+   int ARKSpgmrPrecondSolve(double t, solv::SundialsAbstractVector* y,
+                            solv::SundialsAbstractVector* fy,
+                            solv::SundialsAbstractVector* r,
+                            solv::SundialsAbstractVector* z, double gamma,
+                            double delta, int lr);
 
    int applyProjection(double time, solv::SundialsAbstractVector* y,
                        solv::SundialsAbstractVector* corr, double epsProj,
