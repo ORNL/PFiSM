@@ -11,7 +11,6 @@ Main {
    max_order                = 2
    max_iter                 = 100
 // 0=use default
-   max_order                = 2
    // im_ex = 0 is explicit
    // im_ex = 1 is implicit
    // im_ex = 2 IMEX

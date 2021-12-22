@@ -156,6 +156,19 @@ class PFModel : public mesh::StandardTagAndInitStrategy,
    ///
    void evaluateRHSPhase(std::shared_ptr<hier::PatchHierarchy> hierarchy,
                          const int y_dot_phase_id);
+   void evaluateRHSPhaseWithVelocity(
+       std::shared_ptr<hier::PatchHierarchy> hierarchy,
+       const int y_dot_phase_id, const double frame_velocity);
+   void evaluateRHSTemperatureWithVelocity(
+       std::shared_ptr<hier::PatchHierarchy> hierarchy,
+       const int y_dot_temperature_id, const int y_dot_phase_id,
+       const double frame_velocity);
+
+   void evaluateRHSmovingFrame(std::shared_ptr<hier::PatchHierarchy> hierarchy,
+                               const int y_dot_temperature_id,
+                               const int y_dot_phase_id,
+                               const double frame_velocity);
+
    void evaluateRHSTemperature(std::shared_ptr<hier::PatchHierarchy> hierarchy,
                                const int y_dot_temperature_id,
                                const int y_dot_phase_id);

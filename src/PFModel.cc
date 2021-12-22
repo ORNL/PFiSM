@@ -324,6 +324,56 @@ void PFModel::evaluateRHSPhase(std::shared_ptr<hier::PatchHierarchy> hierarchy,
    }     // loop over levels
 }
 
+void PFModel::evaluateRHSPhaseWithVelocity(
+    std::shared_ptr<hier::PatchHierarchy> hierarchy, const int y_dot_phase_id,
+    const double frame_velocity)
+{
+   // Compute rhs for phase first, since it is used in rhs for temperature
+   for (int ln = hierarchy->getFinestLevelNumber(); ln >= 0; --ln) {
+      std::shared_ptr<hier::PatchLevel> level(hierarchy->getPatchLevel(ln));
+
+      for (hier::PatchLevel::iterator ip(level->begin()); ip != level->end();
+           ++ip) {
+         const std::shared_ptr<hier::Patch>& patch = *ip;
+
+         std::shared_ptr<pdat::CellData<double> > phase(
+             SAMRAI_SHARED_PTR_CAST<pdat::CellData<double>, hier::PatchData>(
+                 patch->getPatchData(d_phase_scr_id)));
+         std::shared_ptr<pdat::CellData<double> > temperature(
+             SAMRAI_SHARED_PTR_CAST<pdat::CellData<double>, hier::PatchData>(
+                 patch->getPatchData(d_temperature_scr_id)));
+         std::shared_ptr<pdat::CellData<double> > rhs(
+             SAMRAI_SHARED_PTR_CAST<pdat::CellData<double>, hier::PatchData>(
+                 patch->getPatchData(y_dot_phase_id)));
+         assert(phase);
+         assert(temperature);
+         assert(rhs);
+
+         const hier::Index ifirst(patch->getBox().lower());
+         const hier::Index ilast(patch->getBox().upper());
+
+         const std::shared_ptr<geom::CartesianPatchGeometry> patch_geom(
+             SAMRAI_SHARED_PTR_CAST<geom::CartesianPatchGeometry,
+                                    hier::PatchGeometry>(
+                 patch->getPatchGeometry()));
+         assert(patch_geom);
+         const double* dx = patch_geom->getDx();
+
+         SAMRAI_F77_FUNC(comprhsphase3d, COMPRHSPHASE3D)
+         (ifirst(0), ilast(0), ifirst(1), ilast(1), ifirst(2), ilast(2),
+          phase->getPointer(), phase->getGhostCellWidth()[0],
+          temperature->getPointer(), temperature->getGhostCellWidth()[0], dx,
+          d_mobility, d_well_height, d_epsilon, d_latent_heat, d_Tmelting,
+          rhs->getPointer());
+         SAMRAI_F77_FUNC(addvel2rhs3d, ADDVEL2RHS3D)
+         (ifirst(0), ilast(0), ifirst(1), ilast(1), ifirst(2), ilast(2), dx,
+          phase->getPointer(), phase->getGhostCellWidth()[0], frame_velocity,
+          rhs->getPointer());
+
+      }  // loop over patches
+   }     // loop over levels
+}
+
 void PFModel::evaluateRHSTemperature(
     std::shared_ptr<hier::PatchHierarchy> hierarchy,
     const int y_dot_temperature_id, const int y_dot_phase_id)
@@ -364,6 +414,135 @@ void PFModel::evaluateRHSTemperature(
          (ifirst(0), ilast(0), ifirst(1), ilast(1), ifirst(2), ilast(2), dx,
           y->getPointer(), y->getGhostCellWidth()[0], d_temperature_diffusion,
           phi_dot->getPointer(), d_latent_heat, d_cp, rhs->getPointer());
+
+      }  // loop over patches
+   }     // loop over levels
+}
+
+void PFModel::evaluateRHSTemperatureWithVelocity(
+    std::shared_ptr<hier::PatchHierarchy> hierarchy,
+    const int y_dot_temperature_id, const int y_dot_phase_id,
+    const double frame_velocity)
+{
+   // now compute rhs for temperature
+   for (int ln = hierarchy->getFinestLevelNumber(); ln >= 0; --ln) {
+      std::shared_ptr<hier::PatchLevel> level(hierarchy->getPatchLevel(ln));
+
+      for (hier::PatchLevel::iterator ip(level->begin()); ip != level->end();
+           ++ip) {
+         const std::shared_ptr<hier::Patch>& patch = *ip;
+
+         std::shared_ptr<pdat::CellData<double> > y(
+             SAMRAI_SHARED_PTR_CAST<pdat::CellData<double>, hier::PatchData>(
+                 patch->getPatchData(d_temperature_scr_id)));
+         std::shared_ptr<pdat::CellData<double> > rhs(
+             SAMRAI_SHARED_PTR_CAST<pdat::CellData<double>, hier::PatchData>(
+                 patch->getPatchData(y_dot_temperature_id)));
+         std::shared_ptr<pdat::CellData<double> > phi_dot(
+             SAMRAI_SHARED_PTR_CAST<pdat::CellData<double>, hier::PatchData>(
+                 patch->getPatchData(y_dot_phase_id)));
+
+         assert(y);
+         assert(rhs);
+         assert(phi_dot);
+
+         const hier::Index ifirst(patch->getBox().lower());
+         const hier::Index ilast(patch->getBox().upper());
+
+         const std::shared_ptr<geom::CartesianPatchGeometry> patch_geom(
+             SAMRAI_SHARED_PTR_CAST<geom::CartesianPatchGeometry,
+                                    hier::PatchGeometry>(
+                 patch->getPatchGeometry()));
+         assert(patch_geom);
+         const double* dx = patch_geom->getDx();
+
+         SAMRAI_F77_FUNC(comprhs3d, COMPRHS3D)
+         (ifirst(0), ilast(0), ifirst(1), ilast(1), ifirst(2), ilast(2), dx,
+          y->getPointer(), y->getGhostCellWidth()[0], d_temperature_diffusion,
+          phi_dot->getPointer(), d_latent_heat, d_cp, rhs->getPointer());
+         SAMRAI_F77_FUNC(addvel2rhs3d, ADDVEL2RHS3D)
+         (ifirst(0), ilast(0), ifirst(1), ilast(1), ifirst(2), ilast(2), dx,
+          y->getPointer(), y->getGhostCellWidth()[0], frame_velocity,
+          rhs->getPointer());
+
+      }  // loop over patches
+   }     // loop over levels
+}
+
+void PFModel::evaluateRHSmovingFrame(
+    std::shared_ptr<hier::PatchHierarchy> hierarchy,
+    const int y_dot_temperature_id, const int y_dot_phase_id,
+    const double frame_velocity)
+{
+   for (int ln = hierarchy->getFinestLevelNumber(); ln >= 0; --ln) {
+      std::shared_ptr<hier::PatchLevel> level(hierarchy->getPatchLevel(ln));
+
+      for (hier::PatchLevel::iterator ip(level->begin()); ip != level->end();
+           ++ip) {
+         const std::shared_ptr<hier::Patch>& patch = *ip;
+
+         std::shared_ptr<pdat::CellData<double> > y(
+             SAMRAI_SHARED_PTR_CAST<pdat::CellData<double>, hier::PatchData>(
+                 patch->getPatchData(d_temperature_scr_id)));
+         std::shared_ptr<pdat::CellData<double> > rhs(
+             SAMRAI_SHARED_PTR_CAST<pdat::CellData<double>, hier::PatchData>(
+                 patch->getPatchData(y_dot_temperature_id)));
+
+         assert(y);
+         assert(rhs);
+
+         const hier::Index ifirst(patch->getBox().lower());
+         const hier::Index ilast(patch->getBox().upper());
+
+         const std::shared_ptr<geom::CartesianPatchGeometry> patch_geom(
+             SAMRAI_SHARED_PTR_CAST<geom::CartesianPatchGeometry,
+                                    hier::PatchGeometry>(
+                 patch->getPatchGeometry()));
+         assert(patch_geom);
+         const double* dx = patch_geom->getDx();
+         rhs->fillAll(0.);
+
+         SAMRAI_F77_FUNC(addvel2rhs3d, ADDVEL2RHS3D)
+         (ifirst(0), ilast(0), ifirst(1), ilast(1), ifirst(2), ilast(2), dx,
+          y->getPointer(), y->getGhostCellWidth()[0], frame_velocity,
+          rhs->getPointer());
+
+      }  // loop over patches
+   }     // loop over levels
+
+   for (int ln = hierarchy->getFinestLevelNumber(); ln >= 0; --ln) {
+      std::shared_ptr<hier::PatchLevel> level(hierarchy->getPatchLevel(ln));
+
+      for (hier::PatchLevel::iterator ip(level->begin()); ip != level->end();
+           ++ip) {
+         const std::shared_ptr<hier::Patch>& patch = *ip;
+
+         std::shared_ptr<pdat::CellData<double> > y(
+             SAMRAI_SHARED_PTR_CAST<pdat::CellData<double>, hier::PatchData>(
+                 patch->getPatchData(d_phase_scr_id)));
+         std::shared_ptr<pdat::CellData<double> > rhs(
+             SAMRAI_SHARED_PTR_CAST<pdat::CellData<double>, hier::PatchData>(
+                 patch->getPatchData(y_dot_phase_id)));
+
+         assert(y);
+         assert(rhs);
+
+         const hier::Index ifirst(patch->getBox().lower());
+         const hier::Index ilast(patch->getBox().upper());
+
+         const std::shared_ptr<geom::CartesianPatchGeometry> patch_geom(
+             SAMRAI_SHARED_PTR_CAST<geom::CartesianPatchGeometry,
+                                    hier::PatchGeometry>(
+                 patch->getPatchGeometry()));
+         assert(patch_geom);
+         const double* dx = patch_geom->getDx();
+
+         rhs->fillAll(0.);
+
+         SAMRAI_F77_FUNC(addvel2rhs3d, ADDVEL2RHS3D)
+         (ifirst(0), ilast(0), ifirst(1), ilast(1), ifirst(2), ilast(2), dx,
+          y->getPointer(), y->getGhostCellWidth()[0], frame_velocity,
+          rhs->getPointer());
 
       }  // loop over patches
    }     // loop over levels
