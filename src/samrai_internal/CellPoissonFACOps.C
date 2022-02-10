@@ -659,17 +659,13 @@ CellPoissonFACOps::getFromInput(
          input_db->getStringWithDefault("coarse_solver_choice",
             d_coarse_solver_choice);
       if (!(d_coarse_solver_choice == "hypre" ||
-            d_coarse_solver_choice == "redblack" ||
-            d_coarse_solver_choice == "jacobi")) {
+            d_coarse_solver_choice == "redblack")) {
          INPUT_VALUE_ERROR("coarse_solver_choice");
       }
 
       d_coarse_solver_tolerance =
          input_db->getDoubleWithDefault("coarse_solver_tolerance",
             d_coarse_solver_tolerance);
-      if (!(d_coarse_solver_tolerance > 0)) {
-         INPUT_RANGE_ERROR("coarse_solver_tolerance");
-      }
 
       d_coarse_solver_max_iterations =
          input_db->getIntegerWithDefault("coarse_solver_max_iterations",
@@ -1276,7 +1272,9 @@ CellPoissonFACOps::smoothError(
 
    t_smooth_error->start();
 
+#ifndef NDEBUG
    checkInputPatchDataIndices();
+#endif
    smoothErrorByRedBlack(data,
       residual,
       ln,
@@ -1301,9 +1299,6 @@ CellPoissonFACOps::smoothErrorByRedBlack(
    int num_sweeps,
    double residual_tolerance)
 {
-
-   checkInputPatchDataIndices();
-
 #ifdef DEBUG_CHECK_ASSERTIONS
    if (data.getPatchHierarchy() != d_hierarchy
        || residual.getPatchHierarchy() != d_hierarchy) {
@@ -1643,18 +1638,12 @@ CellPoissonFACOps::solveCoarsestLevel(
 {
    t_solve_coarsest->start();
 
+#ifndef NDEBUG
    checkInputPatchDataIndices();
+#endif
 
    int return_value = 0;
-
-   if (d_coarse_solver_choice == "jacobi") {
-      d_residual_tolerance_during_smoothing = d_coarse_solver_tolerance;
-      smoothError(data,
-         residual,
-         coarsest_ln,
-         d_coarse_solver_max_iterations);
-      d_residual_tolerance_during_smoothing = -1.0;
-   } else if (d_coarse_solver_choice == "redblack") {
+   if (d_coarse_solver_choice == "redblack") {
       d_residual_tolerance_during_smoothing = d_coarse_solver_tolerance;
       smoothError(data,
          residual,
@@ -1694,7 +1683,6 @@ CellPoissonFACOps::solveCoarsestLevel_HYPRE(
 {
    NULL_USE(coarsest_ln);
 
-   checkInputPatchDataIndices();
    d_hypre_solver->setStoppingCriteria(d_coarse_solver_max_iterations,
       d_coarse_solver_tolerance);
    const int solver_ret =
@@ -1732,7 +1720,6 @@ CellPoissonFACOps::computeCompositeResidualOnLevel(
 {
    t_compute_composite_residual->start();
 
-   checkInputPatchDataIndices();
 #ifdef DEBUG_CHECK_ASSERTIONS
    if (residual.getPatchHierarchy() != d_hierarchy
        || solution.getPatchHierarchy() != d_hierarchy
@@ -2085,7 +2072,6 @@ CellPoissonFACOps::checkInputPatchDataIndices() const
 
       TBOX_ASSERT(flux_var);
    }
-
 }
 
 /*
