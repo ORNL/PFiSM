@@ -12,16 +12,16 @@ Main {
 // 0=use default
    max_order                = 2
    uses_preconditioning     = TRUE
-   visit_output             = TRUE
+   //visit_output             = TRUE
 }
 
 Visit {
-   interval = 1.e-4
+   interval = 1.
    interval_type = "time"
 }
 
 TimerManager {
-    timer_list = "PFiSM::*::*"
+    timer_list = "PFiSM::*::*", "PFiSM::*"
     print_threshold = 0.0
 }
 
@@ -62,12 +62,14 @@ PhaseFACsolver{
    }
 
    fac_solver{
-      //enable_logging = TRUE
+      // enable_logging = TRUE
    }
 
    fac_ops{
       //enable_logging = TRUE
-      coarse_solver_tolerance      = 1.e-2
+      coarse_solver_tolerance      = -1.
+      coarse_solver_choice         = "redblack"
+      coarse_solver_max_iterations = 4
    }
 
    hypre_solver {
