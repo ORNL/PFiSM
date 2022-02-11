@@ -4,10 +4,10 @@ Main {
    init_time                = 0.0
    init_cycle               = 0
    print_interval           = 1.e-4
-   max_steps                = 2000
+   max_steps                = 1850
    solution_logging         = FALSE
 
-   relative_tolerance       = 1e-6
+   relative_tolerance       = 1e-5
    absolute_tolerance       = 1e-5
 // 0=use default
    max_order                = 2
