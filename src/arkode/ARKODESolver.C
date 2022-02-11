@@ -51,7 +51,7 @@ ARKODESolver::ARKODESolver(const std::string& object_name,
    setSteppingMethod(ARK_NORMAL);
 
 
-   d_max_num_internal_steps = -1;
+   d_nls_max_iter = -1;
    d_max_num_warnings = -1;
    d_init_step_size = -1;
    d_max_step_size = -1;
@@ -210,8 +210,8 @@ void ARKODESolver::initializeARKODE()
          ARKODE_ERROR(ierr);
       }
 
-      if (!(d_max_num_internal_steps < 0)) {
-         ierr = ARKStepSetMaxNumSteps(d_arkode_mem, d_max_num_internal_steps);
+      if (d_im_ex != 0 && !(d_nls_max_iter < 0)) {
+         ierr = ARKStepSetMaxNonlinIters(d_arkode_mem, d_nls_max_iter);
          ARKODE_ERROR(ierr);
       }
 
@@ -250,25 +250,17 @@ void ARKODESolver::printARKODEStatistics(std::ostream& os) const
 
    os << "\nARKODESolver: ARKODE statistics... " << std::endl;
 
-   sprintf(buf, "lenrw           = %5d     leniw            = %5d\n",
-           getARKODEMemoryUsageForDoubles(), getARKODEMemoryUsageForIntegers());
-   os << buf;
-   sprintf(buf, "nst             = %5d     nfe              = %5d\n",
-           getNumberOfInternalStepsTaken(), getNumberOfRHSFunctionExCalls());
-   os << buf;
    sprintf(buf, "nfi             = %5d     nfe              = %5d\n",
            getNumberOfRHSFunctionImpCalls(), getNumberOfRHSFunctionExCalls());
    os << buf;
-   sprintf(buf, "nge             = %5d     nsetups          = %5d\n",
-           getNumberOfGEvals(), getNumberOfLinearSolverSetupCalls());
+   sprintf(buf, "nsetups         = %5d\n", getNumberOfLinearSolverSetupCalls());
    os << buf;
-   sprintf(buf, "netf            = %5d     ncfn             = %5d\n",
-           getNumberOfLocalErrorTestFailures(), getNumberOfConstrFails());
+   sprintf(buf, "netf            = %5d\n", getNumberOfLocalErrorTestFailures());
    os << buf;
-   sprintf(buf, "ns              = %5d     nsa             = %5d\n",
+   sprintf(buf, "ns              = %5d     nsa              = %5d\n",
            getNumberOfSteps(), getNumberOfStepAttempts());
    os << buf;
-   sprintf(buf, "\nhu              = %e      hcur             = %e\n",
+   sprintf(buf, "hu              = %e      hcur             = %e\n",
            getStepSizeForLastInternalStep(), getStepSizeForNextInternalStep());
    os << buf;
    sprintf(buf, "tcur            = %e      \n",
@@ -284,22 +276,17 @@ void ARKODESolver::printARKSpgmrStatistics(std::ostream& os) const
 {
    os << "ARKODESolver: ARKSpgmr statistics... " << std::endl;
 
-   os << "spgmr_lrw       = "
-      << tbox::Utilities::intToString(getARKSpgmrMemoryUsageForDoubles(), 5)
-      << "     spgmr_liw        = "
-      << tbox::Utilities::intToString(getARKSpgmrMemoryUsageForIntegers(), 5)
+   os << "nnli            = " << std::to_string(getNumberOfNonlinIters())
       << std::endl;
-
-   os << "nli             = "
-      << tbox::Utilities::intToString(getNumberOfLinearIterations(), 5)
-      << "     ncfl             = "
-      << tbox::Utilities::intToString(getNumberOfLinearConvergenceFailures(), 5)
+   os << "nnlf            = " << std::to_string(getNumberOfNonlinConvFails())
       << std::endl;
-
+   os << "nli             = " << std::to_string(getNumberOfLinearIterations())
+      << std::endl;
+   os << "nlf             = "
+      << std::to_string(getNumberOfLinearConvergenceFailures()) << std::endl;
    os << "npe             = "
-      << tbox::Utilities::intToString(getNumberOfPreconditionerEvaluations(), 5)
-      << "     nps              = "
-      << tbox::Utilities::intToString(getNumberOfPrecondSolveCalls(), 5)
+      << std::to_string(getNumberOfPreconditionerEvaluations()) << std::endl;
+   os << "nps             = " << std::to_string(getNumberOfPrecondSolveCalls())
       << std::endl;
 }
 
@@ -344,7 +331,7 @@ void ARKODESolver::printClassData(std::ostream& os) const
 
    os << "Optional ARKODE inputs (see ARKODE docs for details):" << std::endl;
 
-   os << "maximum number of internal steps = " << d_max_num_internal_steps
+   os << "maximum number of non linear iterations = " << d_nls_max_iter
       << std::endl;
    os << "maximum number of nil internal step warnings = " << d_max_num_warnings
       << std::endl;

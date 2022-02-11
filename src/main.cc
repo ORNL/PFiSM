@@ -93,6 +93,7 @@ int main(int argc, char* argv[])
 
       int max_order = main_db->getInteger("max_order");
       int max_steps = main_db->getInteger("max_steps");
+      int max_nls = main_db->getIntegerWithDefault("max_nls", 0);
       double init_time = main_db->getDouble("init_time");
       double target_time = main_db->getDoubleWithDefault("target_time", 1.e6);
       int init_cycle = main_db->getInteger("init_cycle");
@@ -232,9 +233,6 @@ int main(int argc, char* argv[])
 
       pf_model->setInitialConditions();
 
-      std::vector<double> time(max_steps);
-      std::vector<double> maxnorm(max_steps);
-
       double final_time = init_time;
       double print_time = 0.;
 
@@ -246,7 +244,7 @@ int main(int argc, char* argv[])
 
          arkode_solver->setRelativeTolerance(relative_tolerance);
          arkode_solver->setAbsoluteTolerance(absolute_tolerance);
-         arkode_solver->setMaximumNumberOfInternalSteps(max_steps);
+         arkode_solver->setMaximumNumberOfNonlinIters(max_nls);
          arkode_solver->setSteppingMethod(ARK_ONE_STEP);
          arkode_solver->setMethodOrder(max_order);
          if (uses_preconditioning) {
@@ -284,13 +282,6 @@ int main(int argc, char* argv[])
             std::shared_ptr<hier::PatchHierarchy> result_hierarchy(
                 y_result->getPatchHierarchy());
 
-            if (solution_logging) {
-               tbox::plog << "ARKODE stastistics:" << std::endl;
-               arkode_solver->printStatistics(tbox::pout);
-               time[interval - 1] = actual_time;
-               maxnorm[interval - 1] = y_result->maxNorm();
-            }
-
             if (actual_time > print_time && visit_flag) {
                visit_data_writer->writePlotData(result_hierarchy, interval,
                                                 actual_time);
@@ -301,7 +292,12 @@ int main(int argc, char* argv[])
             tbox::pout << "Solid fraction: " << sf << std::endl;
 
             if (actual_time > target_time) break;
-         }    // end of timestep loop
+         }  // end of timestep loop
+
+         if (solution_logging) {
+            tbox::plog << "ARKODE stastistics:" << std::endl;
+            arkode_solver->printStatistics(tbox::pout);
+         }
       } else  // CVODE
       {
          // Setup CVODESolver object.
@@ -351,9 +347,6 @@ int main(int argc, char* argv[])
                 y_result->getPatchHierarchy());
 
             if (solution_logging) {
-               time[interval - 1] = actual_time;
-               maxnorm[interval - 1] = y_result->maxNorm();
-
                tbox::plog << "CVODE stastistics:" << std::endl;
                cvode_solver->printStatistics(tbox::pout);
             }
@@ -376,18 +369,6 @@ int main(int argc, char* argv[])
 
       // Write summary information
       pf_model->printCounters(final_time);
-      if (solution_logging) {
-         tbox::pout << "\n\nTimestep Summary of solution vector y()\n"
-                    << "  time                   \t"
-                    << "  Max Norm  \n";
-
-         for (int interval = 0; interval < max_steps; ++interval) {
-            tbox::pout.precision(18);
-            tbox::pout << "  " << time[interval] << "  \t";
-            tbox::pout.precision(6);
-            tbox::pout << "  " << maxnorm[interval] << std::endl;
-         }
-      }
 
       tbox::TimerManager::getManager()->print(tbox::pout);
 

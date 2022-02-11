@@ -383,17 +383,10 @@ class ARKODESolver
       d_ARKODE_needs_initialization = true;
    }
 
-   /**
-    * Set maximum number of internal steps to be taken by
-    * the solver in its attempt to reach t_f.
-    * By default, this is set to 500.
-    *
-    * @pre max_num_internal_steps >= 0
-    */
-   void setMaximumNumberOfInternalSteps(int max_num_internal_steps)
+   void setMaximumNumberOfNonlinIters(int nls_max_iter)
    {
-      TBOX_ASSERT(max_num_internal_steps >= 0);
-      d_max_num_internal_steps = max_num_internal_steps;
+      TBOX_ASSERT(nls_max_iter >= 0);
+      d_nls_max_iter = nls_max_iter;
       d_ARKODE_needs_initialization = true;
    }
 
@@ -594,7 +587,7 @@ class ARKODESolver
    void printStatistics(std::ostream& os) const
    {
       printARKODEStatistics(os);
-      printARKSpgmrStatistics(os);
+      if (d_im_ex > 0) printARKSpgmrStatistics(os);
    }
 
    /**
@@ -650,13 +643,13 @@ class ARKODESolver
    // ARKODE optional return values.
 
    /**
-    * Return the cumulative number of internal steps taken by
+    * Return the cumulative number of stability-limited steps taken by
     * the solver.
     *
     * Note: if the solver was not set to collect statistics,
     * a value of -1 is returned.
     */
-   int getNumberOfInternalStepsTaken() const
+   int getNumberOfExpStepsTaken() const
    {
       long int r;
       int ierr = ARKStepGetNumExpSteps(d_arkode_mem, &r);
@@ -709,10 +702,10 @@ class ARKODESolver
     * Note: if the solver was not set to collect statistics,
     * a value of -1 is returned.
     */
-   int getNumberOfGEvals() const
+   int getNumberOfNonlinIters() const
    {
       long int r;
-      int ierr = ARKStepGetNumGEvals(d_arkode_mem, &r);
+      int ierr = ARKStepGetNumNonlinSolvIters(d_arkode_mem, &r);
       ARKODE_ERROR(ierr);
       return static_cast<int>(r);
    }
@@ -724,10 +717,10 @@ class ARKODESolver
     * Note: if the solver was not set to collect statistics,
     * a value of -1 is returned.
     */
-   int getNumberOfConstrFails() const
+   int getNumberOfNonlinConvFails() const
    {
       long int r;
-      int ierr = ARKStepGetNumConstrFails(d_arkode_mem, &r);
+      int ierr = ARKStepGetNumNonlinSolvConvFails(d_arkode_mem, &r);
       ARKODE_ERROR(ierr);
       return static_cast<int>(r);
    }
@@ -762,7 +755,7 @@ class ARKODESolver
    }
 
    /**
-    * Return the order of the linear multistep method to be used during
+    * Returns the cumulative number of steps attempted by the solver
     * the next internal step.
     *
     * Note: if the solver was not set to collect statistics,
@@ -774,38 +767,6 @@ class ARKODESolver
       int ierr = ARKStepGetNumStepAttempts(d_arkode_mem, &r);
       ARKODE_ERROR(ierr);
       return static_cast<int>(r);
-   }
-
-   /**
-    * Return the size of memory used
-    * for LLNL_REALS.
-    *
-    * Note: if the solver was not set to collect statistics,
-    * a value of -1 is returned.
-    */
-   int getARKODEMemoryUsageForDoubles() const
-   {
-      long int r1;
-      long int r2;
-      int ierr = ARKStepGetWorkSpace(d_arkode_mem, &r1, &r2);
-      ARKODE_ERROR(ierr);
-      return static_cast<int>(r1);
-   }
-
-   /**
-    * Return the size (in integer words) of memory used
-    * for integers.
-    *
-    * Note: if the solver was not set to collect statistics,
-    * a value of -1 is returned.
-    */
-   int getARKODEMemoryUsageForIntegers() const
-   {
-      long int r1;
-      long int r2;
-      int ierr = ARKStepGetWorkSpace(d_arkode_mem, &r1, &r2);
-      ARKODE_ERROR(ierr);
-      return static_cast<int>(r2);
    }
 
    /**
@@ -936,30 +897,6 @@ class ARKODESolver
       int ierr = ARKStepGetNumLinConvFails(d_arkode_mem, &r);
       ARKODE_ERROR(ierr);
       return static_cast<int>(r);
-   }
-
-   /**
-    * Return the size (in double words) of memory used for doubles.
-    */
-   int getARKSpgmrMemoryUsageForDoubles() const
-   {
-      long int r1;
-      long int r2;
-      int ierr = ARKStepGetWorkSpace(d_arkode_mem, &r1, &r2);
-      ARKODE_ERROR(ierr);
-      return static_cast<int>(r1);
-   }
-
-   /**
-    * Return the size (in integer words) of memory used for integers.
-    */
-   int getARKSpgmrMemoryUsageForIntegers() const
-   {
-      long int r1;
-      long int r2;
-      int ierr = ARKStepGetWorkSpace(d_arkode_mem, &r1, &r2);
-      ARKODE_ERROR(ierr);
-      return static_cast<int>(r2);
    }
 
    /**
@@ -1109,7 +1046,7 @@ class ARKODESolver
     */
    int d_arkode_order;
    int d_im_ex;
-   int d_max_num_internal_steps;
+   int d_nls_max_iter;
    int d_max_num_warnings;
    double d_init_step_size;
    double d_max_step_size;
