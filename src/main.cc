@@ -94,6 +94,7 @@ int main(int argc, char* argv[])
       int max_order = main_db->getInteger("max_order");
       int max_steps = main_db->getInteger("max_steps");
       double init_time = main_db->getDouble("init_time");
+      double target_time = main_db->getDoubleWithDefault("target_time", 1.e6);
       int init_cycle = main_db->getInteger("init_cycle");
       double print_interval = main_db->getDouble("print_interval");
       bool visit_flag = main_db->getBoolWithDefault("visit_output", false);
@@ -300,6 +301,8 @@ int main(int argc, char* argv[])
 
             const double sf = pf_model->computeSolidFraction(result_hierarchy);
             tbox::pout << "Solid fraction: " << sf << std::endl;
+
+            if (actual_time > target_time) break;
          }    // end of timestep loop
       } else  // CVODE
       {
@@ -365,6 +368,8 @@ int main(int argc, char* argv[])
 
             const double sf = pf_model->computeSolidFraction(result_hierarchy);
             tbox::pout << "Solid fraction: " << sf << std::endl;
+
+            if (actual_time > target_time) break;
          }  // end of timestep loop
 
          tbox::pout << "Delete solver..." << std::endl;
