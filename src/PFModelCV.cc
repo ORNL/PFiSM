@@ -21,6 +21,8 @@ PFModelCV::PFModelCV(
 {
    d_have_solver_temperature = fac_solver_temperature ? true : false;
 
+   d_frame_velocity = input_db->getDoubleWithDefault("frame_velocity", 0.);
+
    tbox::TimerManager* tman = tbox::TimerManager::getManager();
    t_rhs_timer = tman->getTimer("PFiSM::rhs");
    t_precondset_timer = tman->getTimer("PFiSM::precondset");
@@ -35,6 +37,8 @@ int PFModelCV::evaluateRHSFunction(double time, solv::SundialsAbstractVector* y,
                                    solv::SundialsAbstractVector* y_dot)
 {
    t_rhs_timer->start();
+
+   const double tol_velocity = 1.e-8;
 
    // Convert Sundials vectors to SAMRAI vectors
    std::shared_ptr<solv::SAMRAIVectorReal<double> > y_samvect(
@@ -55,13 +59,21 @@ int PFModelCV::evaluateRHSFunction(double time, solv::SundialsAbstractVector* y,
    int y_dot_phase_id =
        y_dot_samvect->getComponentDescriptorIndex(d_phase_component);
 
-   evaluateRHSPhase(hierarchy, y_dot_phase_id);
+   if (std::abs(d_frame_velocity) > tol_velocity)
+      evaluateRHSPhaseWithVelocity(hierarchy, y_dot_phase_id, d_frame_velocity);
+   else
+      evaluateRHSPhase(hierarchy, y_dot_phase_id);
 
    if (evolve_temperature()) {
       int y_dot_temperature_id =
           y_dot_samvect->getComponentDescriptorIndex(d_temperature_component);
 
-      evaluateRHSTemperature(hierarchy, y_dot_temperature_id, y_dot_phase_id);
+      if (std::abs(d_frame_velocity) > tol_velocity)
+         evaluateRHSTemperatureWithVelocity(hierarchy, y_dot_temperature_id,
+                                            y_dot_phase_id, d_frame_velocity);
+      else
+         evaluateRHSTemperature(hierarchy, y_dot_temperature_id,
+                                y_dot_phase_id);
    }
 
    ++d_number_rhs_eval;

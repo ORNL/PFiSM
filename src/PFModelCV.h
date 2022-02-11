@@ -71,6 +71,9 @@ class PFModelCV : public PFModel, public solv::CVODEAbstractFunctions
    const int d_temperature_component;
    const int d_phase_component;
 
+   // Moving frame
+   double d_frame_velocity;
+
    ///
    /// Program counters
    ///
