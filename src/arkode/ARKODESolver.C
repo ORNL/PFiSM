@@ -57,7 +57,6 @@ ARKODESolver::ARKODESolver(const std::string& object_name,
    d_max_step_size = -1;
    d_min_step_size = -1;
    d_arkode_order = -1;
-   d_max_iter = -1;
 
    /*
     * ARKSpgmr parameters.

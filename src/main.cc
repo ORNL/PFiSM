@@ -111,7 +111,6 @@ int main(int argc, char* argv[])
 
       // ARKODE specific options
       int im_ex = main_db->getIntegerWithDefault("im_ex", -1);
-      int max_iter = main_db->getIntegerWithDefault("max_iter", -1);
 
       tbox::pout << "Build Geometry, Hierarchy,..." << std::endl;
 
@@ -250,7 +249,6 @@ int main(int argc, char* argv[])
          arkode_solver->setMaximumNumberOfInternalSteps(max_steps);
          arkode_solver->setSteppingMethod(ARK_ONE_STEP);
          arkode_solver->setMethodOrder(max_order);
-         arkode_solver->setMaximumNumberOfIterations(max_iter);
          if (uses_preconditioning) {
             arkode_solver->setPreconditioningType(PREC_LEFT);
          }

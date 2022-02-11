@@ -404,13 +404,6 @@ class ARKODESolver
       d_ARKODE_needs_initialization = true;
    }
 
-   void setMaximumNumberOfIterations(int max_iter)
-   {
-      TBOX_ASSERT(max_iter >= 0);
-      d_max_iter = max_iter;
-      d_ARKODE_needs_initialization = true;
-   }
-
    /**
     * Set maximum number of warning messages issued by the solver
     * that (t + h == t) on the next internal step.  By default,
@@ -1115,7 +1108,6 @@ class ARKODESolver
     * Optional ARKODE parameters.
     */
    int d_arkode_order;
-   int d_max_iter;
    int d_im_ex;
    int d_max_num_internal_steps;
    int d_max_num_warnings;
