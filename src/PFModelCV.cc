@@ -135,7 +135,7 @@ int PFModelCV::CVSpgmrPrecondSolve(double t, solv::SundialsAbstractVector* y,
 
    t_precondsolve_timer->start();
 
-   // plog<<"CVSpgmrPrecondSolve..."<<std::endl;
+   // tbox::plog<<"CVSpgmrPrecondSolve..."<<std::endl;
 
    // Convert passed-in CVODE vectors into SAMRAI vectors
    std::shared_ptr<solv::SAMRAIVectorReal<double> > r_samvect(

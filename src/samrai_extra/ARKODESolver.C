@@ -199,15 +199,14 @@ void ARKODESolver::initializeARKODE()
                                  d_absolute_tolerance_scalar);
 
       ierr = ARKStepSetOrder(d_arkode_mem, d_arkode_order);
+      ARKODE_SAMRAI_ERROR(ierr);
 
       if (d_im_ex != 0) {
-         d_linear_solver = SUNSPGMR(d_solution_vector->getNVector(),
-                                    d_precondition_type, d_max_krylov_dim);
          int pretype = d_uses_preconditioner ? PREC_LEFT : PREC_NONE;
-         SUNLinearSolver ls = SUNLinSol_SPGMR(d_solution_vector->getNVector(),
-                                              pretype, d_max_iter);
+         d_linear_solver = SUNLinSol_SPGMR(d_solution_vector->getNVector(),
+                                           pretype, d_max_krylov_dim);
 
-         ierr = ARKStepSetLinearSolver(d_arkode_mem, ls, NULL);
+         ierr = ARKStepSetLinearSolver(d_arkode_mem, d_linear_solver, NULL);
          ARKODE_SAMRAI_ERROR(ierr);
       }
 
@@ -217,7 +216,9 @@ void ARKODESolver::initializeARKODE()
       if (d_uses_preconditioner) {
          ARKLsPrecSetupFn precond_set = ARKODESolver::ARKSpgmrPrecondSet;
          ARKLsPrecSolveFn precond_solve = ARKODESolver::ARKSpgmrPrecondSolve;
-         ARKStepSetPreconditioner(d_arkode_mem, precond_set, precond_solve);
+         ierr =
+             ARKStepSetPreconditioner(d_arkode_mem, precond_set, precond_solve);
+         ARKODE_SAMRAI_ERROR(ierr);
       }
 
       if (!(d_max_num_internal_steps < 0)) {

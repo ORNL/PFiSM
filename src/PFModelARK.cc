@@ -47,7 +47,8 @@ PFModelARK::PFModelARK(
 PFModelARK::~PFModelARK() {}
 
 /*************************************************************************
- * Original: Methods inherited from ARKODEAbstractFunction
+ * Methods inherited from ARKODEAbstractFunction for fully explicit
+ * or implicit case (complete r.h.s.)
  ************************************************************************/
 int PFModelARK::evaluateRHSFunction(double time,
                                     solv::SundialsAbstractVector* y,
@@ -117,13 +118,16 @@ int PFModelARK::evaluateRHSFunctionImp(double time,
 
    int y_dot_phase_id =
        y_dot_samvect->getComponentDescriptorIndex(d_phase_component);
-   int y_dot_temperature_id =
-       y_dot_samvect->getComponentDescriptorIndex(d_temperature_component);
 
    // compute rhs for phase to be used in temperature equation
    evaluateRHSPhaseWithVelocity(hierarchy, y_dot_phase_id, d_frame_velocity);
 
-   evaluateRHSTemperature(hierarchy, y_dot_temperature_id, y_dot_phase_id);
+   if (evolve_temperature()) {
+      int y_dot_temperature_id =
+          y_dot_samvect->getComponentDescriptorIndex(d_temperature_component);
+
+      evaluateRHSTemperature(hierarchy, y_dot_temperature_id, y_dot_phase_id);
+   }
 
    // recompute rhs for phase without velocity term
    evaluateRHSPhase(hierarchy, y_dot_phase_id);
@@ -191,7 +195,7 @@ int PFModelARK::ARKSpgmrPrecondSet(
 
    t_precondset_timer->start();
 
-   tbox::plog << "ARKSpgmrPrecondSet..." << endl;
+   // tbox::plog << "ARKSpgmrPrecondSet..." << endl;
 
    std::shared_ptr<solv::SAMRAIVectorReal<double> > y_samvect(
        solv::Sundials_SAMRAIVector::getSAMRAIVector(y));
@@ -238,7 +242,7 @@ int PFModelARK::ARKSpgmrPrecondSolve(double t, solv::SundialsAbstractVector* y,
 
    t_precondsolve_timer->start();
 
-   // plog<<"ARKSpgmrPrecondSolve..."<<endl;
+   // tbox::plog<<"ARKSpgmrPrecondSolve..."<<std::endl;
 
    // Convert passed-in ARKODE vectors into SAMRAI vectors
    std::shared_ptr<solv::SAMRAIVectorReal<double> > r_samvect(
