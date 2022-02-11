@@ -1,5 +1,5 @@
 /*************************************************************************
- * Inspired by ARKODEAbstractFunctions
+ * Inspired by SAMRAI CVODEAbstractFunctions
  ************************************************************************/
 
 #ifndef included_ARKODEAbstractFunctions
@@ -33,8 +33,8 @@ class ARKODEAbstractFunctions
     * The constructor and destructor for ARKODEAbstractFunctions
     * is empty.
     */
-   ARKODEAbstractFunctions();
-   virtual ~ARKODEAbstractFunctions();
+   ARKODEAbstractFunctions(){};
+   virtual ~ARKODEAbstractFunctions(){};
 
    /**
     * User-supplied right-hand side function evaluation.

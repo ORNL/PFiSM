@@ -1,18 +1,12 @@
 /*************************************************************************
- * Inspired by SAMRAI ARKODESolver class
+ * Inspired by SAMRAI CVODESolver class
  ************************************************************************/
 
 #include "ARKODESolver.h"
 
 
-const int ARKODESolver::STAT_OUTPUT_BUFFER_SIZE = 256;
-
 /*
- *************************************************************************
- *
  * ARKODESolver constructor and destructor.
- *
- *************************************************************************
  */
 ARKODESolver::ARKODESolver(const std::string& object_name,
                            ARKODEAbstractFunctions* my_functions,
@@ -95,11 +89,7 @@ ARKODESolver::~ARKODESolver()
 }
 
 /*
- *************************************************************************
- *
  * Functions to initialize linear solver and reset ARKODE structure.
- *
- *************************************************************************
  */
 
 void ARKODESolver::initializeARKODE()
@@ -193,13 +183,13 @@ void ARKODESolver::initializeARKODE()
       //  ARKStepCreate takes place of CVodeInit
 
       int ierr = ARKStepSetUserData(d_arkode_mem, this);
-      ARKODE_SAMRAI_ERROR(ierr);
+      ARKODE_ERROR(ierr);
 
       ierr = ARKStepSStolerances(d_arkode_mem, d_relative_tolerance,
                                  d_absolute_tolerance_scalar);
 
       ierr = ARKStepSetOrder(d_arkode_mem, d_arkode_order);
-      ARKODE_SAMRAI_ERROR(ierr);
+      ARKODE_ERROR(ierr);
 
       if (d_im_ex != 0) {
          int pretype = d_uses_preconditioner ? PREC_LEFT : PREC_NONE;
@@ -207,7 +197,7 @@ void ARKODESolver::initializeARKODE()
                                            pretype, d_max_krylov_dim);
 
          ierr = ARKStepSetLinearSolver(d_arkode_mem, d_linear_solver, NULL);
-         ARKODE_SAMRAI_ERROR(ierr);
+         ARKODE_ERROR(ierr);
       }
 
       /*
@@ -218,57 +208,46 @@ void ARKODESolver::initializeARKODE()
          ARKLsPrecSolveFn precond_solve = ARKODESolver::ARKSpgmrPrecondSolve;
          ierr =
              ARKStepSetPreconditioner(d_arkode_mem, precond_set, precond_solve);
-         ARKODE_SAMRAI_ERROR(ierr);
+         ARKODE_ERROR(ierr);
       }
 
       if (!(d_max_num_internal_steps < 0)) {
          ierr = ARKStepSetMaxNumSteps(d_arkode_mem, d_max_num_internal_steps);
-         ARKODE_SAMRAI_ERROR(ierr);
+         ARKODE_ERROR(ierr);
       }
 
       if (!(d_max_num_warnings < 0)) {
          ierr = ARKStepSetMaxNumConstrFails(d_arkode_mem, d_max_num_warnings);
-         ARKODE_SAMRAI_ERROR(ierr);
+         ARKODE_ERROR(ierr);
       }
-
-      /*
-       * ?? Appears that step size is set by tollerance or fixed
-       * see lines below 92 in Handson2
-       *
-       */
 
       if (!(d_init_step_size < 0)) {
          ierr = ARKStepSetInitStep(d_arkode_mem, d_init_step_size);
-         ARKODE_SAMRAI_ERROR(ierr);
+         ARKODE_ERROR(ierr);
       }
 
       if (!(d_max_step_size < 0)) {
          ierr = ARKStepSetMaxStep(d_arkode_mem, d_max_step_size);
-         ARKODE_SAMRAI_ERROR(ierr);
+         ARKODE_ERROR(ierr);
       }
 
       if (!(d_min_step_size < 0)) {
          ierr = ARKStepSetMinStep(d_arkode_mem, d_min_step_size);
-         ARKODE_SAMRAI_ERROR(ierr);
+         ARKODE_ERROR(ierr);
       }
-
-   }  // if no need to initialize ARKODE, function does nothing
+   }
 
    d_ARKODE_needs_initialization = false;
 }
 
 /*
- *************************************************************************
- *
  * Access methods for ARKODE statistics.
- *
- *************************************************************************
  */
 
 void ARKODESolver::printARKODEStatistics(std::ostream& os) const
 {
 
-   char buf[STAT_OUTPUT_BUFFER_SIZE];
+   char buf[256];
 
    os << "\nARKODESolver: ARKODE statistics... " << std::endl;
 
@@ -299,11 +278,7 @@ void ARKODESolver::printARKODEStatistics(std::ostream& os) const
 }
 
 /*
- *************************************************************************
- *
  * Access methods for ARKSpgmr statistics.
- *
- *************************************************************************
  */
 
 void ARKODESolver::printARKSpgmrStatistics(std::ostream& os) const
@@ -330,11 +305,7 @@ void ARKODESolver::printARKSpgmrStatistics(std::ostream& os) const
 }
 
 /*
- *************************************************************************
- *
  * Print ARKODESolver object data to given output stream.
- *
- *************************************************************************
  */
 void ARKODESolver::printClassData(std::ostream& os) const
 {

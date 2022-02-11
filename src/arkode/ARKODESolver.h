@@ -28,7 +28,7 @@ extern "C" {
 using namespace SAMRAI;
 
 #ifndef LACKS_SSTREAM
-#define ARKODE_SAMRAI_ERROR(ierr)                                          \
+#define ARKODE_ERROR(ierr)                                                 \
    do {                                                                    \
       if (ierr != ARK_SUCCESS) {                                           \
          std::ostringstream tboxos;                                        \
@@ -36,7 +36,7 @@ using namespace SAMRAI;
       }                                                                    \
    } while (0)
 #else
-#define ARKODE_SAMRAI_ERROR(ierr)                                  \
+#define ARKODE_ERROR(ierr)                                         \
    do {                                                            \
       if (ierr != ARK_SUCCESS) {                                   \
          std::ostrstream tboxos;                                   \
@@ -45,7 +45,8 @@ using namespace SAMRAI;
    } while (0)
 #endif
 
-#define SABSVEC_CAST(v) (static_cast<solv::SundialsAbstractVector*>(v->content))
+#define SUNABSVEC_CAST(v) \
+   (static_cast<solv::SundialsAbstractVector*>(v->content))
 
 /*!
  * @brief Class ARKODESolver serves as a C++ wrapper for the ARKODE
@@ -666,7 +667,7 @@ class ARKODESolver
    {
       long int r;
       int ierr = ARKStepGetNumExpSteps(d_arkode_mem, &r);
-      ARKODE_SAMRAI_ERROR(ierr);
+      ARKODE_ERROR(ierr);
       return static_cast<int>(r);
    }
 
@@ -681,7 +682,7 @@ class ARKODESolver
       long int nfe_evals;
       long int nfi_evals;
       int ierr = ARKStepGetNumRhsEvals(d_arkode_mem, &nfe_evals, &nfi_evals);
-      ARKODE_SAMRAI_ERROR(ierr);
+      ARKODE_ERROR(ierr);
       return static_cast<int>(nfe_evals);
    }
 
@@ -690,7 +691,7 @@ class ARKODESolver
       long int nfe_evals;
       long int nfi_evals;
       int ierr = ARKStepGetNumRhsEvals(d_arkode_mem, &nfe_evals, &nfi_evals);
-      ARKODE_SAMRAI_ERROR(ierr);
+      ARKODE_ERROR(ierr);
       return static_cast<int>(nfi_evals);
    }
 
@@ -705,7 +706,7 @@ class ARKODESolver
    {
       long int r;
       int ierr = ARKStepGetNumLinSolvSetups(d_arkode_mem, &r);
-      ARKODE_SAMRAI_ERROR(ierr);
+      ARKODE_ERROR(ierr);
       return static_cast<int>(r);
    }
 
@@ -719,7 +720,7 @@ class ARKODESolver
    {
       long int r;
       int ierr = ARKStepGetNumGEvals(d_arkode_mem, &r);
-      ARKODE_SAMRAI_ERROR(ierr);
+      ARKODE_ERROR(ierr);
       return static_cast<int>(r);
    }
 
@@ -734,7 +735,7 @@ class ARKODESolver
    {
       long int r;
       int ierr = ARKStepGetNumConstrFails(d_arkode_mem, &r);
-      ARKODE_SAMRAI_ERROR(ierr);
+      ARKODE_ERROR(ierr);
       return static_cast<int>(r);
    }
 
@@ -748,7 +749,7 @@ class ARKODESolver
    {
       long int r;
       int ierr = ARKStepGetNumErrTestFails(d_arkode_mem, &r);
-      ARKODE_SAMRAI_ERROR(ierr);
+      ARKODE_ERROR(ierr);
       return static_cast<int>(r);
    }
 
@@ -763,7 +764,7 @@ class ARKODESolver
    {
       long int r;
       int ierr = ARKStepGetNumSteps(d_arkode_mem, &r);
-      ARKODE_SAMRAI_ERROR(ierr);
+      ARKODE_ERROR(ierr);
       return static_cast<int>(r);
    }
 
@@ -778,7 +779,7 @@ class ARKODESolver
    {
       long int r;
       int ierr = ARKStepGetNumStepAttempts(d_arkode_mem, &r);
-      ARKODE_SAMRAI_ERROR(ierr);
+      ARKODE_ERROR(ierr);
       return static_cast<int>(r);
    }
 
@@ -794,7 +795,7 @@ class ARKODESolver
       long int r1;
       long int r2;
       int ierr = ARKStepGetWorkSpace(d_arkode_mem, &r1, &r2);
-      ARKODE_SAMRAI_ERROR(ierr);
+      ARKODE_ERROR(ierr);
       return static_cast<int>(r1);
    }
 
@@ -810,7 +811,7 @@ class ARKODESolver
       long int r1;
       long int r2;
       int ierr = ARKStepGetWorkSpace(d_arkode_mem, &r1, &r2);
-      ARKODE_SAMRAI_ERROR(ierr);
+      ARKODE_ERROR(ierr);
       return static_cast<int>(r2);
    }
 
@@ -824,7 +825,7 @@ class ARKODESolver
    {
       realtype r;
       int ierr = ARKStepGetLastStep(d_arkode_mem, &r);
-      ARKODE_SAMRAI_ERROR(ierr);
+      ARKODE_ERROR(ierr);
       return r;
    }
 
@@ -838,7 +839,7 @@ class ARKODESolver
    {
       realtype r;
       int ierr = ARKStepGetCurrentStep(d_arkode_mem, &r);
-      ARKODE_SAMRAI_ERROR(ierr);
+      ARKODE_ERROR(ierr);
       return r;
    }
 
@@ -854,7 +855,7 @@ class ARKODESolver
    {
       realtype r;
       int ierr = ARKStepGetTolScaleFactor(d_arkode_mem, &r);
-      ARKODE_SAMRAI_ERROR(ierr);
+      ARKODE_ERROR(ierr);
       return r;
    }
 
@@ -868,7 +869,7 @@ class ARKODESolver
    {
       realtype r;
       int ierr = ARKStepGetTolScaleFactor(d_arkode_mem, &r);
-      ARKODE_SAMRAI_ERROR(ierr);
+      ARKODE_ERROR(ierr);
       return r;
    }
 
@@ -907,7 +908,7 @@ class ARKODESolver
    {
       long int r;
       int ierr = ARKStepGetNumPrecEvals(d_arkode_mem, &r);
-      ARKODE_SAMRAI_ERROR(ierr);
+      ARKODE_ERROR(ierr);
       return static_cast<int>(r);
    }
 
@@ -918,7 +919,7 @@ class ARKODESolver
    {
       long int r;
       int ierr = ARKStepGetNumLinIters(d_arkode_mem, &r);
-      ARKODE_SAMRAI_ERROR(ierr);
+      ARKODE_ERROR(ierr);
       return static_cast<int>(r);
    }
 
@@ -929,7 +930,7 @@ class ARKODESolver
    {
       long int r;
       int ierr = ARKStepGetNumPrecSolves(d_arkode_mem, &r);
-      ARKODE_SAMRAI_ERROR(ierr);
+      ARKODE_ERROR(ierr);
       return static_cast<int>(r);
    }
 
@@ -940,7 +941,7 @@ class ARKODESolver
    {
       long int r;
       int ierr = ARKStepGetNumLinConvFails(d_arkode_mem, &r);
-      ARKODE_SAMRAI_ERROR(ierr);
+      ARKODE_ERROR(ierr);
       return static_cast<int>(r);
    }
 
@@ -952,7 +953,7 @@ class ARKODESolver
       long int r1;
       long int r2;
       int ierr = ARKStepGetWorkSpace(d_arkode_mem, &r1, &r2);
-      ARKODE_SAMRAI_ERROR(ierr);
+      ARKODE_ERROR(ierr);
       return static_cast<int>(r1);
    }
 
@@ -964,7 +965,7 @@ class ARKODESolver
       long int r1;
       long int r2;
       int ierr = ARKStepGetWorkSpace(d_arkode_mem, &r1, &r2);
-      ARKODE_SAMRAI_ERROR(ierr);
+      ARKODE_ERROR(ierr);
       return static_cast<int>(r2);
    }
 
@@ -980,12 +981,6 @@ class ARKODESolver
 
  private:
    /*
-    * Static integer constant describing the size of an output buffer of a
-    * ARKODE statistic.
-    */
-   static const int STAT_OUTPUT_BUFFER_SIZE;
-
-   /*
     * Static member function for linkage with ARKODE routines.
     */
    static int ARKODERHSFuncEval(realtype t, N_Vector y, N_Vector y_dot,
@@ -993,7 +988,7 @@ class ARKODESolver
    {
       return ((ARKODESolver*)my_solver)
           ->getARKODEFunctions()
-          ->evaluateRHSFunction(t, SABSVEC_CAST(y), SABSVEC_CAST(y_dot));
+          ->evaluateRHSFunction(t, SUNABSVEC_CAST(y), SUNABSVEC_CAST(y_dot));
    }
 
    /*
@@ -1004,7 +999,7 @@ class ARKODESolver
    {
       return ((ARKODESolver*)my_solver)
           ->getARKODEFunctions()
-          ->evaluateRHSFunctionImp(t, SABSVEC_CAST(y), SABSVEC_CAST(y_dot));
+          ->evaluateRHSFunctionImp(t, SUNABSVEC_CAST(y), SUNABSVEC_CAST(y_dot));
    }
 
    /*
@@ -1015,7 +1010,7 @@ class ARKODESolver
    {
       return ((ARKODESolver*)my_solver)
           ->getARKODEFunctions()
-          ->evaluateRHSFunctionExp(t, SABSVEC_CAST(y), SABSVEC_CAST(y_dot));
+          ->evaluateRHSFunctionExp(t, SUNABSVEC_CAST(y), SUNABSVEC_CAST(y_dot));
    }
 
    /*
@@ -1028,8 +1023,8 @@ class ARKODESolver
       int success =
           ((ARKODESolver*)my_solver)
               ->getARKODEFunctions()
-              ->ARKSpgmrPrecondSet(t, SABSVEC_CAST(y), SABSVEC_CAST(fy), jok,
-                                   jcurPtr, gamma);
+              ->ARKSpgmrPrecondSet(t, SUNABSVEC_CAST(y), SUNABSVEC_CAST(fy),
+                                   jok, jcurPtr, gamma);
       return success;
    }
 
@@ -1040,9 +1035,9 @@ class ARKODESolver
       int success =
           ((ARKODESolver*)my_solver)
               ->getARKODEFunctions()
-              ->ARKSpgmrPrecondSolve(t, SABSVEC_CAST(y), SABSVEC_CAST(fy),
-                                     SABSVEC_CAST(r), SABSVEC_CAST(z), gamma,
-                                     delta, lr);
+              ->ARKSpgmrPrecondSolve(t, SUNABSVEC_CAST(y), SUNABSVEC_CAST(fy),
+                                     SUNABSVEC_CAST(r), SUNABSVEC_CAST(z),
+                                     gamma, delta, lr);
       return success;
    }
 

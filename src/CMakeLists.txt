@@ -25,8 +25,7 @@ m4tof(rhs3d)
 m4tof(computeCforPhase)
 
 add_library(pfismlib STATIC
-   samrai_extra/ARKODESolver.C
-   samrai_extra/ARKODEAbstractFunctions.C
+   arkode/ARKODESolver.C
    PFModel.cc
    PFModelCV.cc
    PFModelARK.cc
