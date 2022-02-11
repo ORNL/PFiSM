@@ -79,8 +79,6 @@ class PFModelARK : public PFModel, public ARKODEAbstractFunctions
    const int d_temperature_component;
    const int d_phase_component;
 
-   const bool d_evolve_temperature;
-
    // Moving frame
    double d_frame_velocity;
 

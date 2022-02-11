@@ -29,7 +29,6 @@ PFModelARK::PFModelARK(
               fac_solver_phase, input_db, grid_geom),
       d_temperature_component(0),
       d_phase_component(1),
-      d_evolve_temperature(evolve_temperature),
       d_number_rhs_eval(0),
       d_number_precond_setup(0),
       d_number_precond_solve(0)
@@ -77,7 +76,7 @@ int PFModelARK::evaluateRHSFunction(double time,
 
    evaluateRHSPhaseWithVelocity(hierarchy, y_dot_phase_id, d_frame_velocity);
 
-   if (d_evolve_temperature) {
+   if (evolve_temperature()) {
       int y_dot_temperature_id =
           y_dot_samvect->getComponentDescriptorIndex(d_temperature_component);
 
