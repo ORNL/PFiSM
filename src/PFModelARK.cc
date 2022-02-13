@@ -10,7 +10,6 @@
 #endif
 
 #include "SAMRAI/solv/SAMRAIVectorReal.h"
-#include "SAMRAI/hier/VariableDatabase.h"
 
 #ifdef __GNUC__
 #pragma GCC diagnostic pop
@@ -131,7 +130,7 @@ int PFModelARK::evaluateRHSFunctionImp(double time,
    // recompute rhs for phase without velocity term
    evaluateRHSPhase(hierarchy, y_dot_phase_id);
 
-   ++d_number_rhs_eval;
+   ++d_number_rhs_imp_eval;
 
    t_rhs_timer->stop();
 
@@ -170,7 +169,7 @@ int PFModelARK::evaluateRHSFunctionExp(double time,
    evaluateRHSmovingFrame(hierarchy, y_dot_temperature_id, y_dot_phase_id,
                           d_frame_velocity);
 
-   ++d_number_rhs_eval;
+   ++d_number_rhs_exp_eval;
 
    t_rhs_timer->stop();
 
@@ -282,10 +281,12 @@ int PFModelARK::ARKSpgmrPrecondSolve(double t, solv::SundialsAbstractVector* y,
 
 void PFModelARK::printCounters(const double final_time)
 {
-   tbox::plog << "\n\nEnd Timesteps - final time = " << final_time
-              << "\n\tTotal number of RHS evaluations = " << d_number_rhs_eval
-              << "\n\tTotal number of precond setups = "
-              << d_number_precond_setup
-              << "\n\tTotal number of precond solves = "
-              << d_number_precond_solve << endl;
+   tbox::plog
+       << "\n\nEnd Timesteps - final time = " << final_time
+       << "\n\tTotal number of RHS evaluations = " << d_number_rhs_eval
+       << "\n\tTotal number of explicit RHS    = " << d_number_rhs_exp_eval
+       << "\n\tTotal number of implicit RHS    = " << d_number_rhs_imp_eval
+       << "\n\tTotal number of precond setups = " << d_number_precond_setup
+       << "\n\tTotal number of precond solves = " << d_number_precond_solve
+       << endl;
 }

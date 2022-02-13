@@ -250,22 +250,25 @@ void ARKODESolver::printARKODEStatistics(std::ostream& os) const
 
    os << "\nARKODESolver: ARKODE statistics... " << std::endl;
 
-   sprintf(buf, "nfi             = %5d     nfe              = %5d\n",
-           getNumberOfRHSFunctionImpCalls(), getNumberOfRHSFunctionExCalls());
-   os << buf;
-   sprintf(buf, "nsetups         = %5d\n", getNumberOfLinearSolverSetupCalls());
-   os << buf;
-   sprintf(buf, "netf            = %5d\n", getNumberOfLocalErrorTestFailures());
-   os << buf;
    sprintf(buf, "ns              = %5d     nsa              = %5d\n",
            getNumberOfSteps(), getNumberOfStepAttempts());
    os << buf;
+   sprintf(buf, "nfi             = %5d     nfe              = %5d\n",
+           getNumberOfRHSFunctionImpCalls(), getNumberOfRHSFunctionExCalls());
+   os << buf;
+   os << "nnli            = " << std::to_string(getNumberOfNonlinIters())
+      << std::endl;
+   os << "nnlf            = " << std::to_string(getNumberOfNonlinConvFails())
+      << std::endl;
+   os << "nsetups         = " << getNumberOfLinearSolverSetupCalls()
+      << std::endl;
+   os << "netf            = " << getNumberOfLocalErrorTestFailures()
+      << std::endl;
    sprintf(buf, "hu              = %e      hcur             = %e\n",
            getStepSizeForLastInternalStep(), getStepSizeForNextInternalStep());
    os << buf;
-   sprintf(buf, "tcur            = %e      \n",
-           getCurrentInternalValueOfIndependentVariable());
-   os << buf;
+   os << "tcur            = " << getCurrentInternalValueOfIndependentVariable()
+      << std::endl;
 }
 
 /*
@@ -276,10 +279,6 @@ void ARKODESolver::printARKSpgmrStatistics(std::ostream& os) const
 {
    os << "ARKODESolver: ARKSpgmr statistics... " << std::endl;
 
-   os << "nnli            = " << std::to_string(getNumberOfNonlinIters())
-      << std::endl;
-   os << "nnlf            = " << std::to_string(getNumberOfNonlinConvFails())
-      << std::endl;
    os << "nli             = " << std::to_string(getNumberOfLinearIterations())
       << std::endl;
    os << "nlf             = "

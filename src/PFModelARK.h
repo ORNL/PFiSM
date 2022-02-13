@@ -84,6 +84,8 @@ class PFModelARK : public PFModel, public ARKODEAbstractFunctions
 
    // Program counters
    int d_number_rhs_eval;
+   int d_number_rhs_exp_eval;
+   int d_number_rhs_imp_eval;
    int d_number_precond_setup;
    int d_number_precond_solve;
 
