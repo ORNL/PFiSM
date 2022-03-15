@@ -233,7 +233,6 @@ int main(int argc, char* argv[])
 
       pf_model->setInitialConditions();
 
-      double final_time = init_time;
       double print_time = 0.;
 
       if (im_ex >= 0)  // ARKODE
@@ -260,8 +259,7 @@ int main(int argc, char* argv[])
          // Time-stepping.
          for (int interval = 1; interval <= max_steps; ++interval) {
 
-            final_time += print_interval;
-            arkode_solver->setFinalValueOfIndependentVariable(final_time,
+            arkode_solver->setFinalValueOfIndependentVariable(target_time,
                                                               false);
 
             // Perform ARKODE solve to the requested interval time.
@@ -281,6 +279,11 @@ int main(int argc, char* argv[])
                 solv::Sundials_SAMRAIVector::getSAMRAIVector(solution_vector));
             std::shared_ptr<hier::PatchHierarchy> result_hierarchy(
                 y_result->getPatchHierarchy());
+
+            if (solution_logging) {
+               tbox::plog << "ARKODE stastistics:" << std::endl;
+               arkode_solver->printStatistics(tbox::plog);
+            }
 
             if (actual_time > print_time && visit_flag) {
                visit_data_writer->writePlotData(result_hierarchy, interval,
@@ -325,8 +328,8 @@ int main(int argc, char* argv[])
 
             // tbox::plog << "interval = "<<interval<<std::endl;
 
-            final_time += print_interval;
-            cvode_solver->setFinalValueOfIndependentVariable(final_time, false);
+            cvode_solver->setFinalValueOfIndependentVariable(target_time,
+                                                             false);
 
             // Perform CVODE solve to the requested interval time.
             t_ode_solve->start();
@@ -348,7 +351,7 @@ int main(int argc, char* argv[])
 
             if (solution_logging) {
                tbox::plog << "CVODE stastistics:" << std::endl;
-               cvode_solver->printStatistics(tbox::pout);
+               cvode_solver->printStatistics(tbox::plog);
             }
 
             if (actual_time > print_time && visit_flag) {
@@ -368,7 +371,7 @@ int main(int argc, char* argv[])
       }
 
       // Write summary information
-      pf_model->printCounters(final_time);
+      pf_model->printCounters(target_time);
 
       tbox::TimerManager::getManager()->print(tbox::pout);
 
