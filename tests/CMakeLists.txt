@@ -51,7 +51,13 @@ add_test(NAME PlanarFrontIMEX
          COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/PlanarFront/testIMEX.py
          ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ${MPIEXEC_PREFLAGS}
          ${CMAKE_CURRENT_BINARY_DIR}/../src/main
-         ${CMAKE_CURRENT_SOURCE_DIR}/PlanarFront/pfm3dark.input
+         ${CMAKE_CURRENT_SOURCE_DIR}/PlanarFront/pfm3dIMEX.input
+         )
+add_test(NAME PlanarFrontEX
+         COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/PlanarFront/testEX.py
+         ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ${MPIEXEC_PREFLAGS}
+         ${CMAKE_CURRENT_BINARY_DIR}/../src/main
+         ${CMAKE_CURRENT_SOURCE_DIR}/PlanarFront/pfm3dExplicit.input
          )
 
 target_link_libraries(testMPI ${PROJECT_LINK_LIBS1})

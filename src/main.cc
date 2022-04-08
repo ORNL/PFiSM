@@ -113,6 +113,9 @@ int main(int argc, char* argv[])
       // ARKODE specific options
       int im_ex = main_db->getIntegerWithDefault("im_ex", -1);
 
+      // no preconditioner for explicit solver
+      if (im_ex == 0) uses_preconditioning = false;
+
       tbox::pout << "Build Geometry, Hierarchy,..." << std::endl;
 
       // Cartesian mesh geometry management
