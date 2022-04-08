@@ -578,7 +578,6 @@ void PFModel::evaluateRHSmovingFrame(
                  patch->getPatchGeometry()));
          assert(patch_geom);
          const double* dx = patch_geom->getDx();
-         rhs->fillAll(0.);
 
          SAMRAI_F77_FUNC(addvel2rhs3d, ADDVEL2RHS3D)
          (ifirst(0), ilast(0), ifirst(1), ilast(1), ifirst(2), ilast(2), dx,
@@ -614,8 +613,6 @@ void PFModel::evaluateRHSmovingFrame(
                  patch->getPatchGeometry()));
          assert(patch_geom);
          const double* dx = patch_geom->getDx();
-
-         rhs->fillAll(0.);
 
          SAMRAI_F77_FUNC(addvel2rhs3d, ADDVEL2RHS3D)
          (ifirst(0), ilast(0), ifirst(1), ilast(1), ifirst(2), ilast(2), dx,

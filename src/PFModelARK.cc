@@ -118,13 +118,13 @@ int PFModelARK::evaluateRHSFunctionImp(double time,
        y_dot_samvect->getComponentDescriptorIndex(d_phase_component);
 
    if (evolve_temperature()) {
-      // compute rhs for phase to be used in temperature equation
-      evaluateRHSPhaseWithVelocity(hierarchy, y_dot_phase_id, d_frame_velocity);
-
       int y_dot_temperature_id =
           y_dot_samvect->getComponentDescriptorIndex(d_temperature_component);
 
       evaluateRHSTemperatureDiffusion(hierarchy, y_dot_temperature_id);
+
+      // compute rhs for phase to be used in temperature equation
+      evaluateRHSPhaseWithVelocity(hierarchy, y_dot_phase_id, d_frame_velocity);
 
       evaluateRHSTemperature(hierarchy, y_dot_temperature_id, y_dot_phase_id);
    }
@@ -168,6 +168,13 @@ int PFModelARK::evaluateRHSFunctionExp(double time,
        y_dot_samvect->getComponentDescriptorIndex(d_phase_component);
    int y_dot_temperature_id =
        y_dot_samvect->getComponentDescriptorIndex(d_temperature_component);
+
+   math::HierarchyCellDataOpsReal<double> cell_ops(hierarchy);
+
+   if (evolve_temperature()) {
+      cell_ops.setToScalar(y_dot_temperature_id, 0.);
+   }
+   cell_ops.setToScalar(y_dot_phase_id, 0.);
 
    evaluateRHSmovingFrame(hierarchy, y_dot_temperature_id, y_dot_phase_id,
                           d_frame_velocity);
