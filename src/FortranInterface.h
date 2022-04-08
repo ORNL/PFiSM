@@ -9,10 +9,16 @@ void SAMRAI_F77_FUNC(comprhs3d, COMPRHS3D)(const int&, const int&, const int&,
                                            const double*, const int&,
                                            const double*, const double&,
                                            const double&, double*);
-void SAMRAI_F77_FUNC(comprhsphase3d, COMPRHSPHASE3D)(
+void SAMRAI_F77_FUNC(comprhsphasedw3d,
+                     COMPRHSPHASEDW3D)(const int&, const int&, const int&,
+                                       const int&, const int&, const int&,
+                                       const double*, const int&, const double&,
+                                       const double&, const double*);
+void SAMRAI_F77_FUNC(comprhsphasedriving3d, COMPRHSPHASEDRIVING3D)(
     const int&, const int&, const int&, const int&, const int&, const int&,
     const double*, const int&, const double*, const int&, const double&,
-    const double&, const double&, const double&, const double*);
+    const double&, const double&, const double*);
+
 void SAMRAI_F77_FUNC(compcforphase,
                      COMPCFORPHASE)(const int&, const int&, const int&,
                                     const int&, const int&, const int&,

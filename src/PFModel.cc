@@ -345,12 +345,16 @@ void PFModel::evaluateRHSPhase(std::shared_ptr<hier::PatchHierarchy> hierarchy,
          const hier::Index ifirst(patch->getBox().lower());
          const hier::Index ilast(patch->getBox().upper());
 
-         SAMRAI_F77_FUNC(comprhsphase3d, COMPRHSPHASE3D)
+         SAMRAI_F77_FUNC(comprhsphasedw3d, COMPRHSPHASEDW3D)
+         (ifirst(0), ilast(0), ifirst(1), ilast(1), ifirst(2), ilast(2),
+          phase->getPointer(), phase->getGhostCellWidth()[0], d_mobility,
+          d_well_height, rhs->getPointer());
+
+         SAMRAI_F77_FUNC(comprhsphasedriving3d, COMPRHSPHASEDRIVING3D)
          (ifirst(0), ilast(0), ifirst(1), ilast(1), ifirst(2), ilast(2),
           phase->getPointer(), phase->getGhostCellWidth()[0],
           temperature->getPointer(), temperature->getGhostCellWidth()[0],
-          d_mobility, d_well_height, d_latent_heat, d_Tmelting,
-          rhs->getPointer());
+          d_mobility, d_latent_heat, d_Tmelting, rhs->getPointer());
 
       }  // loop over patches
    }     // loop over levels
@@ -396,12 +400,16 @@ void PFModel::evaluateRHSPhaseWithVelocity(
           phase->getPointer(), phase->getGhostCellWidth()[0],
           d_mobility * d_epsilon * d_epsilon, rhs->getPointer());
 
-         SAMRAI_F77_FUNC(comprhsphase3d, COMPRHSPHASE3D)
+         SAMRAI_F77_FUNC(comprhsphasedw3d, COMPRHSPHASEDW3D)
+         (ifirst(0), ilast(0), ifirst(1), ilast(1), ifirst(2), ilast(2),
+          phase->getPointer(), phase->getGhostCellWidth()[0], d_mobility,
+          d_well_height, rhs->getPointer());
+
+         SAMRAI_F77_FUNC(comprhsphasedriving3d, COMPRHSPHASEDRIVING3D)
          (ifirst(0), ilast(0), ifirst(1), ilast(1), ifirst(2), ilast(2),
           phase->getPointer(), phase->getGhostCellWidth()[0],
           temperature->getPointer(), temperature->getGhostCellWidth()[0],
-          d_mobility, d_well_height, d_latent_heat, d_Tmelting,
-          rhs->getPointer());
+          d_mobility, d_latent_heat, d_Tmelting, rhs->getPointer());
 
          SAMRAI_F77_FUNC(addvel2rhs3d, ADDVEL2RHS3D)
          (ifirst(0), ilast(0), ifirst(1), ilast(1), ifirst(2), ilast(2), dx,

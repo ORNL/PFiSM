@@ -97,12 +97,10 @@ c
       end
 c
 c
-      subroutine comprhsphase3d(
+      subroutine comprhsphasedw3d(
      &  ifirst0,ilast0,ifirst1,ilast1,ifirst2,ilast2,
      &  phi, ngp,
-     &  temp, ngt,
      &  mobility, well_height,
-     &  latent_heat, tmelting,
      &  rhs)
 c***********************************************************************
       implicit none
@@ -113,6 +111,50 @@ c input arrays:
       integer ifirst0,ilast0,ifirst1,ilast1,ifirst2,ilast2
       integer ngp, ngt
       double precision mobility, well_height
+      double precision phi(CELL3d(ifirst,ilast,ngp))
+c output arrays:
+      double precision rhs(CELL3d(ifirst,ilast,0))
+c
+c***********************************************************************
+c
+      integer ic0,ic1,ic2
+      double precision phil, tmp
+c
+      do ic2=ifirst2,ilast2
+         do ic1=ifirst1,ilast1
+            do ic0=ifirst0,ilast0
+
+c        compute  RHS
+            phil = phi(ic0,ic1,ic2)
+            tmp =
+     &         -32.d0*well_height*phil*(1.d0-phil)*(1.d0-2.d0*phil)
+
+            rhs(ic0,ic1,ic2) = rhs(ic0,ic1,ic2) + tmp*mobility
+            enddo
+         enddo
+      enddo
+c
+      return
+      end
+c
+c Add driving force
+c
+      subroutine comprhsphasedriving3d(
+     &  ifirst0,ilast0,ifirst1,ilast1,ifirst2,ilast2,
+     &  phi, ngp,
+     &  temp, ngt,
+     &  mobility,
+     &  latent_heat, tmelting,
+     &  rhs)
+c***********************************************************************
+      implicit none
+      double precision one
+      parameter(one=1.d0)
+c***********************************************************************
+c input arrays:
+      integer ifirst0,ilast0,ifirst1,ilast1,ifirst2,ilast2
+      integer ngp, ngt
+      double precision mobility
       double precision latent_heat, tmelting
       double precision phi(CELL3d(ifirst,ilast,ngp))
       double precision temp(CELL3d(ifirst,ilast,ngt))
@@ -131,8 +173,6 @@ c
 c        compute  RHS
             phil = phi(ic0,ic1,ic2)
             tmp =
-     &         -32.d0*well_height*phil*(1.d0-phil)*(1.d0-2.d0*phil)
-            tmp = tmp
      &         -6.d0*latent_heat*(temp(ic0,ic1,ic2)-tmelting)
      &                          *phil*(1.d0-phil)/tmelting
 
