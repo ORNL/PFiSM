@@ -36,12 +36,12 @@ for line in lines:
     sfraction=eval(words[2])
 
 print("Final time: {}".format(time))
-if time < 28.:
+if time < 27.:
   print("Expected time not reached!!!")
   sys.exit(1)
 
 print("Final solid fraction: {}".format(sfraction))
-if sfraction < 0.52:
+if sfraction < 0.51:
   print("Expected solid fraction not reached!!!")
   sys.exit(1)
 

@@ -313,11 +313,16 @@ void PFModel::evaluateRHSPhase(std::shared_ptr<hier::PatchHierarchy> hierarchy,
          assert(patch_geom);
          const double* dx = patch_geom->getDx();
 
+         SAMRAI_F77_FUNC(comprhsdiffusion3d, COMPRHSDIFFUSION3D)
+         (ifirst(0), ilast(0), ifirst(1), ilast(1), ifirst(2), ilast(2), dx,
+          phase->getPointer(), phase->getGhostCellWidth()[0],
+          d_mobility * d_epsilon * d_epsilon, rhs->getPointer());
+
          SAMRAI_F77_FUNC(comprhsphase3d, COMPRHSPHASE3D)
          (ifirst(0), ilast(0), ifirst(1), ilast(1), ifirst(2), ilast(2),
           phase->getPointer(), phase->getGhostCellWidth()[0],
-          temperature->getPointer(), temperature->getGhostCellWidth()[0], dx,
-          d_mobility, d_well_height, d_epsilon, d_latent_heat, d_Tmelting,
+          temperature->getPointer(), temperature->getGhostCellWidth()[0],
+          d_mobility, d_well_height, d_latent_heat, d_Tmelting,
           rhs->getPointer());
 
       }  // loop over patches
@@ -359,12 +364,18 @@ void PFModel::evaluateRHSPhaseWithVelocity(
          assert(patch_geom);
          const double* dx = patch_geom->getDx();
 
+         SAMRAI_F77_FUNC(comprhsdiffusion3d, COMPRHSDIFFUSION3D)
+         (ifirst(0), ilast(0), ifirst(1), ilast(1), ifirst(2), ilast(2), dx,
+          phase->getPointer(), phase->getGhostCellWidth()[0],
+          d_mobility * d_epsilon * d_epsilon, rhs->getPointer());
+
          SAMRAI_F77_FUNC(comprhsphase3d, COMPRHSPHASE3D)
          (ifirst(0), ilast(0), ifirst(1), ilast(1), ifirst(2), ilast(2),
           phase->getPointer(), phase->getGhostCellWidth()[0],
-          temperature->getPointer(), temperature->getGhostCellWidth()[0], dx,
-          d_mobility, d_well_height, d_epsilon, d_latent_heat, d_Tmelting,
+          temperature->getPointer(), temperature->getGhostCellWidth()[0],
+          d_mobility, d_well_height, d_latent_heat, d_Tmelting,
           rhs->getPointer());
+
          SAMRAI_F77_FUNC(addvel2rhs3d, ADDVEL2RHS3D)
          (ifirst(0), ilast(0), ifirst(1), ilast(1), ifirst(2), ilast(2), dx,
           phase->getPointer(), phase->getGhostCellWidth()[0], frame_velocity,
@@ -410,10 +421,15 @@ void PFModel::evaluateRHSTemperature(
          assert(patch_geom);
          const double* dx = patch_geom->getDx();
 
-         SAMRAI_F77_FUNC(comprhs3d, COMPRHS3D)
+         SAMRAI_F77_FUNC(comprhsdiffusion3d, COMPRHSDIFFUSION3D)
          (ifirst(0), ilast(0), ifirst(1), ilast(1), ifirst(2), ilast(2), dx,
           y->getPointer(), y->getGhostCellWidth()[0], d_temperature_diffusion,
-          phi_dot->getPointer(), d_latent_heat, d_cp, rhs->getPointer());
+          rhs->getPointer());
+
+         SAMRAI_F77_FUNC(comprhs3d, COMPRHS3D)
+         (ifirst(0), ilast(0), ifirst(1), ilast(1), ifirst(2), ilast(2),
+          y->getPointer(), y->getGhostCellWidth()[0], phi_dot->getPointer(),
+          d_latent_heat, d_cp, rhs->getPointer());
 
       }  // loop over patches
    }     // loop over levels
@@ -456,10 +472,16 @@ void PFModel::evaluateRHSTemperatureWithVelocity(
          assert(patch_geom);
          const double* dx = patch_geom->getDx();
 
-         SAMRAI_F77_FUNC(comprhs3d, COMPRHS3D)
+         SAMRAI_F77_FUNC(comprhsdiffusion3d, COMPRHSDIFFUSION3D)
          (ifirst(0), ilast(0), ifirst(1), ilast(1), ifirst(2), ilast(2), dx,
           y->getPointer(), y->getGhostCellWidth()[0], d_temperature_diffusion,
-          phi_dot->getPointer(), d_latent_heat, d_cp, rhs->getPointer());
+          rhs->getPointer());
+
+         SAMRAI_F77_FUNC(comprhs3d, COMPRHS3D)
+         (ifirst(0), ilast(0), ifirst(1), ilast(1), ifirst(2), ilast(2),
+          y->getPointer(), y->getGhostCellWidth()[0], phi_dot->getPointer(),
+          d_latent_heat, d_cp, rhs->getPointer());
+
          SAMRAI_F77_FUNC(addvel2rhs3d, ADDVEL2RHS3D)
          (ifirst(0), ilast(0), ifirst(1), ilast(1), ifirst(2), ilast(2), dx,
           y->getPointer(), y->getGhostCellWidth()[0], frame_velocity,
