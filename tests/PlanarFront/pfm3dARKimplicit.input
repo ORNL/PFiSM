@@ -1,0 +1,159 @@
+Main {
+
+   init_time                = 0.0
+   target_time              = 10.0
+   init_cycle               = 0
+   print_interval           = 2.
+   max_steps                = 100
+   solution_logging         = FALSE
+
+   relative_tolerance       = 1e-4
+   absolute_tolerance       = 1e-4
+   max_order                = 3
+   // im_ex = 0 is explicit
+   // im_ex = 1 is implicit
+   // im_ex = 2 IMEX
+   im_ex                    = 1
+   uses_preconditioning     = TRUE
+   visit_output             = TRUE
+}
+
+PFModel {
+
+   frame_velocity = 0.28
+
+   PFM{
+      epsilon = 2.
+      well_height = 0.25
+      mobility = 0.25
+      initial_solid_fraction = 0.5
+   }
+
+   Temperature{
+      initial_value     = 0.7
+      diffusion_coeff   = 1.e-6 // [cm^2/s]
+      melting           = 1.
+      latent_heat       = 1.
+      cp                = 17.
+   }
+
+   molar_volume = 1.e-6 // [m^3/mol]
+
+   print_solver_info    = FALSE
+
+   BoundaryConditions {
+      Temperature{
+         boundary_0 = "slope", "0.0"
+         boundary_1 = "slope", "0.0"
+         boundary_2 = "slope", "0.0"
+         boundary_3 = "slope", "0.0"
+         boundary_4 = "slope", "0.0"
+         boundary_5 = "value", "0.7"
+      }
+      Phase{
+         boundary_0 = "slope", "0"
+         boundary_1 = "slope", "0"
+         boundary_2 = "slope", "0"
+         boundary_3 = "slope", "0"
+         boundary_4 = "slope", "0."
+         boundary_5 = "value", "0."
+      }
+   }
+
+}
+
+PhaseFACsolver{
+   fac_precond {
+      residual_tol         = 1.e-2
+   }
+
+   fac_solver{
+      //enable_logging = TRUE
+   }
+
+   fac_ops{
+      //enable_logging = TRUE
+      coarse_solver_tolerance      = 1.e-2
+   }
+
+   hypre_solver {
+      use_smg              = FALSE
+      relative_residual_tol = 1.e-2
+   }
+}
+
+TemperatureFACsolver{
+   fac_precond {
+      residual_tol         = 1.e-2
+   }
+
+   fac_solver{
+      //enable_logging = TRUE
+   }
+
+   fac_ops{
+      //enable_logging = TRUE
+      coarse_solver_tolerance      = 1.e-2
+   }
+
+   hypre_solver {
+      use_smg              = FALSE
+      relative_residual_tol = 1.e-2
+   }
+}
+
+StandardTagAndInitialize{
+   tagging_method = "REFINE_BOXES"
+
+   level_0 {
+      boxes = [ (0,0,0) , (19,19,19) ]
+   }
+}
+
+TimerManager {
+   timer_list = "PFiSM::*", "PFiSM::*::*","solv::*::*"
+   print_exclusive = TRUE
+}
+
+Geometry {
+   domain_boxes  = [ (0,0,0) , (15,15,127) ]
+   x_lo          = 0.e0 , 0.e0 , 0.e0 // lower end of computational domain.
+   x_up          = 10. , 10. , 80. // upper end of computational domain.
+}
+
+PatchHierarchy {
+   max_levels              = 1 // Maximum number of levels in hierarchy.
+
+// Note: For the following regridding information, data is required for each
+//       potential in the patch hierarchy; i.e., levels 0 thru max_levels-1.
+//       If more data values than needed are given, only the number required
+//       will be read in.  If fewer values are given, an error will result.
+//
+// Specify coarsening ratios for each level 1 through max_levels-1
+   ratio_to_coarser {         // vector ratio to next coarser level
+      level_1               = 2 , 2 , 2
+   }
+
+   largest_patch_size {
+      level_0 = 16, 16, 16
+      // all finer levels will use same values as level_0...
+   }
+
+   smallest_patch_size {
+      level_0 = 2 , 2 , 2
+      // all finer levels will use same values as level_0...
+   }
+
+}
+
+BergerRigoutsos {
+   efficiency_tolerance     = 0.70e0   // min % of tag cells in new patch level
+   combine_efficiency       = 0.85e0   // chop box if sum of volumes of smaller
+                                       // boxes < efficiency * vol of large box
+}
+
+GriddingAlgorithm {
+}
+
+LoadBalancer {
+}

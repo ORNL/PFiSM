@@ -59,6 +59,12 @@ add_test(NAME PlanarFrontEX
          ${CMAKE_CURRENT_BINARY_DIR}/../src/main
          ${CMAKE_CURRENT_SOURCE_DIR}/PlanarFront/pfm3dExplicit.input
          )
+add_test(NAME PlanarFrontARKimplicit
+         COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/PlanarFront/testARKimplicit.py
+         ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ${MPIEXEC_PREFLAGS}
+         ${CMAKE_CURRENT_BINARY_DIR}/../src/main
+         ${CMAKE_CURRENT_SOURCE_DIR}/PlanarFront/pfm3dARKimplicit.input
+         )
 
 target_link_libraries(testMPI ${PROJECT_LINK_LIBS1})
 target_link_libraries(testHyprePoisson testHyprePoissonLib
