@@ -61,8 +61,10 @@ int PFModelCV::evaluateRHSFunction(double time, solv::SundialsAbstractVector* y,
 
    if (std::abs(d_frame_velocity) > tol_velocity)
       evaluateRHSPhaseWithVelocity(hierarchy, y_dot_phase_id, d_frame_velocity);
-   else
+   else {
+      evaluateRHSPhaseDiffusion(hierarchy, y_dot_phase_id);
       evaluateRHSPhase(hierarchy, y_dot_phase_id);
+   }
 
    if (evolve_temperature()) {
       int y_dot_temperature_id =
@@ -71,9 +73,11 @@ int PFModelCV::evaluateRHSFunction(double time, solv::SundialsAbstractVector* y,
       if (std::abs(d_frame_velocity) > tol_velocity)
          evaluateRHSTemperatureWithVelocity(hierarchy, y_dot_temperature_id,
                                             y_dot_phase_id, d_frame_velocity);
-      else
+      else {
+         evaluateRHSTemperatureDiffusion(hierarchy, y_dot_temperature_id);
          evaluateRHSTemperature(hierarchy, y_dot_temperature_id,
                                 y_dot_phase_id);
+      }
    }
 
    ++d_number_rhs_eval;

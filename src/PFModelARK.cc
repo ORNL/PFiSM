@@ -124,10 +124,13 @@ int PFModelARK::evaluateRHSFunctionImp(double time,
       int y_dot_temperature_id =
           y_dot_samvect->getComponentDescriptorIndex(d_temperature_component);
 
+      evaluateRHSTemperatureDiffusion(hierarchy, y_dot_temperature_id);
+
       evaluateRHSTemperature(hierarchy, y_dot_temperature_id, y_dot_phase_id);
    }
 
    // recompute rhs for phase without velocity term
+   evaluateRHSPhaseDiffusion(hierarchy, y_dot_phase_id);
    evaluateRHSPhase(hierarchy, y_dot_phase_id);
 
    ++d_number_rhs_imp_eval;
