@@ -1,16 +1,15 @@
 Main {
 
    init_time                = 0.0
+   target_time              = 10.0
    init_cycle               = 0
-   print_interval           = 10.
-   max_steps                = 50
+   print_interval           = 2.
+   max_steps                = 5000
    solution_logging         = FALSE
 
-   relative_tolerance       = 1e-6
-   absolute_tolerance       = 1e-6
-   max_order                = 2
-   max_iter                 = 100
-// 0=use default
+   relative_tolerance       = 1e-4
+   absolute_tolerance       = 1e-4
+   max_order                = 3
    // im_ex = 0 is explicit
    // im_ex = 1 is implicit
    // im_ex = 2 IMEX
@@ -65,7 +64,7 @@ PFModel {
 
 PhaseFACsolver{
    fac_precond {
-      residual_tol         = 1.e-4
+      residual_tol         = 1.e-2
    }
 
    fac_solver{
@@ -85,7 +84,7 @@ PhaseFACsolver{
 
 TemperatureFACsolver{
    fac_precond {
-      residual_tol         = 1.e-4
+      residual_tol         = 1.e-2
    }
 
    fac_solver{
@@ -112,7 +111,7 @@ StandardTagAndInitialize{
 }
 
 TimerManager {
-   timer_list = "PFiSM::*", "apps::main::*","solv::*::*"
+   timer_list = "PFiSM::*", "PFiSM::*::*","solv::*::*"
    print_exclusive = TRUE
 }
 

@@ -47,7 +47,12 @@ add_test(NAME PlanarFrontUniformT
          ${CMAKE_CURRENT_BINARY_DIR}/../src/main
          ${CMAKE_CURRENT_SOURCE_DIR}/PlanarFrontUniformT/3d.input
          )
-
+add_test(NAME PlanarFrontIMEX
+         COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/PlanarFront/testIMEX.py
+         ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ${MPIEXEC_PREFLAGS}
+         ${CMAKE_CURRENT_BINARY_DIR}/../src/main
+         ${CMAKE_CURRENT_SOURCE_DIR}/PlanarFront/pfm3dark.input
+         )
 
 target_link_libraries(testMPI ${PROJECT_LINK_LIBS1})
 target_link_libraries(testHyprePoisson testHyprePoissonLib
