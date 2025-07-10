@@ -1,22 +1,23 @@
 PFiSM
 =====
 
-Implementation of simple phase-field model (PFM) based on SAMRAI, Sundials
-and hypre. Includes coupled solver for temperature field.
-PFM driving force is proportional to difference between local temperature
-and melting temperature. Latent heat production from phase change affects
-temperature. Alternatively, the temperature field can be fixed to a
-uniform value.
-
-Spatial discretization is based on the finite volume approach.
-
-The time-integration is based on a Backward-Euler scheme, using a
-Jacobian-Free Newton Krylov (JNFK) solver based on Sundials functionalities
-to solve the nonlinear problem in that implicit scheme.
-A multigrid preconditioner is implemented using the hypre library to accelerate
-the solution of the linear systems within the Newton iterations.
-
+Time-evolution of simple phase-field model (PFM) coupled to temperature field.
+PFM driving force is proportional to difference between local temperature and
+melting temperature. Latent heat production from phase change affects temperature.
+Alternatively, the temperature field can be fixed to a uniform value.
 Boundary conditions can be periodic or Dirichlet or Neumann.
+
+Implementation based on SAMRAI, Sundials and hypre libraries. Spatial discretization
+is based on the finite volume approach. The time-integration is based on Sundials
+and offers two options:
+(i) a Backward-difference formula temporal discretization, using a Jacobian-Free
+Newton Krylov (JNFK) solver based on Sundials CVODE functionalities to solve the
+nonlinear problem in that implicit scheme. A multigrid preconditioner is implemented
+using the hypre library to accelerate the solution of the linear systems within
+the Newton iterations.
+(ii) an IMEX (Implicit-Explicit) solver based on Sundials ARKODE functionalities.
+
+Allows for testing and comparison of various time-integration schemes.
 
 Conventions
 -----------
